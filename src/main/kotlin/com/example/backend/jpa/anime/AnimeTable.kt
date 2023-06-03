@@ -44,14 +44,17 @@ data class AnimeTable(
         orphanRemoval = true
     )
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "anime_openings", schema = "anime")
-    @Column(columnDefinition = "text")
-    val openings: MutableList<String> = mutableListOf(),
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "anime_endings", schema = "anime")
-    @Column(columnDefinition = "text")
-    val endings: MutableList<String> = mutableListOf(),
+    @ManyToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL]
+    )
+    @JoinTable(
+        name = "anime_music",
+        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
+        inverseJoinColumns = [JoinColumn(name = "music_id", referencedColumnName = "id")],
+        schema = "anime",
+    )
+    val music: MutableSet<AnimeMusicTable> = mutableSetOf(),
     val year: Int = 0,
     val nextEpisode: LocalDateTime? = null,
     val episodesCount: Int = 0,
@@ -147,6 +150,10 @@ data class AnimeTable(
     }
     fun addAllAnimeGenre(genre: List<AnimeGenreTable>): AnimeTable {
         genres.addAll(genre)
+        return this
+    }
+    fun addAllMusic(musicT: List<AnimeMusicTable>): AnimeTable {
+        music.addAll(musicT)
         return this
     }
     fun addAllAnimeStudios(studio: List<AnimeStudiosTable>): AnimeTable {

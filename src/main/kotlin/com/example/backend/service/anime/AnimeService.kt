@@ -4,6 +4,7 @@ package com.example.backend.service.anime
 import com.example.backend.jpa.anime.*
 import com.example.backend.jpa.user.UserFavoriteAnime
 import com.example.backend.models.ServiceResponse
+import com.example.backend.models.anime.AnimeMusicType
 import com.example.backend.models.animeParser.AnimeResponse
 import com.example.backend.models.animeParser.AnimeTempResponse
 import com.example.backend.models.animeParser.ScreenshotsParse
@@ -55,10 +56,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.imageio.ImageIO
-import javax.persistence.EntityManager
-import javax.persistence.PersistenceContext
-import javax.persistence.Tuple
-import javax.persistence.TypedQuery
+import javax.persistence.*
 import javax.persistence.criteria.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
@@ -85,6 +83,9 @@ class AnimeService : AnimeRepositoryImpl {
 
     @Autowired
     lateinit var animeRepository: AnimeRepository
+
+    @Autowired
+    lateinit var animeMusicRepository: AnimeMusicRepository
 
     @Autowired
     private lateinit var userRatingCountRepository: UserRatingCountRepository
@@ -991,19 +992,39 @@ class AnimeService : AnimeRepositoryImpl {
                                 }.body<Jikan<JikanThemes>>()
                             }
 
-                            val endings: MutableList<String> = mutableListOf()
+                            val music: MutableList<AnimeMusicTable> = mutableListOf()
 
-                            val openings: MutableList<String> = mutableListOf()
-
-                            if(jikanThemes.data != null) {
+                            if (jikanThemes.data != null) {
                                 jikanThemes.data.endings.forEach { ending ->
-                                    if(ending != null) {
-                                        endings.add(jikanThemesNormalize(ending))
+                                    if (ending != null) {
+                                        val endingNormalize = jikanThemesNormalize(ending)
+                                        music.add(
+                                            animeMusicRepository.save(
+                                                AnimeMusicTable(
+                                                    url = "https://music.youtube.com/search?q=$endingNormalize",
+                                                    name = endingNormalize,
+                                                    episodes = mergeEpisodes(ending),
+                                                    type = AnimeMusicType.Ending,
+                                                    hosting = "YoutubeMusic"
+                                                )
+                                            )
+                                        )
                                     }
                                 }
                                 jikanThemes.data.openings.forEach { opening ->
-                                    if(opening != null) {
-                                        openings.add(jikanThemesNormalize(opening))
+                                    if (opening != null) {
+                                        val openingNormalize = jikanThemesNormalize(opening)
+                                        music.add(
+                                            animeMusicRepository.save(
+                                                AnimeMusicTable(
+                                                    url = "https://music.youtube.com/search?q=$openingNormalize",
+                                                    name = openingNormalize,
+                                                    episodes = mergeEpisodes(opening),
+                                                    type = AnimeMusicType.Opening,
+                                                    hosting = "YoutubeMusic"
+                                                )
+                                            )
+                                        )
                                     }
                                 }
                             }
@@ -1026,7 +1047,8 @@ class AnimeService : AnimeRepositoryImpl {
                             val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
                                 .withZone(ZoneId.of("Europe/Moscow"))
 
-                            anime.materialData.otherTitles.toMutableList().add(mediaTemp.russianLic ?: mediaTemp.russian)
+                            anime.materialData.otherTitles.toMutableList()
+                                .add(mediaTemp.russianLic ?: mediaTemp.russian)
 
                             val a = AnimeTable(
                                 title = mediaTemp.russianLic ?: mediaTemp.russian,
@@ -1067,8 +1089,6 @@ class AnimeService : AnimeRepositoryImpl {
                                     "G" -> "G"
                                     else -> ""
                                 },
-                                openings = openings,
-                                endings = endings,
                                 shikimoriId = anime.shikimoriId.toInt(),
                                 shikimoriRating = anime.materialData.shikimoriRating,
                                 shikimoriVotes = anime.materialData.shikimoriVotes,
@@ -1080,6 +1100,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image!!)
                             )
+                            a.addAllMusic(music)
                             a.addAllAnimeGenre(g)
                             a.addAllAnimeStudios(st)
                             translations.forEach { translation ->
@@ -1143,6 +1164,63 @@ class AnimeService : AnimeRepositoryImpl {
 //        } catch (e: Exception) {
 //            println(e.message)
 //        }
+    }
+
+    fun mergeEpisodes(input: String): String {
+        val numbersRegex = Regex("(\\d+)-(\\d+)")
+        val rangeMatches = numbersRegex.findAll(input)
+
+        val extractedRanges = mutableListOf<String>()
+        for (match in rangeMatches) {
+            val start = match.groupValues[1]
+            val end = match.groupValues[2]
+            extractedRanges.add("$start-$end")
+        }
+
+        val distinctNumbers = extractedRanges.flatMap { range ->
+            val (start, end) = range.split("-").map { it.toInt() }
+            (start..end).toList()
+        }.distinct()
+
+        val numbersOnlyRegex = Regex("\\b\\d+\\b")
+        val numberMatches = numbersOnlyRegex.findAll(input)
+
+        val extractedNumbers = mutableListOf<String>()
+        for (match in numberMatches) {
+            val number = match.value
+            extractedNumbers.add(number)
+        }
+
+        if (input.startsWith(extractedNumbers.first())) {
+            extractedNumbers.removeAt(0)
+        }
+
+        val distinctSingleNumbers = extractedNumbers
+            .distinct()
+            .mapNotNull { it.toIntOrNull() }
+            .filter { it !in distinctNumbers }
+
+        return mergeNumbers(distinctNumbers + distinctSingleNumbers)
+    }
+
+    fun mergeNumbers(numbers: List<Int>): String {
+        if(numbers.isNotEmpty()) {
+            val ranges = mutableListOf<Pair<Int, Int>>()
+            var currentRange = Pair(numbers.first(), numbers.first())
+
+            for (i in 1 until numbers.size) {
+                currentRange = if (numbers[i] == currentRange.second + 1) {
+                    Pair(currentRange.first, numbers[i])
+                } else {
+                    ranges.add(currentRange)
+                    Pair(numbers[i], numbers[i])
+                }
+            }
+
+            ranges.add(currentRange)
+
+            return ranges.joinToString(", ") { if (it.first == it.second) it.first.toString() else "${it.first}-${it.second}" }
+        } else return ""
     }
 
     fun checkTranslation(element: String): AnimeTranslationTable {
