@@ -1,6 +1,7 @@
 package com.example.backend.util.common
 
 fun jikanThemesNormalize(input: String): String {
+    println("INPUT = $input")
     val regex = "\"(.*)\" by (.*)".toRegex()
     val matchResult = regex.find(input.replace(Regex("\\(.*?\\)"), "").trim())
     val songTitle = matchResult?.groups?.get(1)?.value

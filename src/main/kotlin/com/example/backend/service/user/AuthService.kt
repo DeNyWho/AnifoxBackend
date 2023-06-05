@@ -7,6 +7,7 @@ import com.example.backend.jpa.user.User
 import com.example.backend.models.shikimori.ShikimoriOauth
 import com.example.backend.models.shikimori.ShikimoriProfile
 import com.example.backend.models.users.SignUpRequest
+import com.example.backend.models.users.TokenResponse
 import com.example.backend.models.users.TypeUser
 import com.example.backend.models.users.UserCreateResponseDTO
 import com.example.backend.repository.shikimori.ShikimoriUsersRepository
@@ -53,7 +54,7 @@ class AuthService(
     private val authzClient: AuthzClient,
     private val shikimoriUsersRepository: ShikimoriUsersRepository
 ) {
-    fun authenticate(email: String, password: String, response: HttpServletResponse) {
+    fun authenticate(email: String, password: String, response: HttpServletResponse): TokenResponse {
         val user = if (userRepository.findByEmail(email).isPresent) userRepository.findByEmail(email).get()
         else {
             throw BadCredentialsException("User not found with email: $email")
@@ -62,15 +63,14 @@ class AuthService(
             throw BadCredentialsException("Invalid email/password supplied")
         }
         try {
-            makeCookieAniFox(response, email, password)
-
             response.status = HttpStatus.OK.value()
+            return makeCookieAniFox(response, email, password)
         } catch (e: Exception) {
             throw BadCredentialsException("Bad Request: ${e.message}}")
         }
     }
 
-    fun register(signUpRequest: SignUpRequest, response: HttpServletResponse) {
+    fun register(signUpRequest: SignUpRequest, response: HttpServletResponse): TokenResponse {
         if (userRepository.findByEmail(signUpRequest.email).isPresent)
             throw BadCredentialsException("Email already exists")
 
@@ -124,34 +124,8 @@ class AuthService(
             throw BadRequestException("${e.message}")
         }
 
-        makeCookieAniFox(response, signUpRequest.username, signUpRequest.password)
         response.status = HttpStatus.CREATED.value()
-    }
-
-    fun test(response: HttpServletResponse) {
-        val user = UserRepresentation()
-
-        user.apply {
-            isEnabled = true
-            username = "sdfsdfsfds"
-        }
-
-        val tempPass = UUID.randomUUID().toString()
-
-        val realmResource = keycloak.realm(realm)
-        val usersResource = realmResource.users()
-
-        try {
-            val u = usersResource.searchByUsername("sdfsdfsfds", true)[0]
-            val userResource = usersResource[u.id]
-            val passwordCred = keycloakService.getCredentialRepresentation(tempPass)
-            userResource.resetPassword(passwordCred)
-
-            makeCookieAniFox(response, "sdfsdfsfds", tempPass)
-
-        } catch (e: Exception) {
-            throw BadRequestException("${e.message}")
-        }
+        return makeCookieAniFox(response, signUpRequest.username, signUpRequest.password)
     }
 
     private fun insertNewRole(
@@ -301,10 +275,11 @@ class AuthService(
         response: HttpServletResponse,
         username: String,
         password: String
-    ) {
+    ): TokenResponse {
         val auth = authzClient.obtainAccessToken(username, password)
-
-        response.addHeader("refreshToken", auth.refreshToken)
-        response.addHeader("accessToken", auth.token)
+        return TokenResponse(
+            accessToken = auth.token,
+            refreshToken = auth.refreshToken
+        )
     }
 }

@@ -1145,6 +1145,7 @@ class AnimeService : AnimeRepositoryImpl {
                             }
                         }
                     } catch (e: Exception) {
+                        println("WAXZCF = ${e.message}")
                         return@Loop
                     }
                 }
@@ -1167,40 +1168,45 @@ class AnimeService : AnimeRepositoryImpl {
     }
 
     fun mergeEpisodes(input: String): String {
-        val numbersRegex = Regex("(\\d+)-(\\d+)")
-        val rangeMatches = numbersRegex.findAll(input)
+        try {
 
-        val extractedRanges = mutableListOf<String>()
-        for (match in rangeMatches) {
-            val start = match.groupValues[1]
-            val end = match.groupValues[2]
-            extractedRanges.add("$start-$end")
+            val numbersRegex = Regex("(\\d+)-(\\d+)")
+            val rangeMatches = numbersRegex.findAll(input)
+
+            val extractedRanges = mutableListOf<String>()
+            for (match in rangeMatches) {
+                val start = match.groupValues[1]
+                val end = match.groupValues[2]
+                extractedRanges.add("$start-$end")
+            }
+
+            val distinctNumbers = extractedRanges.flatMap { range ->
+                val (start, end) = range.split("-").map { it.toInt() }
+                (start..end).toList()
+            }.distinct()
+
+            val numbersOnlyRegex = Regex("\\b\\d+\\b")
+            val numberMatches = numbersOnlyRegex.findAll(input)
+
+            val extractedNumbers = mutableListOf<String>()
+            for (match in numberMatches) {
+                val number = match.value
+                extractedNumbers.add(number)
+            }
+
+            if (input.startsWith(extractedNumbers.first())) {
+                extractedNumbers.removeAt(0)
+            }
+
+            val distinctSingleNumbers = extractedNumbers
+                .distinct()
+                .mapNotNull { it.toIntOrNull() }
+                .filter { it !in distinctNumbers }
+
+            return mergeNumbers(distinctNumbers + distinctSingleNumbers)
+        } catch (e: Exception) {
+            return ""
         }
-
-        val distinctNumbers = extractedRanges.flatMap { range ->
-            val (start, end) = range.split("-").map { it.toInt() }
-            (start..end).toList()
-        }.distinct()
-
-        val numbersOnlyRegex = Regex("\\b\\d+\\b")
-        val numberMatches = numbersOnlyRegex.findAll(input)
-
-        val extractedNumbers = mutableListOf<String>()
-        for (match in numberMatches) {
-            val number = match.value
-            extractedNumbers.add(number)
-        }
-
-        if (input.startsWith(extractedNumbers.first())) {
-            extractedNumbers.removeAt(0)
-        }
-
-        val distinctSingleNumbers = extractedNumbers
-            .distinct()
-            .mapNotNull { it.toIntOrNull() }
-            .filter { it !in distinctNumbers }
-
-        return mergeNumbers(distinctNumbers + distinctSingleNumbers)
     }
 
     fun mergeNumbers(numbers: List<Int>): String {

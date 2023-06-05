@@ -53,13 +53,13 @@ class AuthController(
             ),
         ]
     )
-    fun login(@Valid @RequestBody loginRequest: LoginRequest, res: HttpServletResponse) {
-        authService.authenticate(email = loginRequest.email, password = loginRequest.password, res)
+    fun login(@Valid @RequestBody loginRequest: LoginRequest, res: HttpServletResponse): TokenResponse {
+        return authService.authenticate(email = loginRequest.email, password = loginRequest.password, res)
     }
 
     @PostMapping("/register")
-    fun register(@RequestBody signUpRequest: SignUpRequest, response: HttpServletResponse) {
-        authService.register(signUpRequest, response)
+    fun register(@RequestBody signUpRequest: SignUpRequest, response: HttpServletResponse): TokenResponse {
+        return authService.register(signUpRequest, response)
     }
 
     @Value("\${shikimori.oauth.client-id}")
@@ -83,11 +83,6 @@ class AuthController(
     @GetMapping("/oauth2/code/shikimori")
     fun handleOAuth2CodeShikimori(@RequestParam("code") code: String, response: HttpServletResponse): RedirectView {
         return authService.authenticateShikimori(code, response)
-    }
-
-    @GetMapping("/test")
-    fun testTestOnlyTest(response: HttpServletResponse) {
-        authService.test(response)
     }
 
 }
