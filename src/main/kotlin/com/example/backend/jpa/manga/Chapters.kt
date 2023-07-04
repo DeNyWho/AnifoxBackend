@@ -19,7 +19,12 @@ data class MangaChapters(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL]
     )
-    @JoinTable(schema = "manga")
+    @JoinTable(
+        schema = "manga",
+        name = "chapters_mangachapterspage", // Имя таблицы соединения
+        joinColumns = [JoinColumn(name = "mangachapters_id")], // Имя столбца для связи с "MangaChapters"
+        inverseJoinColumns = [JoinColumn(name = "mangachapterspage_id")] // Имя столбца для связи с "MangaChaptersPage"
+    )
     val mangaChaptersPage: MutableSet<MangaChaptersPage> = mutableSetOf()
 ) {
     fun addToMangaChaptersPage(chapter: MangaChaptersPage): MangaChapters {

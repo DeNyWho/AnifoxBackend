@@ -33,4 +33,6 @@ interface MangaRepositoryImpl {
     ): ServiceResponse<MangaLight>
 
     fun getMangaChapter(mangaId: String, chapterId: String): ServiceResponse<ChapterSingle>
+    fun getMangaChapters(chapterId: String): ServiceResponse<String>
+    fun getMangaChaptersList(mangaId: String, pageNum: Int, pageSize: Int): ServiceResponse<ChaptersLight>
 }

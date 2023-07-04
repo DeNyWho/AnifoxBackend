@@ -81,7 +81,6 @@ class UserService : UserRepositoryImpl {
             } else {
                 existFavorite.status = status
                 userFavoriteAnimeRepository.save(existFavorite)
-                entityManager.flush()
                 response.status = HttpStatus.OK.value()
                 return
             }
@@ -111,7 +110,6 @@ class UserService : UserRepositoryImpl {
             } else {
                 existFavorite.status = status
                 userFavoriteMangaRepository.save(existFavorite)
-                entityManager.flush()
                 response.status = HttpStatus.OK.value()
                 return
             }

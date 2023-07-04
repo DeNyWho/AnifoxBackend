@@ -5,6 +5,7 @@ import com.example.backend.models.MangaLightJson
 import com.example.backend.models.PercentageList
 import com.example.backend.models.ServiceResponse
 import com.example.backend.models.mangaResponse.chapters.ChapterSingle
+import com.example.backend.models.mangaResponse.chapters.ChaptersLight
 import com.example.backend.models.mangaResponse.detail.GenresDetail
 import com.example.backend.models.mangaResponse.detail.MangaDetail
 import com.example.backend.models.mangaResponse.detail.TypesDetail
@@ -270,6 +271,57 @@ class MangaService: MangaRepositoryImpl {
             }
         }
         return mangaLightSuccess(listToMangaLight(mangaRepository.findManga(pageable = pageable, searchQuery = actualSearch)))
+    }
+
+    override fun getMangaChapters(chapterId: String): ServiceResponse<String> {
+        val chapter = mangaChaptersRepository.findById(UUID.fromString(chapterId)).get()
+        val a = mutableListOf<String>()
+        chapter.mangaChaptersPage.forEach {
+            a.add(it.imagePageUrl)
+        }
+
+        return ServiceResponse(
+            data = a,
+            status = HttpStatus.OK
+        )
+    }
+
+    override fun getMangaChaptersList(mangaId: String, pageNum: Int, pageSize: Int): ServiceResponse<ChaptersLight> {
+        val manga = mangaRepository.findMangaWithChapters(pageable = PageRequest.of(pageNum, pageSize),id = mangaId).get()
+        val data = mutableListOf<ChaptersLight>()
+        manga.forEach {
+            data.add(
+                ChaptersLight(
+                    id = it.id.toString(),
+                    title = it.title,
+                    date = it.date,
+                    urlCode = it.urlCode
+                )
+            )
+        }
+        val sortedChapters = data.sortedWith { chapter1, chapter2 ->
+            val regex = """Том (\d+)\. Глава (\d+)""".toRegex()
+            val (volume1, chapterNumber1) = regex.find(chapter1.title)!!.destructured
+            val (volume2, chapterNumber2) = regex.find(chapter2.title)!!.destructured
+
+            val volumeComparison = volume1.toInt().compareTo(volume2.toInt())
+            if (volumeComparison != 0) {
+                volumeComparison
+            } else {
+                chapterNumber1.toInt().compareTo(chapterNumber2.toInt())
+            }
+        }.reversed()
+        return ServiceResponse(
+            data = sortedChapters,
+            status = HttpStatus.OK
+        )
+    }
+
+    fun test(mangaId: String) {
+        val manga = mangaRepository.findById(mangaId).get()
+        val a = manga.chapters
+        println(manga.chapters)
+
     }
 
     override fun getMangaChapter(mangaId: String, chapterId: String): ServiceResponse<ChapterSingle> {

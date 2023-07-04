@@ -78,8 +78,12 @@ data class AnimeTable(
     var status: String = "",
     @Column(columnDefinition = "TEXT")
     val description: String = "",
-    @Column(columnDefinition = "TEXT")
-    val posterUrl: String = "",
+    @OneToOne(
+        fetch = FetchType.EAGER,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val images: AnimeImages = AnimeImages(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
     @Column(columnDefinition = "text")
@@ -152,6 +156,7 @@ data class AnimeTable(
         genres.addAll(genre)
         return this
     }
+
     fun addAllMusic(musicT: List<AnimeMusicTable>): AnimeTable {
         music.addAll(musicT)
         return this

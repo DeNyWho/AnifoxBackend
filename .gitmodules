@@ -1,0 +1,3 @@
+[submodule "ConfigBackend"]
+	path = ConfigBackend
+	url = https://github.com/ANIFOX-CLUB/ConfigBackend.git

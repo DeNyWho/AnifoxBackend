@@ -1,6 +1,7 @@
 package com.example.backend.util.common
 
 import com.example.backend.jpa.anime.AnimeTable
+import com.example.backend.models.anime.AnimeImagesTypes
 import com.example.backend.models.animeResponse.light.AnimeLight
 
 fun listToAnimeLight(
@@ -12,7 +13,7 @@ fun listToAnimeLight(
             AnimeLight(
                 url = it.url,
                 title = it.title,
-                image = it.posterUrl,
+                image = AnimeImagesTypes(large = it.images.large, medium = it.images.medium),
                 studio = it.studios.toList(),
                 season = it.season,
                 genres = it.genres.toList(),

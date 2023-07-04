@@ -46,6 +46,12 @@ data class MangaTable (
     var linked: MutableSet<String> = mutableSetOf(),
     val updateTime: LocalDateTime = LocalDateTime.now(),
     @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH]
+    )
+    @JoinTable(schema = "manga")
+    var chapters: MutableSet<MangaChapters> = mutableSetOf(),
+    @OneToMany(
         mappedBy = "manga",
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
@@ -56,6 +62,10 @@ data class MangaTable (
     fun addMangaLinked(linkedTemp: String): MangaTable{
         linked.add(linkedTemp)
         return this
+    }
+
+    fun addMangaChapters(chaptersTemp: List<MangaChapters>){
+        chapters.addAll(chaptersTemp)
     }
 
     fun addMangaGenre(genreTemp: MangaGenre): MangaTable{

@@ -17,7 +17,7 @@ data class UserFavouriteManga(
     @JoinColumn(name = "user_id")
     val user: User = User(),
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL],)
     @JoinColumn(name = "manga_id")
     val manga: MangaTable = MangaTable(),
 

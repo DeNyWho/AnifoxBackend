@@ -7,7 +7,7 @@ import java.io.Serial
 @Serializable
 data class ShikimoriProfile(
     @SerialName("id")
-    val id: Long,
+    val id: Int,
     @SerialName("nickname")
     val nickname: String,
     @SerialName("avatar")

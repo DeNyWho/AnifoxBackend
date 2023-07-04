@@ -1,6 +1,7 @@
 package com.example.backend.jpa.user
 
 import com.example.backend.jpa.anime.AnimeRating
+import com.example.backend.jpa.manga.MangaRating
 import com.example.backend.models.users.TypeUser
 import java.util.*
 import javax.persistence.*
@@ -41,11 +42,19 @@ data class User(
 
     @OneToMany(
         fetch = FetchType.LAZY,
-        mappedBy = "user",
+        mappedBy = "anime",
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    val favorites: MutableSet<UserFavoriteAnime> = mutableSetOf(),
+    val favoritesAnime: MutableSet<UserFavoriteAnime> = mutableSetOf(),
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "manga",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val favoritesManga: MutableSet<UserFavouriteManga> = mutableSetOf(),
 
     @OneToMany(
         mappedBy = "anime",
@@ -53,5 +62,13 @@ data class User(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    val rating: MutableSet<AnimeRating> = mutableSetOf()
+    val rating: MutableSet<AnimeRating> = mutableSetOf(),
+
+    @OneToMany(
+        mappedBy = "manga",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val mangaRating: MutableSet<MangaRating> = mutableSetOf()
 )

@@ -4,7 +4,6 @@ import org.hibernate.annotations.GenericGenerator
 import java.util.*
 import javax.persistence.*
 
-
 @Entity
 @Table(name = "chapters_page", schema = "manga")
 data class MangaChaptersPage(

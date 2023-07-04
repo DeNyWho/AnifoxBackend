@@ -4,6 +4,8 @@ package com.example.backend.service.anime
 import com.example.backend.jpa.anime.*
 import com.example.backend.jpa.user.UserFavoriteAnime
 import com.example.backend.models.ServiceResponse
+import com.example.backend.models.anime.AnimeBufferedImagesSup
+import com.example.backend.models.anime.AnimeImagesTypes
 import com.example.backend.models.anime.AnimeMusicType
 import com.example.backend.models.animeParser.AnimeResponse
 import com.example.backend.models.animeParser.AnimeTempResponse
@@ -23,6 +25,7 @@ import com.example.backend.models.users.StatusFavourite
 import com.example.backend.repository.anime.*
 import com.example.backend.repository.user.UserRatingCountMangaRepository
 import com.example.backend.repository.user.UserRatingCountRepository
+import com.example.backend.service.image.ImageService
 import com.example.backend.util.*
 import com.example.backend.util.common.animeTableToAnimeLight
 import com.example.backend.util.common.jikanThemesNormalize
@@ -71,6 +74,9 @@ class AnimeService : AnimeRepositoryImpl {
 
     @Autowired
     lateinit var animeStudiosRepository: AnimeStudiosRepository
+
+    @Autowired
+    lateinit var imageService: ImageService
 
     @Autowired
     lateinit var animeGenreRepository: AnimeGenreRepository
@@ -663,11 +669,13 @@ class AnimeService : AnimeRepositoryImpl {
         return AnimeDetail(
             url = anime.url,
             title = anime.title,
-            image = anime.posterUrl,
+            image = AnimeImagesTypes(large = anime.images.large, medium = anime.images.medium),
             studio = anime.studios.toList(),
             season = anime.season,
             description = anime.description,
             otherTitles = anime.otherTitles.distinct(),
+            shikimoriRating = anime.shikimoriRating,
+            nextEpisode = anime.nextEpisode,
             year = anime.year,
             releasedAt = anime.releasedAt,
             airedAt = anime.airedAt,
@@ -934,9 +942,9 @@ class AnimeService : AnimeRepositoryImpl {
                                 }
                             }
 
-                            val tempingAnimeImage = animeRepository.findByPosterUrl(fr.materialData.poster).isPresent
+                            var animeImages: AnimeImagesTypes? = null
 
-                            val image: BufferedImage?
+                            var image: AnimeBufferedImagesSup? = null
 
                             Thread.sleep(1000)
                             val jikanImage = runBlocking {
@@ -951,32 +959,17 @@ class AnimeService : AnimeRepositoryImpl {
                                 }.body<Jikan<JikanData>>()
                             }
 
-                            val url = if (jikanImage.data == null) {
-                                if (tempingAnimeImage) {
-                                    "https://shikimori.me/system/animes/original/${anime.shikimoriId}.jpg"
-                                } else {
-                                    val regex = Regex("\\b[0-9]\\b")
-                                    if (regex.containsMatchIn(anime.materialData.title)) {
-                                        "https://shikimori.me/system/animes/original/${anime.shikimoriId}.jpg"
-                                    } else {
-                                        fr.materialData.poster
-                                    }
-                                }
-                            } else jikanImage.data.images.jikanJpg.largeImageUrl
-                            try {
-                                val urlObj = if (jikanImage.data == null) {
-                                    URL(
-                                        if (url.startsWith("https://")) {
-                                            url
-                                        } else {
-                                            "https://$url"
-                                        }
-                                    )
-                                } else URL(jikanImage.data.images.jikanJpg.largeImageUrl)
-                                image = ImageIO.read(urlObj)
-                            } catch (e: IOException) {
-                                e.printStackTrace()
-                                return@Loop
+                            val urlLinking = translit(mediaTemp.russian)
+
+                            if(jikanImage.data != null) {
+                                animeImages = AnimeImagesTypes(
+                                    large = imageService.saveFileInSThird("images/large/$urlLinking.png", URL(jikanImage.data.images.jikanJpg.largeImageUrl).readBytes() ),
+                                    medium = imageService.saveFileInSThird("images/medium/$urlLinking.png", URL(jikanImage.data.images.jikanJpg.mediumImageUrl).readBytes() ),
+                                )
+                                image = AnimeBufferedImagesSup(
+                                    large = ImageIO.read(URL(jikanImage.data.images.jikanJpg.largeImageUrl)),
+                                    medium = ImageIO.read(URL(jikanImage.data.images.jikanJpg.mediumImageUrl)),
+                                )
                             }
 
                             Thread.sleep(1000)
@@ -1047,21 +1040,26 @@ class AnimeService : AnimeRepositoryImpl {
                             val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
                                 .withZone(ZoneId.of("Europe/Moscow"))
 
-                            anime.materialData.otherTitles.toMutableList()
-                                .add(mediaTemp.russianLic ?: mediaTemp.russian)
+                            val otherTitles = anime.materialData.otherTitles.toMutableList()
+
+                            otherTitles.add(mediaTemp.russianLic ?: mediaTemp.russian)
 
                             val a = AnimeTable(
                                 title = mediaTemp.russianLic ?: mediaTemp.russian,
-                                url = translit(mediaTemp.russian),
+                                url = urlLinking,
                                 nextEpisode = if (mediaTemp.nextEpisodeAt != null) {
                                     LocalDateTime.parse(mediaTemp.nextEpisodeAt, formatterUpdated)
                                 } else {
                                     null
                                 },
+                                images = AnimeImages(
+                                    large = animeImages?.large!!,
+                                    medium = animeImages.medium,
+                                ),
                                 titleEn = mediaTemp.english.toMutableList(),
                                 titleJapan = mediaTemp.japanese.toMutableList(),
                                 synonyms = mediaTemp.synonyms.toMutableList(),
-                                otherTitles = anime.materialData.otherTitles.toMutableList(),
+                                otherTitles = otherTitles,
                                 similarAnime = similarIds.take(30).toMutableList(),
                                 related = r.toMutableSet(),
                                 status = mediaTemp.status,
@@ -1073,7 +1071,6 @@ class AnimeService : AnimeRepositoryImpl {
                                 releasedAt = if (mediaTemp.releasedAt != null) LocalDate.parse(mediaTemp.releasedAt) else anime.materialData.releasedAt,
                                 episodesCount = mediaTemp.episodes,
                                 episodesAires = if (mediaTemp.status == "released") mediaTemp.episodes else mediaTemp.episodesAired,
-                                posterUrl = url,
                                 type = anime.materialData.animeType,
                                 updatedAt = anime.updatedAt,
                                 minimalAge = anime.materialData.minimalAge,
@@ -1098,7 +1095,7 @@ class AnimeService : AnimeRepositoryImpl {
                                     6, 7, 8 -> "Summer"
                                     else -> "Fall"
                                 },
-                                accentColor = getMostCommonColor(image!!)
+                                accentColor = getMostCommonColor(image?.large!!)
                             )
                             a.addAllMusic(music)
                             a.addAllAnimeGenre(g)

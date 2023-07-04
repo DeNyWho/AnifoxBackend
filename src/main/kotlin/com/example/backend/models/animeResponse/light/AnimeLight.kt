@@ -2,13 +2,14 @@ package com.example.backend.models.animeResponse.light
 
 import com.example.backend.jpa.anime.AnimeGenreTable
 import com.example.backend.jpa.anime.AnimeStudiosTable
+import com.example.backend.models.anime.AnimeImagesTypes
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class AnimeLight(
     val url: String = "",
     var title: String = "",
-    var image: String = "",
+    var image: AnimeImagesTypes = AnimeImagesTypes(),
     var type: String = "",
     val rating: Double? = null,
     val studio: List<AnimeStudiosTable> = listOf(),

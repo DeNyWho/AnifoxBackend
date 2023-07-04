@@ -21,9 +21,11 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.keycloak.admin.client.CreatedResponseUtil
 import org.keycloak.admin.client.Keycloak
@@ -195,7 +197,7 @@ class AuthService(
             }.body<ShikimoriOauth>()
         }
 
-        val shikimoriWhoAmi = runBlocking {
+        val shiki = runBlocking {
             client.get {
                 headers {
                     contentType(ContentType.Application.Json)
@@ -205,8 +207,13 @@ class AuthService(
                     protocol = URLProtocol.HTTPS
                     host = "shikimori.me/api/users/whoami"
                 }
-            }.body<ShikimoriProfile>()
+            }.bodyAsText()
         }
+
+        val shikimoriWhoAmi = Json {
+            ignoreUnknownKeys = true
+        }.decodeFromString<ShikimoriProfile>(shiki)
+
         val role =
             if (roleRepository.findByName(RoleName.ROLE_USER).isPresent) roleRepository.findByName(RoleName.ROLE_USER)
                 .get() else roleRepository.save(Role(name = RoleName.ROLE_USER))
@@ -220,13 +227,12 @@ class AuthService(
             isEnabled = true
             username = shikimoriWhoAmi.nickname
         }
-        if (shikimoriUsersRepository.findById(shikimoriWhoAmi.id).isPresent) {
-            val u = usersResource.searchByUsername(shikimoriWhoAmi.nickname, true)[0]
+        if (shikimoriUsersRepository.findById(shikimoriWhoAmi.id.toLong()).isPresent) {
+            val u = usersResource.searchByUsername(shikimoriWhoAmi.nickname, false)[0]
             val userResource = usersResource[u.id]
             val passwordCred = keycloakService.getCredentialRepresentation(tempPass)
             userResource.resetPassword(passwordCred)
 
-            makeCookieAniFox(response, shikimoriWhoAmi.nickname, tempPass)
             response.status = HttpStatus.OK.value()
         } else {
             try {
@@ -253,22 +259,36 @@ class AuthService(
 
                         userEntity.roles.add(role)
                         userRepository.save(userEntity)
-                        makeCookieAniFox(response, shikimoriWhoAmi.nickname, tempPass)
                     }
                 }
             } catch (e: Exception) {
+                println(e.message)
                 throw BadRequestException("${e.message}")
             }
             shikimoriUsersRepository.save(
                 ShikimoriUsers(
-                    id = shikimoriWhoAmi.id,
+                    id = shikimoriWhoAmi.id.toLong(),
                     image = shikimoriWhoAmi.avatar,
                     username = shikimoriWhoAmi.nickname
                 )
             )
             response.status = HttpStatus.CREATED.value()
         }
-        return RedirectView("https://anifox.club/")
+        val u = usersResource.searchByUsername(shikimoriWhoAmi.nickname, false)[0]
+        println("ZXF = $tempPass")
+        val userResource = usersResource[u.id]
+        val passwordCred = keycloakService.getCredentialRepresentation(tempPass)
+        println("WW = ${passwordCred.value}")
+        println("WW = ${passwordCred.credentialData}")
+        println("WW = ${passwordCred.secretData}")
+        userResource.resetPassword(passwordCred)
+        println("ZXF = $tempPass")
+        val auth = authzClient.obtainAccessToken(shikimoriWhoAmi.nickname, tempPass)
+        TokenResponse(
+            accessToken = auth.token,
+            refreshToken = auth.refreshToken
+        )
+        return RedirectView("https://anifox.club/?accessToken=${auth.token}&refreshToken=${auth.refreshToken}")
     }
 
     fun makeCookieAniFox(

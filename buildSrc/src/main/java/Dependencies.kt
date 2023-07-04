@@ -44,6 +44,7 @@ object Dependencies {
         const val javax = "4.0.1"
         const val jakarta = "5.0.0"
         const val hibernate = "5.6.7.Final"
+        const val amazonAws = "1.12.500"
 
         // Desktop Dependencies Version
         const val composeDesktop = "1.2.1"
@@ -154,6 +155,7 @@ object Dependencies {
         const val javax = "javax.servlet:javax.servlet-api:${Versions.javax}"
         const val jakarta = "jakarta.servlet:jakarta.servlet-api:${Versions.jakarta}"
         const val hibernate = "org.hibernate:hibernate-entitymanager:${Versions.hibernate}"
+        const val amazon = "com.amazonaws:aws-java-sdk-s3:${Versions.amazonAws}"
 
         object Defaults {
             const val postgreSQLRun = "org.postgresql:postgresql"

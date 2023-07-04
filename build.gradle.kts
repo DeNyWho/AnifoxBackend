@@ -29,6 +29,8 @@ repositories {
 }
 
 dependencies {
+    // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
+    implementation("com.amazonaws:aws-java-sdk-s3:1.12.500")
     implementation("org.bitbucket.b_c:jose4j:0.9.3")
     implementation("org.springframework.security:spring-security-jwt:1.1.1.RELEASE")
     implementation("org.springframework.security:spring-security-oauth2-resource-server")
@@ -97,6 +99,7 @@ dependencies {
         implementation(servlet)
     }
     with(Dependencies.Spring){
+        implementation(amazon)
         implementation(logging)
         implementation(skrapeIT)
         implementation(jackson)

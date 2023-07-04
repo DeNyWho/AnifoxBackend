@@ -81,15 +81,28 @@ class MangaController {
 //        }
 //    }
 
-    @GetMapping("{mangaId}/chapters/{chapterId}")
-    @Operation(summary = "get manga chapters")
-    fun getMangaChaptersPages(
-        response: HttpServletResponse,
-        @PathVariable(name = "mangaId") mangaId: String,
-        @PathVariable(name = "chapterId") chapterId: String
-    ): ServiceResponse<ChapterSingle> {
+    @GetMapping("{mangaId}/chapters")
+    @Operation(summary = "TEST get manga chapters")
+    fun getMangaChaptersList(
+        @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
+        @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
+        @PathVariable mangaId: String,
+        ): ServiceResponse<ChaptersLight> {
         return try {
-            mangaService.getMangaChapter(chapterId = chapterId, mangaId = mangaId)
+            mangaService.getMangaChaptersList(pageNum = pageNum, pageSize = pageSize, mangaId = mangaId)
+        } catch (e: ChangeSetPersister.NotFoundException) {
+            ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
+        }
+    }
+
+    @GetMapping("{mangaId}/chapters/{chapterId}")
+    @Operation(summary = "TEST get manga chapters")
+    fun getMangaChapterInfo(
+        @PathVariable mangaId: String,
+        @PathVariable chapterId: String
+        ): ServiceResponse<String> {
+        return try {
+            mangaService.getMangaChapters(chapterId)
         } catch (e: ChangeSetPersister.NotFoundException) {
             ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
         }

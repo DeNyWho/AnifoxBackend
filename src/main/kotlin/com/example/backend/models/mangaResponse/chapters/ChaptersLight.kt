@@ -11,8 +11,7 @@ import java.time.LocalDate
 data class ChaptersLight(
     @SerialName("title")
     val title: String = "",
-    @SerialName("url")
-    val url: String = "",
+    val urlCode: Int = 0,
     @SerialName("date")
     val date: LocalDate = LocalDate.now(),
     val id: String
