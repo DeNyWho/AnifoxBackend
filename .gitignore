@@ -5,7 +5,6 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 app.tar
-config
 ### STS ###
 env.txt
 .apt_generated
