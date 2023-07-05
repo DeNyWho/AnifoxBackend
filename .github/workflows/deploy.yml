@@ -11,9 +11,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        with:
-          ssh-key: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
-          submodules: 'ConfigBackend'
+      - name: get_subm
+        env:
+          SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "$SSHK" > $HOME/.ssh/ssh.key
+          chmod 600 $HOME/.ssh/ssh.key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
+          git submodule update --init --recursive  
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
