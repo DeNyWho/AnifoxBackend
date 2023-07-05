@@ -16,10 +16,12 @@ jobs:
           SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
         run: |
           mkdir -p $HOME/.ssh
-          echo "$SSHK" > $HOME/.ssh/id_rsa
+          echo "$SSH_PRIVATE_KEY" > $HOME/.ssh/id_rsa
           chmod 600 $HOME/.ssh/id_rsa
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_rsa"
           git submodule update --init --recursive
           docker login docker.pkg.github.com -u $GITHUB_ACTOR --password $GITHUB_TOKEN
+
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
