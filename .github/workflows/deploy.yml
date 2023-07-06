@@ -7,7 +7,7 @@ on:
       
 env:
   GITHUB_USERNAME: ${{ secrets.USERNAME }}
-  GITHUB_TOKEN: ${{ secrets.TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
   
 jobs:
