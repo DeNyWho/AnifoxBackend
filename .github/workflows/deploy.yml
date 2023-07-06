@@ -11,6 +11,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Trigger release build
         env:
           SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
