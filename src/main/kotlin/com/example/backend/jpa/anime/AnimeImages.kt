@@ -18,4 +18,6 @@ data class AnimeImages(
     val large: String = "",
     @Column(columnDefinition = "TEXT")
     val medium: String = "",
+    @Column(columnDefinition = "TEXT", nullable = true)
+    val cover: String? = null,
 )

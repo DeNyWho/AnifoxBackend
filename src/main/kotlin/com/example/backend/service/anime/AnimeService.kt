@@ -10,6 +10,8 @@ import com.example.backend.models.anime.AnimeMusicType
 import com.example.backend.models.animeParser.*
 import com.example.backend.models.animeParser.haglund.AnimeIdsHagLund
 import com.example.backend.models.animeParser.kitsu.KitsuDefaults
+import com.example.backend.models.animeParser.kitsu.KitsuDetails
+import com.example.backend.models.animeParser.kitsu.anime.AnimeKitsu
 import com.example.backend.models.animeParser.kitsu.episodes.EpisodesKitsu
 import com.example.backend.models.animeParser.microsoft.default.TextTranslations
 import com.example.backend.models.animeParser.microsoft.request.TextMicRequest
@@ -686,7 +688,7 @@ class AnimeService : AnimeRepositoryImpl {
         return AnimeDetail(
             url = anime.url,
             title = anime.title,
-            image = AnimeImagesTypes(large = anime.images.large, medium = anime.images.medium),
+            image = AnimeImagesTypes(posterLarge = anime.images.large, posterMedium = anime.images.medium, coverLarge = anime.images.cover),
             studio = anime.studios.toList(),
             season = anime.season,
             description = anime.description,
@@ -1032,6 +1034,17 @@ class AnimeService : AnimeRepositoryImpl {
 
                             var image: AnimeBufferedImagesSup? = null
 
+                            var kitsuAnime = runBlocking {
+                                client.get {
+                                    url {
+                                        protocol = URLProtocol.HTTPS
+                                        host = "kitsu.io"
+                                        encodedPath = "/api/edge/anime/${animeIds.kitsu}"
+                                    }
+                                    header("Accept", "application/vnd.api+json")
+                                }.body<KitsuDetails<AnimeKitsu>>()
+                            }
+
                             Thread.sleep(1000)
                             val jikanImage = runBlocking {
                                 client.get {
@@ -1045,17 +1058,35 @@ class AnimeService : AnimeRepositoryImpl {
                                 }.body<Jikan<JikanData>>()
                             }
 
-
-                            if (jikanImage.data != null) {
+                            if(kitsuAnime.data != null) {
                                 animeImages = AnimeImagesTypes(
-                                    large = imageService.saveFileInSThird(
+                                    posterLarge = imageService.saveFileInSThird(
+                                        "images/large/$urlLinking.png",
+                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes()
+                                    ),
+                                    posterMedium = imageService.saveFileInSThird(
+                                        "images/medium/$urlLinking.png",
+                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.large).readBytes()
+                                    ),
+                                    coverLarge = imageService.saveFileInSThird(
+                                        "images/cover/$urlLinking.png",
+                                        URL(kitsuAnime.data!!.attributesKitsu.coverImage.coverOriginal).readBytes()
+                                    ),
+                                )
+                                image = AnimeBufferedImagesSup(
+                                    large = ImageIO.read(URL(kitsuAnime.data!!.attributesKitsu.posterImage.original)),
+                                    medium = ImageIO.read(URL(kitsuAnime.data!!.attributesKitsu.posterImage.large)),
+                                )
+                            } else if (jikanImage.data != null) {
+                                animeImages = AnimeImagesTypes(
+                                    posterLarge = imageService.saveFileInSThird(
                                         "images/large/$urlLinking.png",
                                         URL(jikanImage.data.images.jikanJpg.largeImageUrl).readBytes()
                                     ),
-                                    medium = imageService.saveFileInSThird(
+                                    posterMedium = imageService.saveFileInSThird(
                                         "images/medium/$urlLinking.png",
                                         URL(jikanImage.data.images.jikanJpg.mediumImageUrl).readBytes()
-                                    ),
+                                    )
                                 )
                                 image = AnimeBufferedImagesSup(
                                     large = ImageIO.read(URL(jikanImage.data.images.jikanJpg.largeImageUrl)),
@@ -1155,8 +1186,9 @@ class AnimeService : AnimeRepositoryImpl {
                                     null
                                 },
                                 images = AnimeImages(
-                                    large = animeImages?.large!!,
-                                    medium = animeImages.medium,
+                                    large = animeImages?.posterLarge!!,
+                                    medium = animeImages.posterMedium,
+                                    cover = animeImages.coverLarge
                                 ),
                                 titleEn = mediaTemp.english.toMutableList(),
                                 titleJapan = mediaTemp.japanese.toMutableList(),
