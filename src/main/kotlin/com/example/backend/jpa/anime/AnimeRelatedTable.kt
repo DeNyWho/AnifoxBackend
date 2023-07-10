@@ -18,9 +18,5 @@ data class AnimeRelatedTable(
     @Column(nullable = true)
     val typeEn: String? = "",
 
-    val shikimoriId: Int = 0,
-
-//    val anime: AnimeTable,
-
-
+    val shikimoriId: Int = 0
 )

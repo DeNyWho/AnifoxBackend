@@ -44,6 +44,18 @@ data class AnimeTable(
         orphanRemoval = true
     )
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
+    @OneToOne(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val ids: AnimeIds = AnimeIds(),
     @ManyToMany(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL]
@@ -150,6 +162,11 @@ data class AnimeTable(
     }
     fun addMediaAll(mediaAll: List<AnimeMediaTable>): AnimeTable {
         media.addAll(mediaAll)
+        return this
+    }
+
+    fun addEpisodesAll(episodesAll: List<AnimeEpisodeTable>) : AnimeTable {
+        episodes.addAll(episodesAll)
         return this
     }
     fun addAllAnimeGenre(genre: List<AnimeGenreTable>): AnimeTable {

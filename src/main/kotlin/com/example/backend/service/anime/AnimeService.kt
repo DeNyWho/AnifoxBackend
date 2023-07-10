@@ -7,9 +7,12 @@ import com.example.backend.models.ServiceResponse
 import com.example.backend.models.anime.AnimeBufferedImagesSup
 import com.example.backend.models.anime.AnimeImagesTypes
 import com.example.backend.models.anime.AnimeMusicType
-import com.example.backend.models.animeParser.AnimeResponse
-import com.example.backend.models.animeParser.AnimeTempResponse
-import com.example.backend.models.animeParser.ScreenshotsParse
+import com.example.backend.models.animeParser.*
+import com.example.backend.models.animeParser.haglund.AnimeIdsHagLund
+import com.example.backend.models.animeParser.kitsu.KitsuDefaults
+import com.example.backend.models.animeParser.kitsu.episodes.EpisodesKitsu
+import com.example.backend.models.animeParser.microsoft.default.TextTranslations
+import com.example.backend.models.animeParser.microsoft.request.TextMicRequest
 import com.example.backend.models.animeParser.shikimori.AnimeMediaParse
 import com.example.backend.models.animeParser.shikimori.RelationParse
 import com.example.backend.models.animeParser.shikimori.SimilarParse
@@ -37,6 +40,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
@@ -104,6 +108,20 @@ class AnimeService : AnimeRepositoryImpl {
 
     @PersistenceContext
     private lateinit var entityManager: EntityManager
+
+
+
+    val client = HttpClient {
+        defaultRequest {
+            contentType(ContentType.Application.Json)
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+            })
+        }
+    }
 
 
     override fun getAnime(
@@ -572,7 +590,6 @@ class AnimeService : AnimeRepositoryImpl {
                     status = HttpStatus.OK
                 )
             } catch (e: Exception) {
-                println(e.message)
                 ServiceResponse(
                     data = null,
                     message = "Anime with id = $id not found",
@@ -713,17 +730,6 @@ class AnimeService : AnimeRepositoryImpl {
 
     override fun addDataToDB(translationID: String) {
         var nextPage: String? = "1"
-        val client = HttpClient {
-            defaultRequest {
-                contentType(ContentType.Application.Json)
-            }
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                })
-            }
-        }
 
         var ar = runBlocking {
             client.get {
@@ -751,11 +757,22 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse>()
         }
 
+        val translatedToken = runBlocking {
+            client.get {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "edge.microsoft.com"
+                    encodedPath = "/translate/auth"
+                }
+                header("Accept", "application/vnd.api+json")
+            }.bodyAsText()
+        }
+
 //        try {
         while (nextPage != null) {
-            ar.result.forEach Loop@{ anime ->
-                println(anime.title)
-                val animeTemp = runBlocking {
+            ar.result.forEach Loop@{ animeTemp ->
+                println(animeTemp.title)
+                val anime = runBlocking {
                     client.get {
                         headers {
                             contentType(ContentType.Application.Json)
@@ -764,15 +781,26 @@ class AnimeService : AnimeRepositoryImpl {
                             protocol = URLProtocol.HTTPS
                             host = "kodikapi.com/search"
                         }
+
                         parameter("token", animeToken)
                         parameter("with_material_data", true)
                         parameter("full_match", true)
-                        parameter("title_orig", anime.title)
-                    }.body<AnimeTempResponse>()
-                }
+                        parameter("title_orig", animeTemp.title)
+                        parameter("sort", "shikimori_rating")
+                        parameter("order", "desc")
+                        parameter("types", "anime-serial")
+                        parameter("camrip", false)
+                        parameter("with_episodes_data", true)
+                        parameter("not_blocked_in", "ALL")
+                        parameter("with_material_data", true)
+                        parameter(
+                            "anime_genres",
+                            "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
+                        )
+                        parameter("translation_id", translationID)
+                    }.body<AnimeResponse>()
+                }.result[0]
 
-                anime.materialData = animeTemp.result[0].materialData
-                val fr = animeTemp.result[0]
                 if (
                     !anime.materialData.title.contains("Атака Титанов") &&
                     !anime.materialData.title.contains("Атака титанов") &&
@@ -842,6 +870,20 @@ class AnimeService : AnimeRepositoryImpl {
                                 }
                             }
 
+                            val animeIds = runBlocking {
+                                client.get {
+                                    headers {
+                                        contentType(ContentType.Application.Json)
+                                    }
+                                    url {
+                                        protocol = URLProtocol.HTTPS
+                                        host = "arm.haglund.dev/api/v2/ids"
+                                    }
+                                    parameter("source", "myanimelist")
+                                    parameter("id", anime.shikimoriId)
+                                }.body<AnimeIdsHagLund>()
+                            }
+
                             Thread.sleep(1000)
                             val mediaTemp = runBlocking {
                                 client.get {
@@ -855,6 +897,50 @@ class AnimeService : AnimeRepositoryImpl {
                                 }.body<AnimeMediaParse>()
                             }
 
+                            val urlLinking = translit(mediaTemp.russian)
+
+                            val episodesReady = mutableListOf<AnimeEpisodeTable>()
+
+                            anime.seasons.forEach { kodikSeason ->
+                                if (kodikSeason.key != "0") {
+                                    val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
+                                    var responseKitsuEpisodes = runBlocking {
+                                        client.get {
+                                            url {
+                                                protocol = URLProtocol.HTTPS
+                                                host = "kitsu.io"
+                                                encodedPath = "/api/edge/anime/${animeIds.kitsu}/episodes"
+                                            }
+                                            header("Accept", "application/vnd.api+json")
+                                            parameter("page%5Boffset%5D", 0)
+                                            parameter("page%5Blimit%5D", 20)
+                                            parameter("sort", "number")
+                                        }.body<KitsuDefaults<EpisodesKitsu>>()
+                                    }
+
+                                    while (responseKitsuEpisodes.data != null) {
+                                        kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
+                                        responseKitsuEpisodes =
+                                            if (responseKitsuEpisodes.links.next != null) runBlocking {
+                                                client.get {
+                                                    url {
+                                                        protocol = URLProtocol.HTTPS
+                                                        host = "kitsu.io"
+                                                        encodedPath =
+                                                            responseKitsuEpisodes.links.next?.replace(
+                                                                "https://kitsu.io",
+                                                                ""
+                                                            ).toString()
+                                                    }
+                                                    header("Accept", "application/vnd.api+json")
+                                                }.body<KitsuDefaults<EpisodesKitsu>>()
+                                            } else KitsuDefaults()
+                                    }
+                                    episodesReady.addAll(runBlocking {
+                                        processEpisodes(urlLinking, kodikSeason.value.episodes, kitsuEpisodes)
+                                    })
+                                }
+                            }
                             Thread.sleep(1000)
                             val relationIds = runBlocking {
                                 client.get {
@@ -959,12 +1045,17 @@ class AnimeService : AnimeRepositoryImpl {
                                 }.body<Jikan<JikanData>>()
                             }
 
-                            val urlLinking = translit(mediaTemp.russian)
 
-                            if(jikanImage.data != null) {
+                            if (jikanImage.data != null) {
                                 animeImages = AnimeImagesTypes(
-                                    large = imageService.saveFileInSThird("images/large/$urlLinking.png", URL(jikanImage.data.images.jikanJpg.largeImageUrl).readBytes() ),
-                                    medium = imageService.saveFileInSThird("images/medium/$urlLinking.png", URL(jikanImage.data.images.jikanJpg.mediumImageUrl).readBytes() ),
+                                    large = imageService.saveFileInSThird(
+                                        "images/large/$urlLinking.png",
+                                        URL(jikanImage.data.images.jikanJpg.largeImageUrl).readBytes()
+                                    ),
+                                    medium = imageService.saveFileInSThird(
+                                        "images/medium/$urlLinking.png",
+                                        URL(jikanImage.data.images.jikanJpg.mediumImageUrl).readBytes()
+                                    ),
                                 )
                                 image = AnimeBufferedImagesSup(
                                     large = ImageIO.read(URL(jikanImage.data.images.jikanJpg.largeImageUrl)),
@@ -1047,6 +1138,17 @@ class AnimeService : AnimeRepositoryImpl {
                             val a = AnimeTable(
                                 title = mediaTemp.russianLic ?: mediaTemp.russian,
                                 url = urlLinking,
+                                ids = AnimeIds(
+                                    aniDb = animeIds.aniDb,
+                                    aniList = animeIds.aniList,
+                                    animePlanet = animeIds.animePlanet,
+                                    imdb = animeIds.imdb,
+                                    kitsu = animeIds.kitsu,
+                                    liveChart = animeIds.liveChart,
+                                    notifyMoe = animeIds.notifyMoe,
+                                    thetvdb = animeIds.theMovieDb,
+                                    myAnimeList = animeIds.myAnimeList
+                                ),
                                 nextEpisode = if (mediaTemp.nextEpisodeAt != null) {
                                     LocalDateTime.parse(mediaTemp.nextEpisodeAt, formatterUpdated)
                                 } else {
@@ -1097,6 +1199,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
+                            a.addEpisodesAll(episodesReady)
                             a.addAllMusic(music)
                             a.addAllAnimeGenre(g)
                             a.addAllAnimeStudios(st)
@@ -1204,6 +1307,101 @@ class AnimeService : AnimeRepositoryImpl {
         } catch (e: Exception) {
             return ""
         }
+    }
+
+
+    // Главная функция для обработки всех эпизодов
+    suspend fun processEpisodes(urlLinking: String, kodikEpisodes: Map<String, Episode>, kitsuEpisodes: List<EpisodesKitsu>): List<AnimeEpisodeTable> {
+        val episodeReady = mutableListOf<AnimeEpisodeTable>()
+
+        val jobs = kodikEpisodes.map { (episodeKey, episode) ->
+            val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
+            CoroutineScope(Dispatchers.Default).async {
+                processEpisode(urlLinking, episodeKey.toInt(), episode.link, kitsuEpisode)
+            }
+        }
+
+        val processedEpisodes = jobs.awaitAll()
+        episodeReady.addAll(processedEpisodes)
+
+        return episodeReady
+    }
+
+    suspend fun processEpisode(
+        urlLinking: String,
+        episode: Int,
+        link: String,
+        kitsuEpisode: EpisodesKitsu?
+    ): AnimeEpisodeTable {
+        return if (kitsuEpisode != null) {
+            val deferredTitle = CoroutineScope(Dispatchers.Default).async {
+                translateText(kitsuEpisode.attributes?.titles?.enToUs ?: "")
+            }
+
+            val deferredDescription = CoroutineScope(Dispatchers.Default).async {
+                translateText(kitsuEpisode.attributes?.description ?: "")
+            }
+
+            val translatedTitleEpisode = deferredTitle.await()
+            val translatedDescriptionEpisode = deferredDescription.await()
+
+            val imageEpisode = if(kitsuEpisode.attributes?.thumbnail != null) {
+                imageService.saveFileInSThird("images/episodes/$urlLinking/$episode.png", URL(kitsuEpisode.attributes.thumbnail.original).readBytes() )
+            } else ""
+
+            AnimeEpisodeTable(
+                title = translatedTitleEpisode,
+                titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
+                description = translatedDescriptionEpisode,
+                descriptionEn = kitsuEpisode.attributes?.description ?: "",
+                link = link,
+                image = imageEpisode
+            )
+        } else {
+            return AnimeEpisodeTable(
+                title = episode.toString(),
+                titleEn = episode.toString(),
+                description = null,
+                descriptionEn = null,
+                link = link,
+                image = null
+            )
+        }
+    }
+
+    fun findEpisodeByNumber(number: Int, kitsuEpisodes: List<EpisodesKitsu>): EpisodesKitsu? {
+        return kitsuEpisodes.find { kitsuEpisode ->
+            kitsuEpisode.attributes?.number == number
+        }
+    }
+
+    suspend fun translateText(text: String): String {
+        val translatedText = client.post {
+            bearerAuth(client.get {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "edge.microsoft.com"
+                    encodedPath = "/translate/auth"
+                }
+                header("Accept", "application/vnd.api+json")
+            }.bodyAsText())
+            url {
+                protocol = URLProtocol.HTTPS
+                host = "api-edge.cognitive.microsofttranslator.com"
+                encodedPath = "/translate"
+            }
+            setBody(
+                listOf(
+                    TextMicRequest(text = text)
+                )
+            )
+            header("Accept", "application/vnd.api+json")
+            parameter("from", "en")
+            parameter("to", "ru")
+            parameter("api-version", "3.0")
+        }.body<List<TextTranslations>>()
+
+        return translatedText[0].translations[0].text ?: ""
     }
 
     fun mergeNumbers(numbers: List<Int>): String {
