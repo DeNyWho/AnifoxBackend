@@ -161,9 +161,10 @@ class AnimeController {
         @PathVariable url: String,
         @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
         @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
+        @Schema(name = "sort", required = false, description = "Must be one of: numberAsc | numberDesc", nullable = true) sort: String?,
     ): List<EpisodeLight> {
         return try {
-            animeService.getAnimeEpisodesWithPaging(url, pageNum, pageSize)
+            animeService.getAnimeEpisodesWithPaging(url, pageNum, pageSize, sort)
         } catch (e: ChangeSetPersister.NotFoundException) {
             throw NotFoundException(e.message)
         }

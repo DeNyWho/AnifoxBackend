@@ -44,6 +44,6 @@ interface AnimeRepositoryImpl {
     fun getAnimeRelated(url: String): ServiceResponse<AnimeLightWithType>
     fun getAnimeSimilar(url: String): ServiceResponse<AnimeLight>
     fun getAnimeRating(url: String): Any
-    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int): List<EpisodeLight>
+    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight>
     fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable
 }

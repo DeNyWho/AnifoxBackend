@@ -16,10 +16,10 @@ class ScheduleTasks {
 	@Autowired
 	private lateinit var animeService: AnimeService
 
-	@Scheduled(fixedRate = 12, timeUnit = TimeUnit.HOURS)
-	fun refreshData(){
-		animeService.addDataToDB("610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
-	}
+//	@Scheduled(fixedRate = 12, timeUnit = TimeUnit.HOURS)
+//	fun refreshData(){
+//		animeService.addDataToDB("610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
+//	}
 }
 
 @SpringBootApplication

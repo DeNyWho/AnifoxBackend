@@ -706,7 +706,9 @@ class AnimeService : AnimeRepositoryImpl {
         )
     }
 
-    override fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int): List<EpisodeLight> {
+    override fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight> {
+        checkAnime(url)
+
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
@@ -719,8 +721,13 @@ class AnimeService : AnimeRepositoryImpl {
         val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
 
         if (anime != null) {
-            val episodes = anime.episodes.toList()
-                .subList((pageNumber - 1) * pageSize, minOf(pageNumber * pageSize, anime.episodes.size))
+            val temp = when(sort) {
+                "numberAsc" -> anime.episodes.toList().sortedBy { it.number }
+                "numberDesc" -> anime.episodes.toList().sortedByDescending { it.number }
+                else -> anime.episodes.toList()
+            }
+
+            val episodes = temp.toPage(PageRequest.of(pageNumber, pageSize)).content
 
             return episodeToEpisodeLight(episodes)
         }
@@ -730,28 +737,24 @@ class AnimeService : AnimeRepositoryImpl {
 
 
     override fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable {
-        val anime = checkAnime(url)
+        checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
-        val root: Root<AnimeEpisodeTable> = criteriaQuery.from(AnimeEpisodeTable::class.java)
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
 
         criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        val animeJoin: Join<AnimeEpisodeTable, AnimeTable> = root.join("anime")
-        val numberPredicate: Predicate = criteriaBuilder.equal(root.get<Any>("number"), number)
-        val animePredicate: Predicate = criteriaBuilder.equal(animeJoin, anime)
+        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
 
-        criteriaQuery.where(numberPredicate, animePredicate)
+        val episode = anime?.episodes?.find { it.number == number }
 
-        val query = entityManager.createQuery(criteriaQuery)
+        if(episode != null) return episode
 
-        val episode = query.resultList.firstOrNull()
-        if (episode != null) {
-            return episode
-        } else {
-            throw NotFoundException("Anime episode not found")
-        }
+        throw NotFoundException("Anime episode not found")
     }
 
     override fun addDataToDB(translationID: String) {
