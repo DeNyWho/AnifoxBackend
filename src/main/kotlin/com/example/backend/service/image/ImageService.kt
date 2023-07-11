@@ -8,8 +8,10 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.example.backend.jpa.common.Image
 import com.example.backend.repository.image.ImageRepository
+import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.awt.RenderingHints
@@ -41,7 +43,7 @@ class ImageService {
     @Value("\${domain_s3}")
     lateinit var domainS3: String
 
-    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false): String {
+    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0): String {
         val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
             .withEndpointConfiguration(
                 AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1")
@@ -50,7 +52,7 @@ class ImageService {
             .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKeyS3, secretKeyS3))) // <--- заменить
             .build()
 
-        val readyData = if(compress) compressImage(data) else data
+        val readyData = if(compress) compressImage(imageBytes = data, width, height) else data
 
         val inputStream = ByteArrayInputStream(readyData)
         val metadata = ObjectMetadata().apply {
@@ -61,66 +63,17 @@ class ImageService {
         return "$domainS3/$filePath"
     }
 
-    fun compressImage(imageBytes: ByteArray): ByteArray {
-        val uncompressedImage = ImageIO.read(ByteArrayInputStream(imageBytes))
 
-        // Указываем желаемый формат сжатия
-        val compressFormat = determineImageFormat(uncompressedImage)
-
+    private fun compressImage(imageBytes: ByteArray, width: Int, height: Int): ByteArray {
+        val image = ImageIO.read(ByteArrayInputStream(imageBytes))
         val outputStream = ByteArrayOutputStream()
-
-        // Получаем экземпляр ImageWriter для указанного формата
-        val imageWriter = ImageIO.getImageWritersByFormatName(compressFormat).next()
-
-        // Получаем параметры сжатия для ImageWriter
-        val imageWriteParam = imageWriter.defaultWriteParam
-        if (imageWriteParam.canWriteCompressed()) {
-            // Указываем желаемое качество сжатия (от 0.0 до 1.0)
-            val compressionQuality = 0.3f
-            imageWriteParam.compressionMode = ImageWriteParam.MODE_EXPLICIT
-            imageWriteParam.compressionQuality = compressionQuality
-        }
-
-        // Настраиваем рендеринг для сглаживания
-        val renderingHints = RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        renderingHints[RenderingHints.KEY_RENDERING] = RenderingHints.VALUE_RENDER_QUALITY
-
-        // Создаем новый BufferedImage для сжатого изображения
-        val compressedImage = BufferedImage(uncompressedImage.width, uncompressedImage.height, BufferedImage.TYPE_INT_RGB)
-        val graphics = compressedImage.createGraphics()
-        graphics.addRenderingHints(renderingHints)
-        graphics.drawImage(uncompressedImage, 0, 0, null)
-        graphics.dispose()
-
-        // Записываем сжатое изображение в выходной поток
-        val imageOutputStream: ImageOutputStream = ImageIO.createImageOutputStream(outputStream)
-        imageWriter.output = imageOutputStream
-        imageWriter.write(null, javax.imageio.IIOImage(compressedImage, null, null), imageWriteParam)
-        imageOutputStream.close()
-
-        // Получаем сжатые байты из выходного потока
-        val compressedBytes = outputStream.toByteArray()
-        outputStream.close()
-
-        return compressedBytes
+        Thumbnails.of(image)
+            .outputFormat("png")
+            .size(width, height)
+            .outputQuality(1.0)
+            .toOutputStream(outputStream)
+        return outputStream.toByteArray()
     }
-
-    fun determineImageFormat(image: BufferedImage): String {
-        return when (image.type) {
-            BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE -> "png"
-            BufferedImage.TYPE_INT_RGB -> "jpeg"
-            else -> {
-                val writerIter = ImageIO.getImageWritersBySuffix("jpeg")
-                if (writerIter.hasNext()) {
-                    "jpeg"
-                } else {
-                    "png"
-                }
-            }
-        }
-    }
-
-
 
     fun saveFile(file: MultipartFile): String {
         val image = imageRepository.save(

@@ -13,7 +13,7 @@ fun listToAnimeLight(
             AnimeLight(
                 url = it.url,
                 title = it.title,
-                image = AnimeImagesTypes(posterLarge = it.images.large, posterMedium = it.images.medium),
+                image = AnimeImagesTypes(large = it.images.large, medium = it.images.medium),
                 studio = it.studios.toList(),
                 season = it.season,
                 genres = it.genres.toList(),

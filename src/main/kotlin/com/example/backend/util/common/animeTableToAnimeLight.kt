@@ -11,7 +11,7 @@ fun animeTableToAnimeLight(
     return AnimeLight(
         url = anime.url,
         title = anime.title,
-        image = AnimeImagesTypes(posterLarge = anime.images.large, posterMedium = anime.images.medium),
+        image = AnimeImagesTypes(large = anime.images.large, medium = anime.images.medium),
         studio = anime.studios.toList(),
         season = anime.season,
         genres = anime.genres.toList(),

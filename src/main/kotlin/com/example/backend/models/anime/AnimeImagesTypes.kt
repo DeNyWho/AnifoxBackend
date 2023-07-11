@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AnimeImagesTypes(
-    val posterLarge: String = "",
-    val posterMedium: String = "",
-    val coverLarge: String? = null
+    val large: String = "",
+    val medium: String = "",
+    val cover: String? = null
 )

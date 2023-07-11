@@ -47,6 +47,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
+import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -57,6 +58,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import java.awt.Color
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.URL
 import java.time.LocalDate
@@ -688,7 +691,7 @@ class AnimeService : AnimeRepositoryImpl {
         return AnimeDetail(
             url = anime.url,
             title = anime.title,
-            image = AnimeImagesTypes(posterLarge = anime.images.large, posterMedium = anime.images.medium, coverLarge = anime.images.cover),
+            image = AnimeImagesTypes(large = anime.images.large, medium = anime.images.medium, cover = anime.images.cover),
             studio = anime.studios.toList(),
             season = anime.season,
             description = anime.description,
@@ -1060,17 +1063,24 @@ class AnimeService : AnimeRepositoryImpl {
 
                             if(kitsuAnime.data != null) {
                                 animeImages = AnimeImagesTypes(
-                                    posterLarge = imageService.saveFileInSThird(
+                                    large = imageService.saveFileInSThird(
                                         "images/large/$urlLinking.png",
-                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes()
+                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes(),
+                                        compress = true,
+                                        width = 540,
+                                        height = 960
                                     ),
-                                    posterMedium = imageService.saveFileInSThird(
+                                    medium = imageService.saveFileInSThird(
                                         "images/medium/$urlLinking.png",
-                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.large).readBytes()
+                                        URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes(),
+                                        compress = true,
+                                        width = 400,
+                                        height = 640
                                     ),
-                                    coverLarge = imageService.saveFileInSThird(
+                                    cover = imageService.saveFileInSThird(
                                         "images/cover/$urlLinking.png",
-                                        URL(kitsuAnime.data!!.attributesKitsu.coverImage.coverOriginal).readBytes()
+                                        URL(kitsuAnime.data!!.attributesKitsu.coverImage.coverOriginal).readBytes(),
+                                        compress = false
                                     ),
                                 )
                                 image = AnimeBufferedImagesSup(
@@ -1079,11 +1089,11 @@ class AnimeService : AnimeRepositoryImpl {
                                 )
                             } else if (jikanImage.data != null) {
                                 animeImages = AnimeImagesTypes(
-                                    posterLarge = imageService.saveFileInSThird(
+                                    large = imageService.saveFileInSThird(
                                         "images/large/$urlLinking.png",
                                         URL(jikanImage.data.images.jikanJpg.largeImageUrl).readBytes()
                                     ),
-                                    posterMedium = imageService.saveFileInSThird(
+                                    medium = imageService.saveFileInSThird(
                                         "images/medium/$urlLinking.png",
                                         URL(jikanImage.data.images.jikanJpg.mediumImageUrl).readBytes()
                                     )
@@ -1186,9 +1196,9 @@ class AnimeService : AnimeRepositoryImpl {
                                     null
                                 },
                                 images = AnimeImages(
-                                    large = animeImages?.posterLarge!!,
-                                    medium = animeImages.posterMedium,
-                                    cover = animeImages.coverLarge
+                                    large = animeImages?.large!!,
+                                    medium = animeImages.medium,
+                                    cover = animeImages.cover
                                 ),
                                 titleEn = mediaTemp.english.toMutableList(),
                                 titleJapan = mediaTemp.japanese.toMutableList(),
@@ -1299,6 +1309,7 @@ class AnimeService : AnimeRepositoryImpl {
 //        }
     }
 
+
     fun mergeEpisodes(input: String): String {
         try {
 
@@ -1378,7 +1389,13 @@ class AnimeService : AnimeRepositoryImpl {
             val translatedDescriptionEpisode = deferredDescription.await()
 
             val imageEpisode = if(kitsuEpisode.attributes?.thumbnail != null) {
-                imageService.saveFileInSThird("images/episodes/$urlLinking/$episode.png", URL(kitsuEpisode.attributes.thumbnail.original).readBytes() )
+                imageService.saveFileInSThird(
+                    "images/episodes/$urlLinking/$episode.png",
+                    URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
+                    compress = true,
+                    width = 960,
+                    height = 540
+                )
             } else ""
 
             AnimeEpisodeTable(
