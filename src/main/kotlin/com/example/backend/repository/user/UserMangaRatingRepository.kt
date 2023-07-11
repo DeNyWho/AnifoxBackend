@@ -1,7 +1,5 @@
 package com.example.backend.repository.user
 
-import com.example.backend.jpa.anime.AnimeRating
-import com.example.backend.jpa.anime.AnimeTable
 import com.example.backend.jpa.manga.MangaRating
 import com.example.backend.jpa.manga.MangaTable
 import com.example.backend.jpa.user.User

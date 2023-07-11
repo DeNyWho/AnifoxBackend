@@ -1,6 +1,5 @@
 package com.example.backend.jpa.manga
 
-import com.example.backend.jpa.anime.AnimeTable
 import java.util.*
 import javax.persistence.*
 import javax.validation.constraints.Max

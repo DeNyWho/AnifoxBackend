@@ -1,7 +1,6 @@
 package com.example.backend.controller.manga
 
 import com.example.backend.models.ServiceResponse
-import com.example.backend.models.mangaResponse.chapters.ChapterSingle
 import com.example.backend.models.mangaResponse.chapters.ChaptersLight
 import com.example.backend.models.mangaResponse.detail.MangaDetail
 import com.example.backend.models.mangaResponse.light.MangaLight

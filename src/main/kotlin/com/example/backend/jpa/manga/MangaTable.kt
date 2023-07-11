@@ -1,6 +1,5 @@
 package com.example.backend.jpa.manga
 
-import com.example.backend.jpa.user.UserFavoriteAnime
 import com.example.backend.jpa.user.UserFavouriteManga
 import java.time.LocalDateTime
 import java.util.*

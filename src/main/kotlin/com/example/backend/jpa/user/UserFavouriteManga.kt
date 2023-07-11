@@ -1,6 +1,5 @@
 package com.example.backend.jpa.user
 
-import com.example.backend.jpa.anime.AnimeTable
 import com.example.backend.jpa.manga.MangaTable
 import com.example.backend.models.users.StatusFavourite
 import java.util.*

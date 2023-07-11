@@ -11,16 +11,11 @@ import com.example.backend.repository.image.ImageRepository
 import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.awt.RenderingHints
-import java.awt.image.BufferedImage
 import java.io.*
 import java.util.*
 import javax.imageio.ImageIO
-import javax.imageio.ImageWriteParam
-import javax.imageio.stream.ImageOutputStream
 
 @Service
 class ImageService {

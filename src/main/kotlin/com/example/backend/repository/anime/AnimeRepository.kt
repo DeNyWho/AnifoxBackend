@@ -1,8 +1,6 @@
 package com.example.backend.repository.anime
 
-import com.example.backend.jpa.anime.AnimeGenreTable
 import com.example.backend.jpa.anime.AnimeTable
-import com.example.backend.models.animeResponse.light.AnimeLight
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param

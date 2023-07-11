@@ -1,9 +1,7 @@
 package com.example.backend.repository.user
 
-import com.example.backend.jpa.anime.AnimeTable
 import com.example.backend.jpa.manga.MangaTable
 import com.example.backend.jpa.user.User
-import com.example.backend.jpa.user.UserFavoriteAnime
 import com.example.backend.jpa.user.UserFavouriteManga
 import com.example.backend.models.users.StatusFavourite
 import org.springframework.data.domain.Pageable

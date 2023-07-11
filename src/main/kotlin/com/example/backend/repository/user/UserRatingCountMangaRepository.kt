@@ -1,6 +1,5 @@
 package com.example.backend.repository.user
 
-import com.example.backend.jpa.anime.AnimeRatingCount
 import com.example.backend.jpa.manga.MangaRatingCount
 import com.example.backend.jpa.manga.MangaTable
 import org.springframework.data.jpa.repository.JpaRepository

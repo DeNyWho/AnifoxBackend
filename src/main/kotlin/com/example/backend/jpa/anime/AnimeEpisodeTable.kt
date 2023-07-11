@@ -27,6 +27,9 @@ data class AnimeEpisodeTable(
     @Column(nullable = false, columnDefinition = "TEXT")
     val link: String = "",
 
+    @Column(nullable = false)
+    val number: Int = 0,
+
     @Column(nullable = true)
     val image: String? = ""
 )

@@ -1,6 +1,5 @@
 package com.example.backend.jpa.manga
 
-import com.example.backend.jpa.anime.AnimeTable
 import com.example.backend.jpa.user.User
 import java.util.*
 import javax.persistence.*

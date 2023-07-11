@@ -1,11 +1,13 @@
 package com.example.backend.controller.anime
 
+import com.example.backend.jpa.anime.AnimeEpisodeTable
 import com.example.backend.jpa.anime.AnimeGenreTable
 import com.example.backend.jpa.anime.AnimeStudiosTable
 import com.example.backend.jpa.anime.AnimeTranslationTable
 import com.example.backend.models.ServiceResponse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
+import com.example.backend.models.animeResponse.episode.EpisodeLight
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
@@ -21,6 +23,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
+import javax.ws.rs.NotFoundException
 
 
 @RestController
@@ -31,11 +34,6 @@ class AnimeController {
 
     @Autowired
     lateinit var animeService: AnimeService
-
-    @GetMapping("test")
-    fun test(): List<AnimeLight> {
-        return animeService.test()
-    }
 
     @GetMapping
     @Operation(summary = "get all anime")
@@ -157,6 +155,33 @@ class AnimeController {
         }
     }
 
+    @GetMapping("{url}/episodes")
+    @Operation(summary = "anime episodes")
+    fun getAnimeEpisodes(
+        @PathVariable url: String,
+        @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
+        @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
+    ): List<EpisodeLight> {
+        return try {
+            animeService.getAnimeEpisodesWithPaging(url, pageNum, pageSize)
+        } catch (e: ChangeSetPersister.NotFoundException) {
+            throw NotFoundException(e.message)
+        }
+    }
+
+    @GetMapping("{url}/episodes/{number}")
+    @Operation(summary = "anime episodes")
+    fun getAnimeEpisodes(
+        @PathVariable url: String,
+        @PathVariable number: Int,
+    ): AnimeEpisodeTable {
+        return try {
+            animeService.getAnimeEpisodeByNumberAndAnime(url, number)
+        } catch (e: ChangeSetPersister.NotFoundException) {
+            throw NotFoundException(e.message)
+        }
+    }
+
     @GetMapping("genres")
     @Operation(summary = "get all anime genres")
     fun getAnimeGenres(): ServiceResponse<AnimeGenreTable>? {
@@ -196,21 +221,5 @@ class AnimeController {
             ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
         }
     }
-//
-//    @GetMapping("parser")
-//    @Operation(summary = "Parse manga and add data to postgreSQL")
-//    fun parseAnime(): ServiceResponse<Long> {
-//        return try {
-//            val start = System.currentTimeMillis()
-//            animeService.addDataToDB()
-//
-//            val finish = System.currentTimeMillis()
-//            val elapsed = finish - start
-//            println("Time execution $elapsed")
-//            return ServiceResponse(data = listOf(elapsed), status = HttpStatus.OK)
-//        } catch (e: ChangeSetPersister.NotFoundException) {
-//            ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
-//        }
-//    }
 
 }

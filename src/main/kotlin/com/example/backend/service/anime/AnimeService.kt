@@ -20,6 +20,7 @@ import com.example.backend.models.animeParser.shikimori.RelationParse
 import com.example.backend.models.animeParser.shikimori.SimilarParse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
+import com.example.backend.models.animeResponse.episode.EpisodeLight
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
@@ -32,10 +33,7 @@ import com.example.backend.repository.user.UserRatingCountMangaRepository
 import com.example.backend.repository.user.UserRatingCountRepository
 import com.example.backend.service.image.ImageService
 import com.example.backend.util.*
-import com.example.backend.util.common.animeTableToAnimeLight
-import com.example.backend.util.common.jikanThemesNormalize
-import com.example.backend.util.common.listToAnimeLight
-import com.example.backend.util.common.relatedToLight
+import com.example.backend.util.common.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -47,7 +45,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
-import net.coobird.thumbnailator.Thumbnails
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -58,9 +55,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.net.URL
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -316,7 +310,7 @@ class AnimeService : AnimeRepositoryImpl {
     }
 
     override fun getAnimeUsersStatusCount(url: String): MutableMap<StatusFavourite, Long> {
-        val anime = animeRepository.findByUrl(url).orElseThrow { throw NotFoundException("Anime not found") }
+        checkAnime(url)
 
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(Tuple::class.java)
@@ -472,8 +466,7 @@ class AnimeService : AnimeRepositoryImpl {
     }
 
     override fun getAnimeRating(url: String): List<RatingResponse> {
-        val anime = animeRepository.findByUrl(url)
-            .orElseThrow { throw NotFoundException("Anime not found") }
+        val anime = checkAnime(url)
 
         return userRatingCountRepository.findByAnime(anime).map { ratingCount ->
             RatingResponse(ratingCount.rating, ratingCount.count)
@@ -713,24 +706,52 @@ class AnimeService : AnimeRepositoryImpl {
         )
     }
 
-    fun test(): List<AnimeLight> {
-        val searchQuery = "Кагуя"
+    override fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int): List<EpisodeLight> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
 
-        val otherTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("otherTitles", JoinType.LEFT)
-        val otherTitlesExpression = criteriaBuilder.like(
-            criteriaBuilder.lower(otherTitlesJoin),
-            "%" + searchQuery.lowercase(Locale.getDefault()) + "%"
-        )
+        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
 
-        val predicates = listOf(otherTitlesExpression)
+        criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        criteriaQuery.select(root).distinct(true).where(criteriaBuilder.or(*predicates.toTypedArray()))
+        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
 
-        val query: TypedQuery<AnimeTable> = entityManager.createQuery(criteriaQuery)
-        return listToAnimeLight(query.resultList.toList())
+        if (anime != null) {
+            val episodes = anime.episodes.toList()
+                .subList((pageNumber - 1) * pageSize, minOf(pageNumber * pageSize, anime.episodes.size))
+
+            return episodeToEpisodeLight(episodes)
+        }
+
+        return emptyList()
+    }
+
+
+    override fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable {
+        val anime = checkAnime(url)
+
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
+        val root: Root<AnimeEpisodeTable> = criteriaQuery.from(AnimeEpisodeTable::class.java)
+
+        criteriaQuery.select(root)
+
+        val animeJoin: Join<AnimeEpisodeTable, AnimeTable> = root.join("anime")
+        val numberPredicate: Predicate = criteriaBuilder.equal(root.get<Any>("number"), number)
+        val animePredicate: Predicate = criteriaBuilder.equal(animeJoin, anime)
+
+        criteriaQuery.where(numberPredicate, animePredicate)
+
+        val query = entityManager.createQuery(criteriaQuery)
+
+        val episode = query.resultList.firstOrNull()
+        if (episode != null) {
+            return episode
+        } else {
+            throw NotFoundException("Anime episode not found")
+        }
     }
 
     override fun addDataToDB(translationID: String) {
@@ -773,7 +794,7 @@ class AnimeService : AnimeRepositoryImpl {
             }.bodyAsText()
         }
 
-//        try {
+        try {
         while (nextPage != null) {
             ar.result.forEach Loop@{ animeTemp ->
                 println(animeTemp.title)
@@ -1067,20 +1088,20 @@ class AnimeService : AnimeRepositoryImpl {
                                         "images/large/$urlLinking.png",
                                         URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes(),
                                         compress = true,
-                                        width = 540,
-                                        height = 960
+                                        width = 400,
+                                        height = 640
                                     ),
                                     medium = imageService.saveFileInSThird(
                                         "images/medium/$urlLinking.png",
                                         URL(kitsuAnime.data!!.attributesKitsu.posterImage.original).readBytes(),
                                         compress = true,
-                                        width = 400,
-                                        height = 640
+                                        width = 200,
+                                        height = 440
                                     ),
                                     cover = imageService.saveFileInSThird(
                                         "images/cover/$urlLinking.png",
-                                        URL(kitsuAnime.data!!.attributesKitsu.coverImage.coverOriginal).readBytes(),
-                                        compress = false
+                                        URL(kitsuAnime.data!!.attributesKitsu.coverImage.coverLarge).readBytes(),
+                                        compress = false,
                                     ),
                                 )
                                 image = AnimeBufferedImagesSup(
@@ -1304,9 +1325,9 @@ class AnimeService : AnimeRepositoryImpl {
             nextPage = ar.nextPage
             Thread.sleep(5000)
         }
-//        } catch (e: Exception) {
-//            println(e.message)
-//        }
+        } catch (e: Exception) {
+            println(e.message)
+        }
     }
 
 
@@ -1393,8 +1414,8 @@ class AnimeService : AnimeRepositoryImpl {
                     "images/episodes/$urlLinking/$episode.png",
                     URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
                     compress = true,
-                    width = 960,
-                    height = 540
+                    width = 640,
+                    height = 360
                 )
             } else ""
 
@@ -1404,6 +1425,7 @@ class AnimeService : AnimeRepositoryImpl {
                 description = translatedDescriptionEpisode,
                 descriptionEn = kitsuEpisode.attributes?.description ?: "",
                 link = link,
+                number = kitsuEpisode.attributes?.number ?: episode,
                 image = imageEpisode
             )
         } else {
@@ -1413,6 +1435,7 @@ class AnimeService : AnimeRepositoryImpl {
                 description = null,
                 descriptionEn = null,
                 link = link,
+                number = episode,
                 image = null
             )
         }
@@ -1471,6 +1494,10 @@ class AnimeService : AnimeRepositoryImpl {
 
             return ranges.joinToString(", ") { if (it.first == it.second) it.first.toString() else "${it.first}-${it.second}" }
         } else return ""
+    }
+
+    fun checkAnime(url: String): AnimeTable {
+        return animeRepository.findByUrl(url).orElseThrow { NotFoundException("Anime not found") }
     }
 
     fun checkTranslation(element: String): AnimeTranslationTable {
