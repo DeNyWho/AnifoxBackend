@@ -7,4 +7,6 @@ import kotlinx.serialization.Serializable
 data class EpisodesThumbnailKitsu(
     @SerialName("original")
     val original: String? = null,
+    @SerialName("large")
+    val large: String? = null,
 )

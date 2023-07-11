@@ -1413,13 +1413,21 @@ class AnimeService : AnimeRepositoryImpl {
             val translatedDescriptionEpisode = deferredDescription.await()
 
             val imageEpisode = if(kitsuEpisode.attributes?.thumbnail != null) {
-                imageService.saveFileInSThird(
-                    "images/episodes/$urlLinking/$episode.png",
-                    URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
-                    compress = true,
-                    width = 640,
-                    height = 360
-                )
+                if(kitsuEpisode.attributes.thumbnail.large != null) {
+                    imageService.saveFileInSThird(
+                        "images/episodes/$urlLinking/$episode.png",
+                        URL(kitsuEpisode.attributes.thumbnail.large).readBytes(),
+                        compress = false,
+                    )
+                } else {
+                    imageService.saveFileInSThird(
+                        "images/episodes/$urlLinking/$episode.png",
+                        URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
+                        compress = true,
+                        width = 400,
+                        height = 225
+                    )
+                }
             } else ""
 
             AnimeEpisodeTable(
