@@ -1,10 +1,7 @@
 package com.example.backend.jpa.anime
 
 import java.util.*
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 @Entity
 @Table(name = "anime_episodes", schema = "anime")
@@ -24,12 +21,21 @@ data class AnimeEpisodeTable(
     @Column(nullable = true, columnDefinition = "TEXT")
     val description: String? = "",
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    val link: String = "",
-
     @Column(nullable = false)
     val number: Int = 0,
 
     @Column(nullable = true)
-    val image: String? = ""
-)
+    val image: String? = "",
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
+) {
+    fun addTranslation(translation: AnimeTranslationTable): AnimeEpisodeTable {
+        translations.add(translation)
+        return this
+    }
+}

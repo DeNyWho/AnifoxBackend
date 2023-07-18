@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 data class EpisodeLight(
     val title: String? = "",
     val description: String? = "",
-    val link: String = "",
     val number: Int = 0,
     val image: String? = ""
 )

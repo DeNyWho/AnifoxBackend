@@ -16,13 +16,13 @@ data class AnimeMediaParse(
     val description: String = "",
     @Nullable
     @SerialName("english")
-    val english: List<String?>,
+    val english: List<String?> = listOf(),
     @Nullable
     @SerialName("synonyms")
-    val synonyms: List<String?>,
+    val synonyms: List<String?> = listOf(),
     @Nullable
     @SerialName("japanese")
-    val japanese: List<String?>,
+    val japanese: List<String?> = listOf(),
     @SerialName("videos")
     val videos: List<AnimeVideoParse> = listOf(),
     @SerialName("fandubbers")

@@ -13,7 +13,6 @@ fun episodeToEpisodeLight(
                 title = it.title,
                 description = it.description,
                 image = it.image,
-                link = it.link,
                 number = it.number
             )
         )

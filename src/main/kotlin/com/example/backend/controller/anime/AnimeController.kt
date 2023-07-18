@@ -8,6 +8,7 @@ import com.example.backend.models.ServiceResponse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
 import com.example.backend.models.animeResponse.episode.EpisodeLight
+import com.example.backend.models.animeResponse.episode.EpisodeWithLink
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
@@ -162,7 +163,7 @@ class AnimeController {
         @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
         @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
         @Schema(name = "sort", required = false, description = "Must be one of: numberAsc | numberDesc", nullable = true) sort: String?,
-    ): List<EpisodeLight> {
+    ): EpisodeWithLink {
         return try {
             animeService.getAnimeEpisodesWithPaging(url, pageNum, pageSize, sort)
         } catch (e: ChangeSetPersister.NotFoundException) {

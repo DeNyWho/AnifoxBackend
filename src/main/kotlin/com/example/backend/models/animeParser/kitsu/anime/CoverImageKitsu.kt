@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CoverImageKitsu(
     @SerialName("original")
-    val coverOriginal: String? = "",
+    val coverOriginal: String? = null,
     @SerialName("large")
-    val coverLarge: String? = "",
+    val coverLarge: String? = null,
 )

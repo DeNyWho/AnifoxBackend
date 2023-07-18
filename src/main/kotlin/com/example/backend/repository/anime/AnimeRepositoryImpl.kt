@@ -7,6 +7,7 @@ import com.example.backend.jpa.anime.AnimeTranslationTable
 import com.example.backend.models.ServiceResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
 import com.example.backend.models.animeResponse.episode.EpisodeLight
+import com.example.backend.models.animeResponse.episode.EpisodeWithLink
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
@@ -44,6 +45,6 @@ interface AnimeRepositoryImpl {
     fun getAnimeRelated(url: String): ServiceResponse<AnimeLightWithType>
     fun getAnimeSimilar(url: String): ServiceResponse<AnimeLight>
     fun getAnimeRating(url: String): Any
-    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight>
+    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): EpisodeWithLink
     fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable
 }
