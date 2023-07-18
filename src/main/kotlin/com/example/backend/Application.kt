@@ -1,6 +1,7 @@
 package com.example.backend
 
 import com.example.backend.service.anime.AnimeService
+import com.example.backend.service.image.ImageService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -8,6 +9,7 @@ import org.springframework.cache.annotation.EnableCaching
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 @Component

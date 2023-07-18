@@ -9,6 +9,8 @@ data class EpisodesTitlesKitsu(
     val enToJp: String? = null,
     @SerialName("en_us")
     val enToUs: String? = null,
+    @SerialName("en")
+    val en: String? = null,
     @SerialName("ja_jp")
     val original: String? = null,
 )

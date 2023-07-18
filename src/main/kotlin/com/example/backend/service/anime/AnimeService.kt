@@ -797,7 +797,7 @@ class AnimeService : AnimeRepositoryImpl {
 
         while (nextPage != null) {
             ar.result.forEach Loop@{ animeTemp ->
-                try {
+//                try {
                     println(animeTemp.title)
                     val anime = runBlocking {
                         client.get {
@@ -1090,8 +1090,8 @@ class AnimeService : AnimeRepositoryImpl {
                                                 "images/cover/$urlLinking.png",
                                                 URL(kitsuData.attributesKitsu.coverImage.coverLarge).readBytes(),
                                                 compress = true,
-                                                width = 1600,
-                                                height = 381
+                                                width = 800,
+                                                height = 200
                                             )
                                         else null,
                                     )
@@ -1376,10 +1376,10 @@ class AnimeService : AnimeRepositoryImpl {
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    println(e.message)
-                    return
-                }
+//                } catch (e: Exception) {
+//                    println(e.message)
+//                    return
+//                }
             }
             if (ar.nextPage != null) {
                 ar = runBlocking {
@@ -1443,10 +1443,43 @@ class AnimeService : AnimeRepositoryImpl {
     suspend fun processEpisodes(urlLinking: String, kodikEpisodes: Map<String, Episode>, kitsuEpisodes: List<EpisodesKitsu>, imageDefault: String): List<AnimeEpisodeTable> {
         val episodeReady = mutableListOf<AnimeEpisodeTable>()
 
-        val jobs = kodikEpisodes.map { (episodeKey, episode) ->
+        val kitsuEpisodesMapped = mutableMapOf<String, EpisodesKitsu?>()
+        val translatedTitleMapped = mutableMapOf<String, String>()
+        val translatedDescriptionMapped = mutableMapOf<String, String>()
+        val tempTranslatedTitle = mutableListOf<TextMicRequest>()
+        val tempTranslatedDescription = mutableListOf<TextMicRequest>()
+
+        kodikEpisodes.map { (episodeKey, episode) ->
             val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
+            kitsuEpisodesMapped[episodeKey] = kitsuEpisode
+            translatedTitleMapped[episodeKey] = kitsuEpisode?.attributes?.titles?.enToUs ?: kitsuEpisode?.attributes?.titles?.en ?: ""
+            translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
+        }
+
+        translatedTitleMapped.map { (episodeKey, title) ->
+            tempTranslatedTitle.add(TextMicRequest(title))
+        }
+
+        translatedDescriptionMapped.map { (episodeKey, description) ->
+            tempTranslatedDescription.add(TextMicRequest(description))
+        }
+
+        val a = translateText(tempTranslatedTitle)
+        val b = translateText(tempTranslatedDescription)
+
+        translatedTitleMapped.map { (episodeKey, title) ->
+            translatedTitleMapped[episodeKey] = a[episodeKey.toInt() - 1]
+        }
+
+        translatedDescriptionMapped.map { (episodeKey, title) ->
+            translatedDescriptionMapped[episodeKey] = b[episodeKey.toInt() - 1]
+        }
+
+
+        val jobs = kodikEpisodes.map { (episodeKey, episode) ->
             coroutineScope.async {
-                processEpisode(urlLinking, episodeKey.toInt(), episode.link, kitsuEpisode, imageDefault)
+                processEpisode(urlLinking, episodeKey.toInt(), episode.link,
+                    kitsuEpisodesMapped[episodeKey], translatedTitleMapped[episodeKey], translatedDescriptionMapped[episodeKey], imageDefault)
             }
         }
 
@@ -1461,21 +1494,11 @@ class AnimeService : AnimeRepositoryImpl {
         episode: Int,
         link: String,
         kitsuEpisode: EpisodesKitsu?,
+        titleRu: String?,
+        descriptionRu: String?,
         imageDefault: String
     ): AnimeEpisodeTable {
         return if (kitsuEpisode != null) {
-            val deferredTitle = coroutineScope.async {
-                translateText(kitsuEpisode.attributes?.titles?.enToUs ?: "")
-            }
-
-            val deferredDescription = coroutineScope.async {
-                delay(200)
-                translateText(kitsuEpisode.attributes?.description ?: "")
-            }
-
-            val translatedTitleEpisode = deferredTitle.await()
-            val translatedDescriptionEpisode = deferredDescription.await()
-
             val imageEpisode = if(kitsuEpisode.attributes?.thumbnail != null) {
                 if(kitsuEpisode.attributes.thumbnail.large != null) {
                     imageService.saveFileInSThird(
@@ -1496,9 +1519,9 @@ class AnimeService : AnimeRepositoryImpl {
                 }
             } else ""
             val animeEpisode = AnimeEpisodeTable(
-                title = translatedTitleEpisode,
+                title = titleRu,
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
-                description = translatedDescriptionEpisode,
+                description = descriptionRu,
                 descriptionEn = kitsuEpisode.attributes?.description ?: "",
                 number = kitsuEpisode.attributes?.number ?: episode,
                 image = imageEpisode
@@ -1526,8 +1549,8 @@ class AnimeService : AnimeRepositoryImpl {
         }
     }
 
-    suspend fun translateText(text: String): String? {
-        return if(text.length > 1) {
+    suspend fun translateText(text: List<TextMicRequest>): List<String> {
+        return if (text.isNotEmpty()) {
             val translatedText = try {
                 client.post {
                     bearerAuth(client.get {
@@ -1543,11 +1566,7 @@ class AnimeService : AnimeRepositoryImpl {
                         host = "api-edge.cognitive.microsofttranslator.com"
                         encodedPath = "/translate"
                     }
-                    setBody(
-                        listOf(
-                            TextMicRequest(text = text)
-                        )
-                    )
+                    setBody(text)
                     header("Accept", "application/vnd.api+json")
                     parameter("from", "en")
                     parameter("to", "ru")
@@ -1569,20 +1588,22 @@ class AnimeService : AnimeRepositoryImpl {
                         host = "api-edge.cognitive.microsofttranslator.com"
                         encodedPath = "/translate"
                     }
-                    setBody(
-                        listOf(
-                            TextMicRequest(text = text)
-                        )
-                    )
+                    setBody(text)
                     header("Accept", "application/vnd.api+json")
                     parameter("from", "en")
                     parameter("to", "ru")
                     parameter("api-version", "3.0")
                 }.body<List<TextTranslations>>()
             }
+            val tempResult = mutableListOf<String>()
 
-            translatedText[0].translations[0].text ?: ""
-        } else null
+            translatedText.forEach {
+                it.translations.forEach {
+                    tempResult.add(it.text ?: "")
+                }
+            }
+            return tempResult
+        } else listOf()
     }
 
     fun mergeNumbers(numbers: List<Int>): String {
