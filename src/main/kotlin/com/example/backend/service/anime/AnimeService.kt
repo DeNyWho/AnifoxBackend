@@ -883,6 +883,8 @@ class AnimeService : AnimeRepositoryImpl {
                         val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())
 
                         if (!tempingAnime.isPresent) {
+                            val startTime = System.currentTimeMillis()
+
                             val g = mutableListOf<AnimeGenreTable>()
                             anime.materialData.genres.forEach { genre ->
                                 val genreIs = animeGenreRepository.findByGenre(genre).isPresent
@@ -1358,6 +1360,9 @@ class AnimeService : AnimeRepositoryImpl {
                             a.addAllAnimeStudios(st)
                             a.addMediaAll(media.filterNotNull())
                             animeRepository.save(a)
+                            val endTime = System.currentTimeMillis()
+                            val executionTime = endTime - startTime
+                            println("Время выполнения запроса: ${executionTime} мс")
                         } else {
 //                            val a = animeRepository.findByShikimoriIdWithTranslation(anime.shikimoriId.toInt()).get()
                         }
@@ -1497,6 +1502,40 @@ class AnimeService : AnimeRepositoryImpl {
         }
 
         val processedEpisodes = jobs.awaitAll()
+        val sortedEpisodes = processedEpisodes.sortedBy { it.number }
+        val animeVariations = runBlocking {
+            client.get {
+                headers {
+                    contentType(ContentType.Application.Json)
+                }
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "kodikapi.com/search"
+                }
+
+                parameter("token", animeToken)
+                parameter("with_material_data", true)
+                parameter("types", "anime-serial")
+                parameter("camrip", false)
+                parameter("with_episodes_data", true)
+                parameter("not_blocked_in", "ALL")
+                parameter("with_material_data", true)
+                parameter("shikimori_id", shikimoriId)
+                parameter(
+                    "anime_genres",
+                    "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
+                )
+                parameter("translation_id", "610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
+            }.body<AnimeResponse<AnimeParser>>()
+        }
+
+        animeVariations.result.forEach { anime ->
+            sortedEpisodes.forEach { episode ->
+                if(episode.number <= anime.lastEpisode) {
+                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
+                }
+            }
+        }
         episodeReady.addAll(processedEpisodes)
 
         return episodeReady
@@ -1534,7 +1573,7 @@ class AnimeService : AnimeRepositoryImpl {
                 }
             } else ""
 
-            val animeEpisode = AnimeEpisodeTable(
+            return AnimeEpisodeTable(
                 link = "$playerLink?episode=$episode",
                 title = titleRu,
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
@@ -1544,39 +1583,6 @@ class AnimeService : AnimeRepositoryImpl {
                 image = imageEpisode
             )
 
-            val animeVariations = runBlocking {
-                client.get {
-                    headers {
-                        contentType(ContentType.Application.Json)
-                    }
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        host = "kodikapi.com/search"
-                    }
-
-                    parameter("token", animeToken)
-                    parameter("with_material_data", true)
-                    parameter("types", "anime-serial")
-                    parameter("camrip", false)
-                    parameter("with_episodes_data", true)
-                    parameter("not_blocked_in", "ALL")
-                    parameter("with_material_data", true)
-                    parameter("shikimori_id", shikimoriId)
-                    parameter(
-                        "anime_genres",
-                        "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
-                    )
-                    parameter("translation_id", "610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
-                }.body<AnimeResponse<AnimeParser>>()
-            }
-
-            animeVariations.result.forEach { anime ->
-                if(animeEpisode.number <= anime.lastEpisode) {
-                    animeEpisode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
-                }
-            }
-
-            animeEpisode
         } else {
             AnimeEpisodeTable(
                 link = "$playerLink?episode=$episode",
