@@ -13,6 +13,8 @@ import com.example.backend.models.animeParser.kitsu.KitsuDefaults
 import com.example.backend.models.animeParser.kitsu.KitsuDetails
 import com.example.backend.models.animeParser.kitsu.anime.AnimeKitsu
 import com.example.backend.models.animeParser.kitsu.episodes.EpisodesKitsu
+import com.example.backend.models.animeParser.kodik.AnimeParser
+import com.example.backend.models.animeParser.kodik.AnimeTranslations
 import com.example.backend.models.animeParser.microsoft.default.TextTranslations
 import com.example.backend.models.animeParser.microsoft.request.TextMicRequest
 import com.example.backend.models.animeParser.shikimori.AnimeMediaParse
@@ -47,12 +49,14 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataAccessException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.JpaSort
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.DefaultTransactionDefinition
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.net.URL
@@ -64,6 +68,7 @@ import java.util.*
 import javax.imageio.ImageIO
 import javax.persistence.*
 import javax.persistence.criteria.*
+import javax.transaction.Transactional
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import javax.ws.rs.NotFoundException
@@ -121,10 +126,6 @@ class AnimeService : AnimeRepositoryImpl {
                 ignoreUnknownKeys = true
                 coerceInputValues = true
             })
-        }
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.ALL
         }
     }
 
@@ -766,6 +767,30 @@ class AnimeService : AnimeRepositoryImpl {
         throw NotFoundException("Anime episode not found")
     }
 
+    override fun addTranslationsToDB(transltionsIDs: List<Int>) {
+        val translations = runBlocking {
+            client.get {
+                headers {
+                    contentType(ContentType.Application.Json)
+                }
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = "kodikapi.com/translations/v2"
+                }
+                parameter("token", animeToken)
+                parameter("types", "anime, anime-serial")
+            }.body<AnimeResponse<AnimeTranslations>>()
+        }
+        transltionsIDs.forEach { translation ->
+            val t = translations.result.find { it.id == translation }
+            if (t != null) {
+                checkKodikTranslation(t.id, t.title, "voice")
+            }
+        }
+
+    }
+
+    @Transactional
     override fun addDataToDB(translationID: String) {
         var nextPage: String? = "1"
 
@@ -792,12 +817,12 @@ class AnimeService : AnimeRepositoryImpl {
                     "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
                 )
                 parameter("translation_id", translationID)
-            }.body<AnimeResponse>()
+            }.body<AnimeResponse<AnimeParser>>()
         }
 
         while (nextPage != null) {
             ar.result.forEach Loop@{ animeTemp ->
-//                try {
+                try {
                     println(animeTemp.title)
                     val anime = runBlocking {
                         client.get {
@@ -825,7 +850,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
                             )
                             parameter("translation_id", translationID)
-                        }.body<AnimeResponse>()
+                        }.body<AnimeResponse<AnimeParser>>()
                     }.result[0]
 
                     if (
@@ -895,7 +920,6 @@ class AnimeService : AnimeRepositoryImpl {
                                     )
                                 }
                             }
-                            println("ZXC")
 
                             val animeIds = runBlocking {
                                 client.get {
@@ -997,21 +1021,6 @@ class AnimeService : AnimeRepositoryImpl {
                                 }
                             }
 
-                            val translations: MutableList<AnimeTranslationTable> = mutableListOf()
-
-                            mediaTemp.fandubbers.forEach Translations@{
-                                val checkTrans = checkTranslation(it)
-                                if (checkTrans.id == 0) return@Translations
-                                val translationIs = animeTranslationRepository.findById(checkTrans.id).isPresent
-                                translations.add(
-                                    if (translationIs) {
-                                        animeTranslationRepository.findById(checkTrans.id).get()
-                                    } else {
-                                        animeTranslationRepository.save(checkTrans)
-                                    }
-                                )
-                            }
-
                             val media = mediaTemp.videos.map { video ->
                                 if (video.hosting != "vk") {
                                     animeMediaRepository.save(
@@ -1067,7 +1076,6 @@ class AnimeService : AnimeRepositoryImpl {
 
                             runBlocking {
                                 val kitsuData = kitsuAnime.await()?.data
-                                println(kitsuData)
                                 val jikanData = jikanImage.await()?.data
                                 if (kitsuData != null) {
                                     animeImages = AnimeImagesTypes(
@@ -1140,6 +1148,7 @@ class AnimeService : AnimeRepositoryImpl {
                                         kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
                                         responseKitsuEpisodes =
                                             if (responseKitsuEpisodes.links.next != null) runBlocking {
+                                                delay(1000)
                                                 client.get {
                                                     url {
                                                         protocol = URLProtocol.HTTPS
@@ -1154,8 +1163,11 @@ class AnimeService : AnimeRepositoryImpl {
                                                 }.body<KitsuDefaults<EpisodesKitsu>>()
                                             } else KitsuDefaults()
                                     }
+
                                     episodesReady.addAll(runBlocking {
                                         processEpisodes(
+                                            anime.shikimoriId,
+                                            anime.link,
                                             urlLinking,
                                             kodikSeason.value.episodes,
                                             kitsuEpisodes,
@@ -1265,6 +1277,15 @@ class AnimeService : AnimeRepositoryImpl {
                             val f = mediaTemp.russianLic
                             val zx = mediaTemp.russian
 
+                            val translations = mutableListOf<AnimeTranslationTable>()
+
+                            episodesReady.forEach { episode ->
+                                episode.translations.forEach { translation ->
+                                    translations.add(translation)
+                                }
+                            }
+
+
                             val a = AnimeTable(
                                 title = if (f != null && !checkEnglishLetter(f)) f else zx,
                                 url = urlLinking,
@@ -1330,56 +1351,20 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
+                            a.addTranslation(translations)
                             a.addEpisodesAll(episodesReady)
                             a.addAllMusic(music)
                             a.addAllAnimeGenre(g)
                             a.addAllAnimeStudios(st)
-                            translations.forEach { translation ->
-                                a.addTranslation(translation)
-                            }
                             a.addMediaAll(media.filterNotNull())
                             animeRepository.save(a)
                         } else {
-                            val a = animeRepository.findByShikimoriIdWithTranslation(anime.shikimoriId.toInt()).get()
-
-                            Thread.sleep(1000)
-                            val mediaTemp = runBlocking {
-                                client.get {
-                                    headers {
-                                        contentType(ContentType.Application.Json)
-                                    }
-                                    url {
-                                        protocol = URLProtocol.HTTPS
-                                        host = "shikimori.me/api/animes/${anime.shikimoriId}"
-                                    }
-                                }.body<AnimeMediaParse>()
-                            }
-
-                            val translations: MutableList<AnimeTranslationTable> = mutableListOf()
-
-                            mediaTemp.fandubbers.forEach Translations@{
-                                val checkTrans = checkTranslation(it)
-                                if (checkTrans.id == 0) return@Translations
-                                val translationIs = animeTranslationRepository.findById(checkTrans.id).isPresent
-                                translations.add(
-                                    if (translationIs) {
-                                        animeTranslationRepository.findById(checkTrans.id).get()
-                                    } else {
-                                        animeTranslationRepository.save(checkTrans)
-                                    }
-                                )
-                            }
-
-                            translations.forEach { translation ->
-                                if (a.translation.find { animeTrans -> animeTrans.id == translation.id } == null)
-                                    a.addTranslation(translation)
-                            }
+//                            val a = animeRepository.findByShikimoriIdWithTranslation(anime.shikimoriId.toInt()).get()
                         }
                     }
-//                } catch (e: Exception) {
-//                    println(e.message)
-//                    return
-//                }
+                } catch (e: Exception) {
+                    return
+                }
             }
             if (ar.nextPage != null) {
                 ar = runBlocking {
@@ -1391,7 +1376,6 @@ class AnimeService : AnimeRepositoryImpl {
                 }
             }
             nextPage = ar.nextPage
-            Thread.sleep(5000)
         }
     }
 
@@ -1440,7 +1424,7 @@ class AnimeService : AnimeRepositoryImpl {
 
 
     // Главная функция для обработки всех эпизодов
-    suspend fun processEpisodes(urlLinking: String, kodikEpisodes: Map<String, Episode>, kitsuEpisodes: List<EpisodesKitsu>, imageDefault: String): List<AnimeEpisodeTable> {
+    suspend fun processEpisodes(shikimoriId: String, playerLink: String, urlLinking: String, kodikEpisodes: Map<String, Episode>, kitsuEpisodes: List<EpisodesKitsu>, imageDefault: String): List<AnimeEpisodeTable> {
         val episodeReady = mutableListOf<AnimeEpisodeTable>()
 
         val kitsuEpisodesMapped = mutableMapOf<String, EpisodesKitsu?>()
@@ -1449,11 +1433,21 @@ class AnimeService : AnimeRepositoryImpl {
         val tempTranslatedTitle = mutableListOf<TextMicRequest>()
         val tempTranslatedDescription = mutableListOf<TextMicRequest>()
 
-        kodikEpisodes.map { (episodeKey, episode) ->
-            val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
-            kitsuEpisodesMapped[episodeKey] = kitsuEpisode
-            translatedTitleMapped[episodeKey] = kitsuEpisode?.attributes?.titles?.enToUs ?: kitsuEpisode?.attributes?.titles?.en ?: ""
-            translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
+        if(kitsuEpisodes.size >= kodikEpisodes.size) {
+            kitsuEpisodes.map { episode ->
+                val number = episode.attributes?.number!!
+                val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
+                kitsuEpisodesMapped[number.toString()] = kitsuEpisode
+                translatedTitleMapped[number.toString()] = kitsuEpisode?.attributes?.titles?.enToUs ?: kitsuEpisode?.attributes?.titles?.en ?: ""
+                translatedDescriptionMapped[number.toString()] = kitsuEpisode?.attributes?.description ?: ""
+            }
+        } else {
+            kodikEpisodes.map { (episodeKey, episode) ->
+                val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
+                kitsuEpisodesMapped[episodeKey] = kitsuEpisode
+                translatedTitleMapped[episodeKey] = kitsuEpisode?.attributes?.titles?.enToUs ?: kitsuEpisode?.attributes?.titles?.en ?: ""
+                translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
+            }
         }
 
         translatedTitleMapped.map { (episodeKey, title) ->
@@ -1464,21 +1458,40 @@ class AnimeService : AnimeRepositoryImpl {
             tempTranslatedDescription.add(TextMicRequest(description))
         }
 
-        val a = translateText(tempTranslatedTitle)
-        val b = translateText(tempTranslatedDescription)
+        val a  = if(tempTranslatedTitle.size < 61) {
+            translateText(tempTranslatedTitle)
+        } else {
+            val tempList = mutableListOf<String>()
+            val temp = tempTranslatedTitle.chunked(60)
+            temp.forEach {
+                tempList.addAll(translateText(it))
+            }
+            tempList
+        }
+
+        val b = if(tempTranslatedDescription.size < 61) {
+            translateText(tempTranslatedDescription)
+        } else {
+            val tempList = mutableListOf<String>()
+            val temp = tempTranslatedDescription.chunked(60)
+            temp.forEach {
+                tempList.addAll(translateText(it))
+            }
+            tempList
+        }
 
         translatedTitleMapped.map { (episodeKey, title) ->
-            translatedTitleMapped[episodeKey] = a[episodeKey.toInt() - 1]
+            val episodeKeyList = episodeKey.toInt() - 1
+            translatedTitleMapped[episodeKey] = a[episodeKeyList]
         }
 
         translatedDescriptionMapped.map { (episodeKey, title) ->
-            translatedDescriptionMapped[episodeKey] = b[episodeKey.toInt() - 1]
+            translatedDescriptionMapped[episodeKey] = b[(episodeKey.toInt() - 1)]
         }
-
 
         val jobs = kodikEpisodes.map { (episodeKey, episode) ->
             coroutineScope.async {
-                processEpisode(urlLinking, episodeKey.toInt(), episode.link,
+                processEpisode(shikimoriId, playerLink, urlLinking, episodeKey.toInt(), episode.link,
                     kitsuEpisodesMapped[episodeKey], translatedTitleMapped[episodeKey], translatedDescriptionMapped[episodeKey], imageDefault)
             }
         }
@@ -1490,6 +1503,8 @@ class AnimeService : AnimeRepositoryImpl {
     }
 
     suspend fun processEpisode(
+        shikimoriId: String,
+        playerLink: String,
         urlLinking: String,
         episode: Int,
         link: String,
@@ -1518,7 +1533,9 @@ class AnimeService : AnimeRepositoryImpl {
                     } else imageDefault
                 }
             } else ""
+
             val animeEpisode = AnimeEpisodeTable(
+                link = "$playerLink?episode=$episode",
                 title = titleRu,
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
                 description = descriptionRu,
@@ -1527,12 +1544,42 @@ class AnimeService : AnimeRepositoryImpl {
                 image = imageEpisode
             )
 
-            animeEpisode
+            val animeVariations = runBlocking {
+                client.get {
+                    headers {
+                        contentType(ContentType.Application.Json)
+                    }
+                    url {
+                        protocol = URLProtocol.HTTPS
+                        host = "kodikapi.com/search"
+                    }
 
+                    parameter("token", animeToken)
+                    parameter("with_material_data", true)
+                    parameter("types", "anime-serial")
+                    parameter("camrip", false)
+                    parameter("with_episodes_data", true)
+                    parameter("not_blocked_in", "ALL")
+                    parameter("with_material_data", true)
+                    parameter("shikimori_id", shikimoriId)
+                    parameter(
+                        "anime_genres",
+                        "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
+                    )
+                    parameter("translation_id", "610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
+                }.body<AnimeResponse<AnimeParser>>()
+            }
+
+            animeVariations.result.forEach { anime ->
+                if(animeEpisode.number <= anime.lastEpisode) {
+                    animeEpisode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
+                }
+            }
 
             animeEpisode
         } else {
             AnimeEpisodeTable(
+                link = "$playerLink?episode=$episode",
                 title = episode.toString(),
                 titleEn = episode.toString(),
                 description = null,
@@ -1630,117 +1677,29 @@ class AnimeService : AnimeRepositoryImpl {
         return animeRepository.findByUrl(url).orElseThrow { NotFoundException("Anime not found") }
     }
 
-    fun checkTranslation(element: String): AnimeTranslationTable {
-        return when {
-            element.lowercase(Locale.getDefault()).contains("shiza") -> {
-                AnimeTranslationTable(
-                    id = 767,
-                    title = "SHIZA Project",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("jam") -> {
-                AnimeTranslationTable(
-                    id = 557,
-                    title = "JAM",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("kansai") -> {
-                AnimeTranslationTable(
-                    id = 559,
-                    title = "Kansai",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("anidub") -> {
-                AnimeTranslationTable(
-                    id = 609,
-                    title = "AniDUB",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("anilibria") -> {
-                animeTranslationRepository.save(
+    fun checkKodikTranslation(translationId: Int, title: String, voice: String): AnimeTranslationTable {
+        val translationCheck = animeTranslationRepository.findById(translationId).isPresent
+        return if(translationCheck) {
+            animeTranslationRepository.findById(translationId).get()
+        } else {
+            if(translationId == 1002) {
+                val studioCheck = animeTranslationRepository.findById(643).isPresent
+                if(studioCheck) {
+                    animeTranslationRepository.findById(643).get()
+                } else {
                     AnimeTranslationTable(
-                        id = 610,
-                        title = "AniLibria",
-                        voice = "voice"
+                        id = 643,
+                        title = "Studio Band",
+                        voice = voice
                     )
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("wakanim") -> {
+                }
+            } else animeTranslationRepository.save(
                 AnimeTranslationTable(
-                    id = 643,
-                    title = "Studio Band",
-                    voice = "voice"
+                    id = translationId,
+                    title = title,
+                    voice = voice
                 )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("flarrow") -> {
-                AnimeTranslationTable(
-                    id = 643,
-                    title = "Studio Band",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("studio band") -> {
-                AnimeTranslationTable(
-                    id = 643,
-                    title = "Studio Band",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("2x2") -> {
-                AnimeTranslationTable(
-                    id = 735,
-                    title = "2x2",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("animedia") -> {
-                AnimeTranslationTable(
-                    id = 739,
-                    title = "Animedia",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("hdrezka") -> {
-                AnimeTranslationTable(
-                    id = 794,
-                    title = "HDrezka Studio",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("animaunt") -> {
-                AnimeTranslationTable(
-                    id = 825,
-                    title = "AniMaunt",
-                    voice = "voice"
-                )
-            }
-
-            element.lowercase(Locale.getDefault()).contains("amber") -> {
-                AnimeTranslationTable(
-                    id = 933,
-                    title = "Amber",
-                    voice = "voice"
-                )
-            }
-
-            else -> {
-                AnimeTranslationTable()
-            }
+            )
         }
     }
 }

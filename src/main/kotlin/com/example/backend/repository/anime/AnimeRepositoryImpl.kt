@@ -47,4 +47,5 @@ interface AnimeRepositoryImpl {
     fun getAnimeRating(url: String): Any
     fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): EpisodeWithLink
     fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable
+    fun addTranslationsToDB(transltionsIDs: List<Int>)
 }

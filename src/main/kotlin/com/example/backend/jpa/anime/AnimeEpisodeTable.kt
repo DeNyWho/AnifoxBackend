@@ -9,6 +9,9 @@ data class AnimeEpisodeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
+    @Column(nullable = false, columnDefinition = "TEXT")
+    val link: String = "",
+
     @Column(nullable = true, columnDefinition = "TEXT")
     val title: String? = "",
 
@@ -26,13 +29,9 @@ data class AnimeEpisodeTable(
 
     @Column(nullable = true)
     val image: String? = "",
-
-    @OneToMany(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
-    val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(schema = "anime")
+    val translations: MutableSet<AnimeTranslationTable> = mutableSetOf()
 ) {
     fun addTranslation(translation: AnimeTranslationTable): AnimeEpisodeTable {
         translations.add(translation)

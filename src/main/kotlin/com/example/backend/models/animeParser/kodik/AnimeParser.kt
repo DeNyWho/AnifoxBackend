@@ -1,6 +1,9 @@
 @file:UseSerializers(LocalDateTimeSerializer::class)
-package com.example.backend.models.animeParser
+package com.example.backend.models.animeParser.kodik
 
+import com.example.backend.models.animeParser.MaterialData
+import com.example.backend.models.animeParser.Season
+import com.example.backend.models.animeParser.Translation
 import com.example.backend.util.LocalDateTimeSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,6 +22,8 @@ data class AnimeParser(
     val link: String = "",
     @SerialName("translation")
     val translation: Translation = Translation(),
+    @SerialName("last_episode")
+    val lastEpisode: Int,
     @SerialName("shikimori_id")
     val shikimoriId: String = "",
     @SerialName("created_at")

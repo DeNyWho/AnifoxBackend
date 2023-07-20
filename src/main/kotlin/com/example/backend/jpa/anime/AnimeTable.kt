@@ -41,19 +41,21 @@ data class AnimeTable(
     @OneToMany(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
+    @JoinTable(schema = "anime")
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
+    @JoinTable(schema = "anime")
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
     @OneToOne(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     val ids: AnimeIds = AnimeIds(),
     @ManyToMany(
@@ -76,17 +78,16 @@ data class AnimeTable(
     val airedAt: LocalDate = LocalDate.now(),
     val releasedAt: LocalDate = LocalDate.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now(),
-    @ManyToMany(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL]
-    )
-    @JoinTable(
-        name = "anime_translation",
-        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
-        inverseJoinColumns = [JoinColumn(name = "translation_id", referencedColumnName = "id")],
-        schema = "anime",
-    )
-    var translation: MutableSet<AnimeTranslationTable> = mutableSetOf(),
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(schema = "anime")
+    val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
+//    @OneToMany(
+//        mappedBy = "anime",
+//        fetch = FetchType.LAZY,
+//        cascade = [CascadeType.ALL],
+//        orphanRemoval = true
+//    )
+//    val translation: MutableSet<AnimeTranslationTable> = mutableSetOf(),
     var status: String = "",
     @Column(columnDefinition = "TEXT")
     val description: String = "",
@@ -156,10 +157,11 @@ data class AnimeTable(
     )
     val rating: MutableSet<AnimeRating> = mutableSetOf(),
 ) {
-    fun addTranslation(translations: AnimeTranslationTable): AnimeTable {
-        translation.add(translations)
+    fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
+        translations.addAll(translation)
         return this
     }
+
     fun addMediaAll(mediaAll: List<AnimeMediaTable>): AnimeTable {
         media.addAll(mediaAll)
         return this

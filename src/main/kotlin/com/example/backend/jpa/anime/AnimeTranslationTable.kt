@@ -1,8 +1,6 @@
 package com.example.backend.jpa.anime
 
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 
 
 @Entity
@@ -11,5 +9,5 @@ data class AnimeTranslationTable(
     @Id
     val id: Int = 0,
     val title: String = "",
-    val voice: String = ""
+    val voice: String = "",
 )
