@@ -1,9 +1,6 @@
 package com.example.backend.controller.anime
 
-import com.example.backend.jpa.anime.AnimeEpisodeTable
-import com.example.backend.jpa.anime.AnimeGenreTable
-import com.example.backend.jpa.anime.AnimeStudiosTable
-import com.example.backend.jpa.anime.AnimeTranslationTable
+import com.example.backend.jpa.anime.*
 import com.example.backend.models.ServiceResponse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
@@ -14,6 +11,7 @@ import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
 import com.example.backend.models.users.StatusFavourite
 import com.example.backend.service.anime.AnimeService
+import com.example.backend.util.exceptions.NotFoundException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Schema
@@ -24,7 +22,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
-import javax.ws.rs.NotFoundException
 
 
 @RestController
@@ -116,12 +113,10 @@ class AnimeController {
     @Operation(summary = "detail anime query")
     fun getAnimeDetails(
         @PathVariable url: String
-    ): ServiceResponse<AnimeDetail>? {
-        return try {
-            return animeService.getAnimeById(url)
-        } catch (e: ChangeSetPersister.NotFoundException) {
-            ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
-        }
+    ): AnimeDetail {
+        val a = animeService.getAnimeByUrl(url)
+        println("WAFL = $a")
+        return a
     }
 
     @GetMapping("{url}/status")
@@ -163,7 +158,7 @@ class AnimeController {
         @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
         @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
         @Schema(name = "sort", required = false, description = "Must be one of: numberAsc | numberDesc", nullable = true) sort: String?,
-    ): EpisodeWithLink {
+    ): List<EpisodeLight> {
         return try {
             animeService.getAnimeEpisodesWithPaging(url, pageNum, pageSize, sort)
         } catch (e: ChangeSetPersister.NotFoundException) {

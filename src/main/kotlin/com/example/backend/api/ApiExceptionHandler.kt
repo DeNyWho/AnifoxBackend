@@ -2,6 +2,7 @@ package com.example.backend.api
 
 import com.example.backend.util.exceptions.BadRequestException
 import com.example.backend.util.exceptions.ConflictException
+import com.example.backend.util.exceptions.NotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.BadCredentialsException
@@ -18,6 +19,14 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequest(response: HttpServletResponse, ex: BadRequestException, request: WebRequest) {
         response.status = HttpStatus.BAD_REQUEST.value()
+        response.contentType = MediaType.APPLICATION_JSON_VALUE
+        response.writer.write("{\"error\": \"${ex.message}\"}")
+        response.writer.flush()
+    }
+
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFoundRequest(response: HttpServletResponse, ex: NotFoundException, request: WebRequest) {
+        response.status = HttpStatus.NOT_FOUND.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
         response.writer.flush()

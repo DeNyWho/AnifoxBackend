@@ -1,9 +1,6 @@
 package com.example.backend.repository.anime
 
-import com.example.backend.jpa.anime.AnimeEpisodeTable
-import com.example.backend.jpa.anime.AnimeGenreTable
-import com.example.backend.jpa.anime.AnimeStudiosTable
-import com.example.backend.jpa.anime.AnimeTranslationTable
+import com.example.backend.jpa.anime.*
 import com.example.backend.models.ServiceResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
 import com.example.backend.models.animeResponse.episode.EpisodeLight
@@ -38,14 +35,14 @@ interface AnimeRepositoryImpl {
     fun getAnimeStudios(): ServiceResponse<AnimeStudiosTable>
     fun getAnimeTranslations(): ServiceResponse<AnimeTranslationTable>
     fun getAnimeYears(): ServiceResponse<String>
-    fun getAnimeById(id: String): ServiceResponse<AnimeDetail>
+    fun getAnimeByUrl(url: String): AnimeDetail
     fun getAnimeScreenshotsById(id: String): ServiceResponse<String>
     fun getAnimeMediaById(id: String): ServiceResponse<AnimeMediaResponse>
     fun getAnimeUsersStatusCount(url: String): MutableMap<StatusFavourite, Long>
     fun getAnimeRelated(url: String): ServiceResponse<AnimeLightWithType>
     fun getAnimeSimilar(url: String): ServiceResponse<AnimeLight>
     fun getAnimeRating(url: String): Any
-    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): EpisodeWithLink
+    fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight>
     fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable
     fun addTranslationsToDB(transltionsIDs: List<Int>)
 }

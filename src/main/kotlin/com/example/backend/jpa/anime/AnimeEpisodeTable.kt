@@ -1,5 +1,6 @@
 package com.example.backend.jpa.anime
 
+import org.hibernate.annotations.BatchSize
 import java.util.*
 import javax.persistence.*
 
@@ -29,8 +30,10 @@ data class AnimeEpisodeTable(
 
     @Column(nullable = true)
     val image: String? = "",
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(schema = "anime")
+    @BatchSize(size = 10)
     val translations: MutableSet<AnimeTranslationTable> = mutableSetOf()
 ) {
     fun addTranslation(translation: AnimeTranslationTable): AnimeEpisodeTable {

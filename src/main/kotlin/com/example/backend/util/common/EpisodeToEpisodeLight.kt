@@ -1,21 +1,38 @@
 package com.example.backend.util.common
 
 import com.example.backend.jpa.anime.AnimeEpisodeTable
+import com.example.backend.jpa.anime.AnimeTranslationTable
 import com.example.backend.models.animeResponse.episode.EpisodeLight
+import com.example.backend.models.animeResponse.episode.EpisodeTranslations
 
 fun episodeToEpisodeLight(
-    episode: List<AnimeEpisodeTable>
+    episodes: List<AnimeEpisodeTable>
 ): List<EpisodeLight> {
     val episodeLight = mutableListOf<EpisodeLight>()
-    episode.forEach {
+    episodes.forEach { episode ->
         episodeLight.add(
             EpisodeLight(
-                title = it.title,
-                description = it.description,
-                image = it.image,
-                number = it.number
+                title = episode.title,
+                description = episode.description,
+                image = episode.image,
+                link = episode.link,
+                number = episode.number,
+                translations = translationsNormal(episode.translations)
             )
         )
     }
     return episodeLight
+}
+
+fun translationsNormal(translations: MutableSet<AnimeTranslationTable>): List<EpisodeTranslations> {
+    val readyTranslations = mutableListOf<EpisodeTranslations>()
+    translations.forEach { translation ->
+        readyTranslations.add(
+            EpisodeTranslations(
+                title = translation.title,
+                type = translation.voice
+            )
+        )
+    }
+    return readyTranslations
 }

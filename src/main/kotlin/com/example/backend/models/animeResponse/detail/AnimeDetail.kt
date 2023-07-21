@@ -1,4 +1,4 @@
-@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class)
+//@file:UseSerializers(LocalDateSerializer::class, LocalDateTimeSerializer::class)
 package com.example.backend.models.animeResponse.detail
 
 import com.example.backend.jpa.anime.AnimeGenreTable
@@ -13,7 +13,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 
-@Serializable
+//@Serializable
 @JsonInclude(JsonInclude.Include.ALWAYS)
 data class AnimeDetail(
     val url: String? = null,

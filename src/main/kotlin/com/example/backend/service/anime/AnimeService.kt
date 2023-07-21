@@ -22,6 +22,7 @@ import com.example.backend.models.animeParser.shikimori.RelationParse
 import com.example.backend.models.animeParser.shikimori.SimilarParse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
+import com.example.backend.models.animeResponse.episode.EpisodeLight
 import com.example.backend.models.animeResponse.episode.EpisodeWithLink
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
@@ -36,6 +37,8 @@ import com.example.backend.repository.user.UserRatingCountRepository
 import com.example.backend.service.image.ImageService
 import com.example.backend.util.*
 import com.example.backend.util.common.*
+import com.example.backend.util.exceptions.BadRequestException
+import com.example.backend.util.exceptions.NotFoundException
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -49,14 +52,13 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.dao.DataAccessException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.JpaSort
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
-import org.springframework.transaction.support.DefaultTransactionDefinition
+import org.springframework.web.client.HttpClientErrorException.BadRequest
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.net.URL
@@ -68,10 +70,8 @@ import java.util.*
 import javax.imageio.ImageIO
 import javax.persistence.*
 import javax.persistence.criteria.*
-import javax.transaction.Transactional
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
-import javax.ws.rs.NotFoundException
 
 
 @Service
@@ -353,29 +353,11 @@ class AnimeService : AnimeRepositoryImpl {
         return resultMap
     }
 
-    override fun getAnimeById(id: String): ServiceResponse<AnimeDetail> {
-        return try {
-            try {
-                val anime = animeRepository.findDetails(id).get()
-                return ServiceResponse(
-                    data = listOf(animeToAnimeDetail(anime)),
-                    message = "Success",
-                    status = HttpStatus.OK
-                )
-            } catch (e: Exception) {
-                ServiceResponse(
-                    data = null,
-                    message = "Anime with id = $id not found",
-                    status = HttpStatus.NOT_FOUND
-                )
-            }
-        } catch (e: Exception) {
-            ServiceResponse(
-                data = null,
-                message = "Error: ${e.message}",
-                status = HttpStatus.BAD_REQUEST
-            )
-        }
+    override fun getAnimeByUrl(url: String): AnimeDetail {
+//        try {
+//        	val animeDetail = animeToAnimeDetail(checkAnime(url))
+//        println("ZZ = $animeDetail")
+        return animeTableToAnimeDetail(checkAnime(url))
     }
 
     override fun getAnimeRelated(url: String): ServiceResponse<AnimeLightWithType> {
@@ -685,64 +667,33 @@ class AnimeService : AnimeRepositoryImpl {
         )
     }
 
-    fun animeToAnimeDetail(
-        anime: AnimeTable
-    ): AnimeDetail {
-        return AnimeDetail(
-            url = anime.url,
-            title = anime.title,
-            image = AnimeImagesTypes(large = anime.images.large, medium = anime.images.medium, cover = anime.images.cover),
-            studio = anime.studios.toList(),
-            season = anime.season,
-            description = anime.description,
-            otherTitles = anime.otherTitles.distinct(),
-            shikimoriRating = anime.shikimoriRating,
-            nextEpisode = anime.nextEpisode,
-            year = anime.year,
-            releasedAt = anime.releasedAt,
-            airedAt = anime.airedAt,
-            type = anime.type,
-            rating = anime.totalRating,
-            episodesCount = anime.episodesCount,
-            episodesCountAired = anime.episodesAires,
-            linkPlayer = anime.link,
-            genres = anime.genres.toList(),
-            status = anime.status,
-            ratingMpa = anime.ratingMpa,
-            minimalAge = anime.minimalAge
-        )
-    }
-
-    override fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): EpisodeWithLink {
-        checkAnime(url)
+    override fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight> {
+        val anime: AnimeTable = checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root = criteriaQuery.from(AnimeTable::class.java)
+        val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
 
-        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
+        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
 
-        criteriaQuery.select(root)
-            .where(criteriaBuilder.equal(root.get<String>("url"), url))
+        val episodesJoin = animeRoot.join<AnimeTable, AnimeEpisodeTable>("episodes", JoinType.LEFT)
 
-        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
+        criteriaQuery.where(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
 
-        if (anime != null) {
-            val temp = when(sort) {
-                "numberAsc" -> anime.episodes.toList().sortedBy { it.number }
-                "numberDesc" -> anime.episodes.toList().sortedByDescending { it.number }
-                else -> anime.episodes.toList()
-            }
+        criteriaQuery.select(episodesJoin)
 
-            val episodes = temp.toPage(PageRequest.of(pageNumber, pageSize)).content
-
-            return EpisodeWithLink(
-                link = anime.link,
-                episodes = episodeToEpisodeLight(episodes)
-            )
+        when(sort) {
+            "numberAsc" -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
+            "numberDesc" -> criteriaQuery.orderBy(criteriaBuilder.desc(episodesJoin.get<Int>("number")))
+            else -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
         }
 
-        return EpisodeWithLink()
+        val query = entityManager.createQuery(criteriaQuery)
+
+        val firstResult = (pageNumber - 1) * pageSize
+        query.firstResult = if (firstResult >= 0) firstResult else 0
+        query.maxResults = pageSize
+
+        return episodeToEpisodeLight(query.resultList)
     }
 
 
@@ -1525,13 +1476,13 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse<AnimeParser>>()
         }
 
-//        animeVariations.result.forEach { anime ->
-//            sortedEpisodes.forEach { episode ->
-//                if(episode.number <= anime.lastEpisode) {
-//                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
-//                }
-//            }
-//        }
+        animeVariations.result.forEach { anime ->
+            sortedEpisodes.forEach { episode ->
+                if(episode.number <= anime.lastEpisode) {
+                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
+                }
+            }
+        }
         episodeReady.addAll(processedEpisodes)
 
         return episodeReady

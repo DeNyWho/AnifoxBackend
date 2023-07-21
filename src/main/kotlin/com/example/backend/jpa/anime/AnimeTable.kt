@@ -1,6 +1,7 @@
 package com.example.backend.jpa.anime
 
 import com.example.backend.jpa.user.UserFavoriteAnime
+import org.hibernate.annotations.BatchSize
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -45,12 +46,9 @@ data class AnimeTable(
     )
     @JoinTable(schema = "anime")
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
-    @OneToMany(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
+    @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinTable(schema = "anime")
+    @BatchSize(size = 10)
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
     @OneToOne(
         fetch = FetchType.LAZY,
