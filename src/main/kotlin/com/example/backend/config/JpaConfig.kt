@@ -46,8 +46,6 @@ class JpaConfiguration (
     private fun hibernateProperties(): Properties {
         val properties = Properties()
         properties["hibernate.hbm2ddl.auto"] = "update"
-//        properties["hibernate.cache.use_second_level_cache"] = "true"
-//        properties["hibernate.cache.use_query_cache"] = "true"
         return properties
     }
 

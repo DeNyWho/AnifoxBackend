@@ -790,7 +790,6 @@ class AnimeService : AnimeRepositoryImpl {
 
     }
 
-    @Transactional
     override fun addDataToDB(translationID: String) {
         var nextPage: String? = "1"
 
@@ -1150,7 +1149,6 @@ class AnimeService : AnimeRepositoryImpl {
                                         kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
                                         responseKitsuEpisodes =
                                             if (responseKitsuEpisodes.links.next != null) runBlocking {
-                                                delay(1000)
                                                 client.get {
                                                     url {
                                                         protocol = URLProtocol.HTTPS
@@ -1255,6 +1253,7 @@ class AnimeService : AnimeRepositoryImpl {
                                     null
                                 }
                             }
+
                             val screenShots = mutableListOf<String>()
                             CoroutineScope(Dispatchers.Default).launch {
                                 screenShots.addAll(screenshotsDeferred.await()?.toMutableList() ?: mutableListOf())
@@ -1279,13 +1278,9 @@ class AnimeService : AnimeRepositoryImpl {
                             val f = mediaTemp.russianLic
                             val zx = mediaTemp.russian
 
-                            val translations = mutableListOf<AnimeTranslationTable>()
-
-                            episodesReady.forEach { episode ->
-                                episode.translations.forEach { translation ->
-                                    translations.add(translation)
-                                }
-                            }
+                            val translations = episodesReady.flatMap { episode -> episode.translations }
+                                .distinct()
+                                .toMutableList()
 
 
                             val a = AnimeTable(
@@ -1359,7 +1354,8 @@ class AnimeService : AnimeRepositoryImpl {
                             a.addAllAnimeGenre(g)
                             a.addAllAnimeStudios(st)
                             a.addMediaAll(media.filterNotNull())
-                            animeRepository.save(a)
+                            animeRepository.saveAndFlush(a)
+
                             val endTime = System.currentTimeMillis()
                             val executionTime = endTime - startTime
                             println("Время выполнения запроса: ${executionTime} мс")
@@ -1529,13 +1525,13 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse<AnimeParser>>()
         }
 
-        animeVariations.result.forEach { anime ->
-            sortedEpisodes.forEach { episode ->
-                if(episode.number <= anime.lastEpisode) {
-                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
-                }
-            }
-        }
+//        animeVariations.result.forEach { anime ->
+//            sortedEpisodes.forEach { episode ->
+//                if(episode.number <= anime.lastEpisode) {
+//                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
+//                }
+//            }
+//        }
         episodeReady.addAll(processedEpisodes)
 
         return episodeReady
