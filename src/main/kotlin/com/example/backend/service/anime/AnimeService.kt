@@ -31,6 +31,7 @@ import com.example.backend.models.jikan.JikanData
 import com.example.backend.models.jikan.JikanThemes
 import com.example.backend.models.users.StatusFavourite
 import com.example.backend.repository.anime.*
+import com.example.backend.repository.anime.error.AnimeErrorParserRepository
 import com.example.backend.repository.user.manga.UserRatingCountMangaRepository
 import com.example.backend.repository.user.anime.UserRatingCountRepository
 import com.example.backend.service.image.ImageService
@@ -102,6 +103,9 @@ class AnimeService : AnimeRepositoryImpl {
     private lateinit var userRatingCountRepository: UserRatingCountRepository
 
     @Autowired
+    private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
+
+    @Autowired
     private lateinit var userRatingCountMangaRepository: UserRatingCountMangaRepository
 
     @Autowired
@@ -123,6 +127,10 @@ class AnimeService : AnimeRepositoryImpl {
                 ignoreUnknownKeys = true
                 coerceInputValues = true
             })
+        }
+        install(Logging){
+            logger = Logger.DEFAULT
+            level = LogLevel.HEADERS
         }
     }
 
@@ -770,7 +778,6 @@ class AnimeService : AnimeRepositoryImpl {
         while (nextPage != null) {
             ar.result.forEach Loop@{ animeTemp ->
                 try {
-                    println(animeTemp.title)
                     val anime = runBlocking {
                         client.get {
                             headers {
@@ -799,6 +806,8 @@ class AnimeService : AnimeRepositoryImpl {
                             parameter("translation_id", translationID)
                         }.body<AnimeResponse<AnimeParser>>()
                     }.result[0]
+
+                    println(anime.shikimoriId)
 
                     if (
                         !anime.materialData.title.contains("Атака Титанов") &&
@@ -1302,7 +1311,11 @@ class AnimeService : AnimeRepositoryImpl {
                             a.addAllAnimeGenre(g)
                             a.addAllAnimeStudios(st)
                             a.addMediaAll(media.filterNotNull())
-                            animeRepository.saveAndFlush(a)
+
+                            val preparationToSaveAnime = animeRepository.findByShikimoriId(a.shikimoriId)
+                            if(preparationToSaveAnime.isPresent) {
+                                return@Loop
+                            } else animeRepository.saveAndFlush(a)
 
                             val endTime = System.currentTimeMillis()
                             val executionTime = endTime - startTime
@@ -1312,10 +1325,13 @@ class AnimeService : AnimeRepositoryImpl {
                         }
                     }
                 } catch (e: Exception) {
-                    println("ZXC TRANSLATE WW = ${e.message}")
-                    println("ZXC TRANSLATE AA = ${e.cause}")
-                    println("ZXC TRANSLATE AA = ${e.stackTrace}")
-                    return
+                    animeErrorParserRepository.save(
+                        AnimeErrorParserTable(
+                            message = e.message,
+                            cause = e.cause?.message
+                        )
+                    )
+                    return@Loop
                 }
             }
             if (ar.nextPage != null) {
@@ -1479,7 +1495,7 @@ class AnimeService : AnimeRepositoryImpl {
         animeVariations.result.forEach { anime ->
             sortedEpisodes.forEach { episode ->
                 if(episode.number <= anime.lastEpisode) {
-                    episode.addTranslation(animeTranslationRepository.findById(anime.translation.id).get())
+                    episode.addTranslation(animeTranslationRepository.findById(if(anime.translation.id != 1002) anime.translation.id else 643).get())
                 }
             }
         }

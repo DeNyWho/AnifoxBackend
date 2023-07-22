@@ -20,7 +20,6 @@ class ScheduleTasks {
 	@Autowired
 	private lateinit var animeService: AnimeService
 
-
 	@Async
 	@Scheduled(fixedRate = 12, timeUnit = TimeUnit.HOURS)
 	fun refreshData(){
