@@ -1,4 +1,4 @@
-package com.example.backend.repository.user
+package com.example.backend.repository.user.anime
 
 import com.example.backend.jpa.anime.AnimeRatingCount
 import com.example.backend.jpa.anime.AnimeTable

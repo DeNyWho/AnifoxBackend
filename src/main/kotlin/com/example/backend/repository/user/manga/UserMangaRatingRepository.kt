@@ -1,4 +1,4 @@
-package com.example.backend.repository.user
+package com.example.backend.repository.user.manga
 
 import com.example.backend.jpa.manga.MangaRating
 import com.example.backend.jpa.manga.MangaTable

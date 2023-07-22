@@ -1,9 +1,11 @@
 package com.example.backend.controller.user
 
+import com.example.backend.models.animeRequest.RecentlyRequest
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.mangaResponse.light.MangaLight
 import com.example.backend.models.users.*
 import com.example.backend.service.user.UserService
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
@@ -21,21 +23,22 @@ class UsersController(
     private val userService: UserService
 ) {
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostMapping("/anime/favorite")
+    @PostMapping("/anime/{url}/favorite")
     fun addToFavoriteAnime(
         @RequestHeader (value = "Authorization") token: String,
-        @RequestParam url: String,
+        @PathVariable url: String,
         @RequestParam status: StatusFavourite,
+        @Schema(name = "episodeNumber", required = false, nullable = true) episodeNumber: Int?,
         response: HttpServletResponse
     ) {
-        userService.addToFavoritesAnime(token, url, status, response)
+        userService.addToFavoritesAnime(token, url, status, episodeNumber, response)
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostMapping("/manga/favorite")
+    @PostMapping("/manga/{id}/favorite")
     fun addToFavoriteManga(
         @RequestHeader (value = "Authorization") token: String,
-        @RequestParam id: String,
+        @PathVariable id: String,
         @RequestParam status: StatusFavourite,
         response: HttpServletResponse
     ) {
@@ -63,6 +66,30 @@ class UsersController(
     ): List<MangaLight> {
         return userService.getFavoritesMangaByStatus(token, status, pageNum, pageSize)
     }
+
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @PostMapping("/anime/{url}/recently")
+    fun addToRecentlyAnime(
+        @RequestHeader (value = "Authorization") token: String,
+        @PathVariable url: String,
+        @RequestBody recently: RecentlyRequest,
+        response: HttpServletResponse
+    ) {
+        userService.addToRecentlyAnime(token, url, recently, response)
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/anime/recently")
+    fun getRecentlyAnime(
+        @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
+        @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
+        @RequestHeader (value = "Authorization") token: String,
+        response: HttpServletResponse
+    ) {
+        userService.getRecentlyAnimeList(token, pageNum, pageSize)
+    }
+
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/whoami")

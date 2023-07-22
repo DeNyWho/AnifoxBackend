@@ -23,7 +23,6 @@ import com.example.backend.models.animeParser.shikimori.SimilarParse
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
 import com.example.backend.models.animeResponse.episode.EpisodeLight
-import com.example.backend.models.animeResponse.episode.EpisodeWithLink
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
@@ -32,12 +31,11 @@ import com.example.backend.models.jikan.JikanData
 import com.example.backend.models.jikan.JikanThemes
 import com.example.backend.models.users.StatusFavourite
 import com.example.backend.repository.anime.*
-import com.example.backend.repository.user.UserRatingCountMangaRepository
-import com.example.backend.repository.user.UserRatingCountRepository
+import com.example.backend.repository.user.manga.UserRatingCountMangaRepository
+import com.example.backend.repository.user.anime.UserRatingCountRepository
 import com.example.backend.service.image.ImageService
 import com.example.backend.util.*
 import com.example.backend.util.common.*
-import com.example.backend.util.exceptions.BadRequestException
 import com.example.backend.util.exceptions.NotFoundException
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -58,7 +56,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.JpaSort
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
-import org.springframework.web.client.HttpClientErrorException.BadRequest
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.net.URL
@@ -925,10 +922,9 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val relationIds = mutableListOf<RelationParse>()
 
-                            runBlocking {
+                            CoroutineScope(Dispatchers.Default).launch {
                                 relationIdsDeferred.await()?.let { relationIds.addAll(it) }
                             }
-
 
                             val r = mutableListOf<AnimeRelatedTable>()
 
@@ -1299,6 +1295,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
+                            println("WAFLYA = DASDSA")
                             a.addTranslation(translations)
                             a.addEpisodesAll(episodesReady)
                             a.addAllMusic(music)
@@ -1315,6 +1312,9 @@ class AnimeService : AnimeRepositoryImpl {
                         }
                     }
                 } catch (e: Exception) {
+                    println("ZXC TRANSLATE WW = ${e.message}")
+                    println("ZXC TRANSLATE AA = ${e.cause}")
+                    println("ZXC TRANSLATE AA = ${e.stackTrace}")
                     return
                 }
             }
@@ -1574,6 +1574,7 @@ class AnimeService : AnimeRepositoryImpl {
                 }.body<List<TextTranslations>>()
             } catch (e: Exception) {
                 delay(1000)
+                println("ZXC TRANSLATE = ${e.message}")
                 client.post {
                     bearerAuth(client.get {
                         url {

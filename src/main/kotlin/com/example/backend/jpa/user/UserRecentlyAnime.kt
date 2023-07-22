@@ -2,13 +2,14 @@ package com.example.backend.jpa.user
 
 import com.example.backend.jpa.anime.AnimeEpisodeTable
 import com.example.backend.jpa.anime.AnimeTable
-import com.example.backend.models.users.StatusFavourite
+import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
 
+
 @Entity
-@Table(name = "user_favorites_anime", schema = "users")
-data class UserFavoriteAnime(
+@Table(name = "user_recently_anime", schema = "users")
+data class UserRecentlyAnime(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
@@ -20,11 +21,11 @@ data class UserFavoriteAnime(
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable = AnimeTable(),
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    var status: StatusFavourite = StatusFavourite.Watching,
+    var timingInSeconds: Double = 0.0,
+
+    var date: LocalDateTime = LocalDateTime.now(),
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "episode_id", nullable = true)
-    var episode: AnimeEpisodeTable? = null
+    @JoinColumn(name = "episode_id", nullable = false)
+    var episode: AnimeEpisodeTable = AnimeEpisodeTable()
 )
