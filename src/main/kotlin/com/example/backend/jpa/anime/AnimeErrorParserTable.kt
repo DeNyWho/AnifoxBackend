@@ -11,8 +11,9 @@ import javax.persistence.Table
 data class AnimeErrorParserTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-    @Column(nullable = true)
+    @Column(nullable = false, columnDefinition = "TEXT")
     val message: String? = null,
-    @Column(nullable = true)
-    val cause: String? = null
+    @Column(nullable = false, columnDefinition = "TEXT")
+    val cause: String? = null,
+    val shikimoriId: Int = 0
 )

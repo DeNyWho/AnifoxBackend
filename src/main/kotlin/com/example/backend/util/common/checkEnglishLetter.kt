@@ -1,6 +1,10 @@
 package com.example.backend.util.common
 
 fun checkEnglishLetter(word: String): Boolean {
-    val regex = "^[A-Za-z]*$".toRegex()
-    return regex.matches(word)
+    for (char in word) {
+        if (char in 'a'..'z' || char in 'A'..'Z') {
+            return true
+        }
+    }
+    return false
 }

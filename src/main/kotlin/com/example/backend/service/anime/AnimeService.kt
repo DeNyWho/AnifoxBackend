@@ -359,9 +359,6 @@ class AnimeService : AnimeRepositoryImpl {
     }
 
     override fun getAnimeByUrl(url: String): AnimeDetail {
-//        try {
-//        	val animeDetail = animeToAnimeDetail(checkAnime(url))
-//        println("ZZ = $animeDetail")
         return animeTableToAnimeDetail(checkAnime(url))
     }
 
@@ -375,10 +372,12 @@ class AnimeService : AnimeRepositoryImpl {
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
+        val anime = entityManager.createQuery(criteriaQuery).resultList
 
-        if (anime != null) {
-            val relatedAnimeList: List<AnimeLightWithType> = anime.related.mapNotNull { related ->
+        if (anime.isEmpty()) {
+            throw NotFoundException("Anime with url = $url not found")
+        } else {
+            val relatedAnimeList: List<AnimeLightWithType> = anime[0].related.mapNotNull { related ->
                 val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
                 val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
                 relatedCriteriaQuery.select(relatedRoot)
@@ -409,12 +408,6 @@ class AnimeService : AnimeRepositoryImpl {
                     status = HttpStatus.OK
                 )
             }
-        } else {
-            return ServiceResponse(
-                data = null,
-                message = "Anime with url = $url not found",
-                status = HttpStatus.NOT_FOUND
-            )
         }
     }
 
@@ -429,19 +422,21 @@ class AnimeService : AnimeRepositoryImpl {
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
+        val anime = entityManager.createQuery(criteriaQuery).resultList
 
-        if (anime != null) {
+        if (anime.isEmpty()) {
+            throw NotFoundException("Anime not found")
+        } else {
             val similarCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
             val similarRoot = similarCriteriaQuery.from(AnimeTable::class.java)
             similarCriteriaQuery.select(similarRoot)
-                .where(similarRoot.get<Int>("shikimoriId").`in`(anime.similarAnime))
+                .where(similarRoot.get<Int>("shikimoriId").`in`(anime[0].similarAnime))
 
             val similarEntityList = entityManager.createQuery(similarCriteriaQuery).resultList as List<AnimeTable>
 
             val similarEntityMap: Map<Int, AnimeTable> = similarEntityList.associateBy { it.shikimoriId }
 
-            val similarAnimeList: List<AnimeTable> = anime.similarAnime.mapNotNull { similarAnimeId ->
+            val similarAnimeList: List<AnimeTable> = anime[0].similarAnime.mapNotNull { similarAnimeId ->
                 similarEntityMap[similarAnimeId]
             }
 
@@ -452,7 +447,9 @@ class AnimeService : AnimeRepositoryImpl {
                 message = "Success",
                 status = HttpStatus.OK
             )
-        } else return ServiceResponse(
+        }
+
+        return ServiceResponse(
             data = null,
             message = "Anime with url = $url not found",
             status = HttpStatus.NOT_FOUND
@@ -777,7 +774,6 @@ class AnimeService : AnimeRepositoryImpl {
 
         while (nextPage != null) {
             ar.result.forEach Loop@{ animeTemp ->
-                try {
                     val anime = runBlocking {
                         client.get {
                             headers {
@@ -806,6 +802,8 @@ class AnimeService : AnimeRepositoryImpl {
                             parameter("translation_id", translationID)
                         }.body<AnimeResponse<AnimeParser>>()
                     }.result[0]
+
+                try {
 
                     println(anime.shikimoriId)
 
@@ -1088,6 +1086,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 if (kodikSeason.key != "0") {
                                     val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
                                     var responseKitsuEpisodes = runBlocking {
+                                        delay(1000)
                                         client.get {
                                             url {
                                                 protocol = URLProtocol.HTTPS
@@ -1105,6 +1104,7 @@ class AnimeService : AnimeRepositoryImpl {
                                         kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
                                         responseKitsuEpisodes =
                                             if (responseKitsuEpisodes.links.next != null) runBlocking {
+                                                delay(1000)
                                                 client.get {
                                                     url {
                                                         protocol = URLProtocol.HTTPS
@@ -1304,7 +1304,6 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
-                            println("WAFLYA = DASDSA")
                             a.addTranslation(translations)
                             a.addEpisodesAll(episodesReady)
                             a.addAllMusic(music)
@@ -1328,7 +1327,8 @@ class AnimeService : AnimeRepositoryImpl {
                     animeErrorParserRepository.save(
                         AnimeErrorParserTable(
                             message = e.message,
-                            cause = e.cause?.message
+                            cause = e.cause?.message,
+                            shikimoriId = anime.shikimoriId.toInt()
                         )
                     )
                     return@Loop
@@ -1458,9 +1458,32 @@ class AnimeService : AnimeRepositoryImpl {
         }
 
         val jobs = kodikEpisodes.map { (episodeKey, episode) ->
-            coroutineScope.async {
-                processEpisode(shikimoriId, playerLink, urlLinking, episodeKey.toInt(), episode.link,
-                    kitsuEpisodesMapped[episodeKey], translatedTitleMapped[episodeKey], translatedDescriptionMapped[episodeKey], imageDefault)
+            CoroutineScope(Dispatchers.Default).async {
+                if(episodeKey.toInt() == 0) {
+                    processEpisode(
+                        shikimoriId,
+                        playerLink,
+                        urlLinking,
+                        episodeKey.toInt(),
+                        episode.link,
+                        null,
+                        null,
+                        null,
+                        imageDefault
+                    )
+                } else {
+                    processEpisode(
+                        shikimoriId,
+                        playerLink,
+                        urlLinking,
+                        episodeKey.toInt(),
+                        episode.link,
+                        kitsuEpisodesMapped[episodeKey],
+                        translatedTitleMapped[episodeKey],
+                        translatedDescriptionMapped[episodeKey],
+                        imageDefault
+                    )
+                }
             }
         }
 
@@ -1515,6 +1538,7 @@ class AnimeService : AnimeRepositoryImpl {
         descriptionRu: String?,
         imageDefault: String
     ): AnimeEpisodeTable {
+        println("EPISODE EPISODE EPISODE")
         return if (kitsuEpisode != null) {
             val imageEpisode = if(kitsuEpisode.attributes?.thumbnail != null) {
                 if(kitsuEpisode.attributes.thumbnail.large != null) {
@@ -1536,14 +1560,21 @@ class AnimeService : AnimeRepositoryImpl {
                 }
             } else ""
 
+
+            val kitsuNumber = when {
+                kitsuEpisode.attributes?.number != null && kitsuEpisode.attributes.number == episode -> kitsuEpisode.attributes.number
+                episode == 0 -> 0
+                else -> episode
+            }
+
             return AnimeEpisodeTable(
                 link = "$playerLink?episode=$episode",
-                title = titleRu,
+                title = if(titleRu != null && titleRu.length > 3) titleRu else "$episode",
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
                 description = descriptionRu,
                 descriptionEn = kitsuEpisode.attributes?.description ?: "",
-                number = kitsuEpisode.attributes?.number ?: episode,
-                image = imageEpisode
+                number = kitsuNumber,
+                image = if(imageEpisode.length > 5) imageEpisode else imageDefault
             )
 
         } else {
@@ -1554,7 +1585,7 @@ class AnimeService : AnimeRepositoryImpl {
                 description = null,
                 descriptionEn = null,
                 number = episode,
-                image = null
+                image = imageDefault
             )
         }
     }
@@ -1589,28 +1620,32 @@ class AnimeService : AnimeRepositoryImpl {
                     parameter("api-version", "3.0")
                 }.body<List<TextTranslations>>()
             } catch (e: Exception) {
-                delay(1000)
-                println("ZXC TRANSLATE = ${e.message}")
-                client.post {
-                    bearerAuth(client.get {
+                try {
+                    delay(1000)
+                    println("ZXC TRANSLATE = ${e.message}")
+                    client.post {
+                        bearerAuth(client.get {
+                            url {
+                                protocol = URLProtocol.HTTPS
+                                host = "edge.microsoft.com"
+                                encodedPath = "/translate/auth"
+                            }
+                            header("Accept", "application/vnd.api+json")
+                        }.bodyAsText())
                         url {
                             protocol = URLProtocol.HTTPS
-                            host = "edge.microsoft.com"
-                            encodedPath = "/translate/auth"
+                            host = "api-edge.cognitive.microsofttranslator.com"
+                            encodedPath = "/translate"
                         }
+                        setBody(text)
                         header("Accept", "application/vnd.api+json")
-                    }.bodyAsText())
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        host = "api-edge.cognitive.microsofttranslator.com"
-                        encodedPath = "/translate"
-                    }
-                    setBody(text)
-                    header("Accept", "application/vnd.api+json")
-                    parameter("from", "en")
-                    parameter("to", "ru")
-                    parameter("api-version", "3.0")
-                }.body<List<TextTranslations>>()
+                        parameter("from", "en")
+                        parameter("to", "ru")
+                        parameter("api-version", "3.0")
+                    }.body<List<TextTranslations>>()
+                } catch (e: Exception) {
+                    return listOf()
+                }
             }
             val tempResult = mutableListOf<String>()
 

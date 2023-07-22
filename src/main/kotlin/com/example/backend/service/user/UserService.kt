@@ -383,7 +383,7 @@ class UserService : UserRepositoryImpl {
                     anime = animeTableToAnimeLight(recentlyItem.anime),
                     date = recentlyItem.date,
                     timingInSeconds = recentlyItem.timingInSeconds,
-                    episode = if(recentlyItem.episode == null) null else episodeToEpisodeLight(listOf(recentlyItem.episode))[0]
+                    episode = episodeToEpisodeLight(listOf(recentlyItem.episode))[0]
                 )
             )
         }
