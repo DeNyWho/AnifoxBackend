@@ -1,9 +1,6 @@
 package com.example.backend.service.user
 
-import com.example.backend.jpa.anime.AnimeEpisodeTable
-import com.example.backend.jpa.anime.AnimeRating
-import com.example.backend.jpa.anime.AnimeRatingCount
-import com.example.backend.jpa.anime.AnimeTable
+import com.example.backend.jpa.anime.*
 import com.example.backend.jpa.manga.MangaRating
 import com.example.backend.jpa.manga.MangaRatingCount
 import com.example.backend.jpa.manga.MangaTable
@@ -93,7 +90,7 @@ class UserService : UserRepositoryImpl {
     ) {
         val user = checkUser(token)
         val anime = checkAnime(url)
-        val episode = if(episodeNumber != null) checkEpisode(anime, episodeNumber) else null
+        val episode = if(episodeNumber != null) checkEpisode(url, episodeNumber) else null
 
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
         if (existingFavorite.isPresent) {
@@ -147,10 +144,10 @@ class UserService : UserRepositoryImpl {
     override fun addToRecentlyAnime(token: String, url: String, recently: RecentlyRequest, response: HttpServletResponse) {
         val user = checkUser(token)
         val anime = checkAnime(url)
-        val episode = checkEpisode(anime, recently.episodeNumber)
+        val episode = checkEpisode(url, recently.episodeNumber)
+        val translation = episode.translations.find { it.translation.id == recently.translationId } ?: throw NotFoundException("Translation not found")
 
         val existingRecently = userRecentlyRepository.findByUserAndAnime(user, anime)
-
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
 
         if (!existingFavorite.isPresent) {
@@ -166,14 +163,14 @@ class UserService : UserRepositoryImpl {
 
         if (existingRecently.isPresent) {
             val existRecently = existingRecently.get()
-            if (existRecently.date == recently.date && recently.timingInSeconds == existRecently.timingInSeconds && existRecently.episode == episode && existRecently.translationId == recently.translationId) {
+            if (existRecently.date == recently.date && recently.timingInSeconds == existRecently.timingInSeconds && existRecently.episode == episode && existRecently.selectedTranslation.translation.id  == recently.translationId) {
                 response.status = HttpStatus.OK.value()
                 return
             } else {
                 existRecently.date = recently.date
                 existRecently.timingInSeconds = recently.timingInSeconds
                 existRecently.episode = episode
-                existRecently.translationId = recently.translationId
+                existRecently.selectedTranslation = translation
 
                 userRecentlyRepository.save(existRecently)
                 response.status = HttpStatus.OK.value()
@@ -188,7 +185,7 @@ class UserService : UserRepositoryImpl {
                 timingInSeconds = recently.timingInSeconds,
                 date = recently.date,
                 episode = episode,
-                translationId = recently.translationId
+                selectedTranslation = translation
             )
         )
         response.status = HttpStatus.CREATED.value()
@@ -361,29 +358,23 @@ class UserService : UserRepositoryImpl {
             .orElseThrow { NotFoundException("Anime not found") }
     }
 
-    fun checkEpisode(anime: AnimeTable, episodeNumber: Int): AnimeEpisodeTable {
+    fun checkEpisode(url: String, episodeNumber: Int): AnimeEpisodeTable {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
 
-        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
+        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
 
-        val episodesJoin = animeRoot.join<AnimeTable, AnimeEpisodeTable>("episodes", JoinType.LEFT)
+        criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        criteriaQuery.where(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
+        val anime: AnimeTable? = entityManager.createQuery(criteriaQuery).singleResult
 
-        criteriaQuery.select(episodesJoin)
+        val episode = anime?.episodes?.find { it.number == episodeNumber }
 
-        criteriaQuery.where(criteriaBuilder.equal(episodesJoin.get<Int>("number"), episodeNumber))
+        if(episode != null) return episode
 
-        val query = entityManager.createQuery(criteriaQuery)
-
-        val resultList = query.resultList
-
-        if (resultList.isEmpty()) {
-            throw NotFoundException("Episode not found")
-        } else {
-            return resultList[0]
-        }
+        throw NotFoundException("Anime episode not found")
     }
 
     fun checkManga(id: String): MangaTable {
@@ -401,7 +392,7 @@ class UserService : UserRepositoryImpl {
                     date = recentlyItem.date,
                     timingInSeconds = recentlyItem.timingInSeconds,
                     episode = episodeToEpisodeLight(listOf(recentlyItem.episode))[0],
-                    translationId = recentlyItem.translationId
+                    translationId = recentlyItem.selectedTranslation.translation.id
                 )
             )
         }

@@ -30,7 +30,7 @@ data class AnimeEpisodeTable(
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(schema = "anime")
-    @BatchSize(size = 10)
+    @BatchSize(size = 20)
     val translations: MutableSet<EpisodeTranslation> = mutableSetOf()
 ) {
     fun addTranslation(translation: EpisodeTranslation): AnimeEpisodeTable {

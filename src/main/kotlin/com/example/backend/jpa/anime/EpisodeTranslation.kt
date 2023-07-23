@@ -1,5 +1,6 @@
 package com.example.backend.jpa.anime
 
+import org.hibernate.annotations.BatchSize
 import java.util.UUID
 import javax.persistence.*
 
@@ -9,7 +10,7 @@ data class EpisodeTranslation(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "translation_id", referencedColumnName = "id")
     val translation: AnimeTranslationTable = AnimeTranslationTable(),
 

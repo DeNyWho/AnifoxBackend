@@ -31,6 +31,7 @@ fun translationsNormal(translations: MutableSet<EpisodeTranslation>): List<Episo
     translations.forEach { translation ->
         readyTranslations.add(
             EpisodeTranslations(
+                id = translation.translation.id,
                 link = translation.link,
                 title = translation.translation.title ,
                 type = translation.translation.voice

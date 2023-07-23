@@ -131,10 +131,6 @@ class AnimeService : AnimeRepositoryImpl {
                 coerceInputValues = true
             })
         }
-        install(Logging){
-            logger = Logger.DEFAULT
-            level = LogLevel.HEADERS
-        }
     }
 
 
@@ -1521,7 +1517,7 @@ class AnimeService : AnimeRepositoryImpl {
                             EpisodeTranslation(
                                 translation = animeTranslationRepository.findById(if (anime.translation.id != 1002) anime.translation.id else 643)
                                     .get(),
-                                link = "${anime.link}?episode=$episode",
+                                link = "${anime.link}?episode=${episode.number}",
                             )
                         )
                     )

@@ -2,6 +2,7 @@ package com.example.backend.jpa.user
 
 import com.example.backend.jpa.anime.AnimeEpisodeTable
 import com.example.backend.jpa.anime.AnimeTable
+import com.example.backend.jpa.anime.EpisodeTranslation
 import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
@@ -23,9 +24,11 @@ data class UserRecentlyAnime(
 
     var timingInSeconds: Double = 0.0,
 
-    var translationId: Int = 0,
-
     var date: LocalDateTime = LocalDateTime.now(),
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "selected_translation_id") // Поле для хранения выбранной озвучки
+    var selectedTranslation: EpisodeTranslation = EpisodeTranslation(),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id", nullable = false)
