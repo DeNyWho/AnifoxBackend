@@ -91,6 +91,9 @@ class AnimeService : AnimeRepositoryImpl {
     lateinit var animeTranslationRepository: AnimeTranslationRepository
 
     @Autowired
+    lateinit var animeEpisodeTranslationRepository: AnimeEpisodeTranslationRepository
+
+    @Autowired
     lateinit var animeMediaRepository: AnimeMediaRepository
 
     @Autowired
@@ -773,7 +776,8 @@ class AnimeService : AnimeRepositoryImpl {
         }
 
         while (nextPage != null) {
-            ar.result.forEach Loop@{ animeTemp ->
+            ar.result.distinctBy { it.shikimoriId }.forEach Loop@ { animeTemp ->
+                try {
                     val anime = runBlocking {
                         client.get {
                             headers {
@@ -783,15 +787,13 @@ class AnimeService : AnimeRepositoryImpl {
                                 protocol = URLProtocol.HTTPS
                                 host = "kodikapi.com/search"
                             }
-
                             parameter("token", animeToken)
                             parameter("with_material_data", true)
-                            parameter("full_match", true)
-                            parameter("title_orig", animeTemp.title)
                             parameter("sort", "shikimori_rating")
                             parameter("order", "desc")
                             parameter("types", "anime-serial")
                             parameter("camrip", false)
+                            parameter("shikimori_id", animeTemp.shikimoriId)
                             parameter("with_episodes_data", true)
                             parameter("not_blocked_in", "ALL")
                             parameter("with_material_data", true)
@@ -802,8 +804,6 @@ class AnimeService : AnimeRepositoryImpl {
                             parameter("translation_id", translationID)
                         }.body<AnimeResponse<AnimeParser>>()
                     }.result[0]
-
-                try {
 
                     println(anime.shikimoriId)
 
@@ -1234,7 +1234,9 @@ class AnimeService : AnimeRepositoryImpl {
                             val f = mediaTemp.russianLic
                             val zx = mediaTemp.russian
 
-                            val translations = episodesReady.flatMap { episode -> episode.translations }
+                            val translations = episodesReady.flatMap { episode -> episode.translations.map {
+                                it.translation
+                            } }
                                 .distinct()
                                 .toMutableList()
 
@@ -1328,7 +1330,7 @@ class AnimeService : AnimeRepositoryImpl {
                         AnimeErrorParserTable(
                             message = e.message,
                             cause = e.cause?.message,
-                            shikimoriId = anime.shikimoriId.toInt()
+                            shikimoriId = animeTemp.shikimoriId.toInt()
                         )
                     )
                     return@Loop
@@ -1462,10 +1464,8 @@ class AnimeService : AnimeRepositoryImpl {
                 if(episodeKey.toInt() == 0) {
                     processEpisode(
                         shikimoriId,
-                        playerLink,
                         urlLinking,
                         episodeKey.toInt(),
-                        episode.link,
                         null,
                         null,
                         null,
@@ -1474,10 +1474,8 @@ class AnimeService : AnimeRepositoryImpl {
                 } else {
                     processEpisode(
                         shikimoriId,
-                        playerLink,
                         urlLinking,
                         episodeKey.toInt(),
-                        episode.link,
                         kitsuEpisodesMapped[episodeKey],
                         translatedTitleMapped[episodeKey],
                         translatedDescriptionMapped[episodeKey],
@@ -1517,8 +1515,16 @@ class AnimeService : AnimeRepositoryImpl {
 
         animeVariations.result.forEach { anime ->
             sortedEpisodes.forEach { episode ->
-                if(episode.number <= anime.lastEpisode) {
-                    episode.addTranslation(animeTranslationRepository.findById(if(anime.translation.id != 1002) anime.translation.id else 643).get())
+                if (episode.number <= anime.lastEpisode) {
+                    episode.addTranslation(
+                        animeEpisodeTranslationRepository.save(
+                            EpisodeTranslation(
+                                translation = animeTranslationRepository.findById(if (anime.translation.id != 1002) anime.translation.id else 643)
+                                    .get(),
+                                link = "${anime.link}?episode=$episode",
+                            )
+                        )
+                    )
                 }
             }
         }
@@ -1529,10 +1535,8 @@ class AnimeService : AnimeRepositoryImpl {
 
     suspend fun processEpisode(
         shikimoriId: String,
-        playerLink: String,
         urlLinking: String,
         episode: Int,
-        link: String,
         kitsuEpisode: EpisodesKitsu?,
         titleRu: String?,
         descriptionRu: String?,
@@ -1568,7 +1572,6 @@ class AnimeService : AnimeRepositoryImpl {
             }
 
             return AnimeEpisodeTable(
-                link = "$playerLink?episode=$episode",
                 title = if(titleRu != null && titleRu.length > 3) titleRu else "$episode",
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
                 description = descriptionRu,
@@ -1579,7 +1582,6 @@ class AnimeService : AnimeRepositoryImpl {
 
         } else {
             AnimeEpisodeTable(
-                link = "$playerLink?episode=$episode",
                 title = episode.toString(),
                 titleEn = episode.toString(),
                 description = null,

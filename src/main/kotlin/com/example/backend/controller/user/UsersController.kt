@@ -2,6 +2,7 @@ package com.example.backend.controller.user
 
 import com.example.backend.models.animeRequest.RecentlyRequest
 import com.example.backend.models.animeResponse.light.AnimeLight
+import com.example.backend.models.animeResponse.user.RecentlyAnimeLight
 import com.example.backend.models.mangaResponse.light.MangaLight
 import com.example.backend.models.users.*
 import com.example.backend.service.user.UserService
@@ -86,8 +87,8 @@ class UsersController(
         @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
         @RequestHeader (value = "Authorization") token: String,
         response: HttpServletResponse
-    ) {
-        userService.getRecentlyAnimeList(token, pageNum, pageSize)
+    ): List<RecentlyAnimeLight>  {
+        return userService.getRecentlyAnimeList(token, pageNum, pageSize)
     }
 
 

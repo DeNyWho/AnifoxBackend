@@ -1,17 +1,18 @@
 package com.example.backend.jpa.anime
 
+import java.util.UUID
 import javax.persistence.*
 
 @Entity
-@Table(name = "anime_translation_episode_mapping", schema = "anime")
-data class AnimeTranslationEpisodeMapping(
+@Table(name = "episode_translation", schema = "anime")
+data class EpisodeTranslation(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: String = UUID.randomUUID().toString(),
 
     @ManyToOne
-    val animeTranslation: AnimeTranslationTable = AnimeTranslationTable(),
+    @JoinColumn(name = "translation_id", referencedColumnName = "id")
+    val translation: AnimeTranslationTable = AnimeTranslationTable(),
 
-    @ManyToOne
-    val animeEpisode: AnimeEpisodeTable = AnimeEpisodeTable()
+    @Column(nullable = false, columnDefinition = "TEXT")
+    val link: String = ""
 )

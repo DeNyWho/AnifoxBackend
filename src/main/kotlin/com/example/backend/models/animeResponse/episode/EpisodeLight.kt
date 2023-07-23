@@ -10,6 +10,5 @@ data class EpisodeLight(
     val description: String? = "",
     val number: Int,
     val image: String? = "",
-    val link: String = "",
     val translations: List<EpisodeTranslations> = listOf()
 )

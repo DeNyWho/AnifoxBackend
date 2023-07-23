@@ -23,6 +23,8 @@ data class UserRecentlyAnime(
 
     var timingInSeconds: Double = 0.0,
 
+    var translationId: Int = 0,
+
     var date: LocalDateTime = LocalDateTime.now(),
 
     @ManyToOne(fetch = FetchType.LAZY)

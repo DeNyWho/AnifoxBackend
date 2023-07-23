@@ -154,18 +154,26 @@ class UserService : UserRepositoryImpl {
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
 
         if (!existingFavorite.isPresent) {
-            userFavoriteAnimeRepository.save(UserFavoriteAnime(user = user, anime = anime, status = StatusFavourite.Watching, episode = episode))
+            userFavoriteAnimeRepository.save(
+                UserFavoriteAnime(
+                    user = user,
+                    anime = anime,
+                    status = StatusFavourite.Watching,
+                    episode = episode
+                )
+            )
         }
 
         if (existingRecently.isPresent) {
             val existRecently = existingRecently.get()
-            if (existRecently.date == recently.date && recently.timingInSeconds == existRecently.timingInSeconds && existRecently.episode == episode) {
+            if (existRecently.date == recently.date && recently.timingInSeconds == existRecently.timingInSeconds && existRecently.episode == episode && existRecently.translationId == recently.translationId) {
                 response.status = HttpStatus.OK.value()
                 return
             } else {
                 existRecently.date = recently.date
                 existRecently.timingInSeconds = recently.timingInSeconds
                 existRecently.episode = episode
+                existRecently.translationId = recently.translationId
 
                 userRecentlyRepository.save(existRecently)
                 response.status = HttpStatus.OK.value()
@@ -173,7 +181,16 @@ class UserService : UserRepositoryImpl {
             }
         }
 
-        userRecentlyRepository.save(UserRecentlyAnime(user = user, anime = anime, timingInSeconds = recently.timingInSeconds, date = recently.date, episode = episode))
+        userRecentlyRepository.save(
+            UserRecentlyAnime(
+                user = user,
+                anime = anime,
+                timingInSeconds = recently.timingInSeconds,
+                date = recently.date,
+                episode = episode,
+                translationId = recently.translationId
+            )
+        )
         response.status = HttpStatus.CREATED.value()
     }
 
@@ -383,7 +400,8 @@ class UserService : UserRepositoryImpl {
                     anime = animeTableToAnimeLight(recentlyItem.anime),
                     date = recentlyItem.date,
                     timingInSeconds = recentlyItem.timingInSeconds,
-                    episode = episodeToEpisodeLight(listOf(recentlyItem.episode))[0]
+                    episode = episodeToEpisodeLight(listOf(recentlyItem.episode))[0],
+                    translationId = recentlyItem.translationId
                 )
             )
         }

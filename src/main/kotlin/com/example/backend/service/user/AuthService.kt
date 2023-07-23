@@ -4,6 +4,7 @@ import com.example.backend.jpa.shikimori.ShikimoriUsers
 import com.example.backend.jpa.user.Role
 import com.example.backend.jpa.user.RoleName
 import com.example.backend.jpa.user.User
+import com.example.backend.models.keycloak.KeyCloakTokenRefresh
 import com.example.backend.models.shikimori.ShikimoriOauth
 import com.example.backend.models.shikimori.ShikimoriProfile
 import com.example.backend.models.users.SignUpRequest
@@ -17,14 +18,16 @@ import com.example.backend.service.keycloak.KeycloakService
 import com.example.backend.util.exceptions.BadRequestException
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.java.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.keycloak.admin.client.CreatedResponseUtil
@@ -41,6 +44,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.view.RedirectView
 import java.util.*
+import javax.net.ssl.SSLContext
 import javax.servlet.http.HttpServletResponse
 
 
@@ -52,9 +56,27 @@ class AuthService(
     private val keycloakService: KeycloakService,
     private val keycloak: Keycloak,
     @Value("\${keycloak.realm}") private val realm: String,
+    @Value("\${keycloak.resource}") private val clientId: String,
+    @Value("\${keycloak.credentials.secret}") private val secret: String,
+    @Value("\${keycloak.auth-server-url}") private val authServer: String,
     private val authzClient: AuthzClient,
+    private val sslContext: SSLContext,
     private val shikimoriUsersRepository: ShikimoriUsersRepository
 ) {
+    val client = HttpClient(Java) {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+            })
+        }
+        engine {
+            config {
+                sslContext(sslContext)
+            }
+        }
+    }
+
     fun authenticate(email: String, password: String, response: HttpServletResponse): TokenResponse {
         val user = if (userRepository.findByEmail(email).isPresent) userRepository.findByEmail(email).get()
         else {
@@ -129,6 +151,32 @@ class AuthService(
         return makeCookieAniFox(response, signUpRequest.username, signUpRequest.password)
     }
 
+    fun refreshAccessToken(refreshToken: String, response: HttpServletResponse): TokenResponse {
+        val parameters = Parameters.build {
+            append("client_id", clientId)
+            append("grant_type", "refresh_token")
+            append("refresh_token", refreshToken)
+            append("client_secret", secret)
+        }
+
+        val refresh = runBlocking {
+            client.post("${authServer}realms/$realm/protocol/openid-connect/token") {
+                headers {
+                    contentType(ContentType.Application.FormUrlEncoded)
+                }
+                setBody(FormDataContent(parameters))
+            }.body<KeyCloakTokenRefresh>()
+        }
+
+        response.status = HttpStatus.OK.value()
+        return TokenResponse(
+            accessToken = refresh.accessToken,
+            accessExpires = refresh.expiresIn,
+            refreshToken = refresh.refreshToken,
+            refreshExpires = refresh.refreshExpiresIn
+        )
+    }
+
     private fun insertNewRole(
         newRole: String,
         realmResource: RealmResource,
@@ -153,24 +201,8 @@ class AuthService(
         userResource.roles().realmLevel().remove(roleRepresentationList)
     }
 
-    val client = HttpClient {
-        defaultRequest {
-            contentType(ContentType.Application.Json)
-        }
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                coerceInputValues = true
-            })
-        }
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.HEADERS
-        }
-    }
-
     @Value("\${shikimori.oauth.client-id}")
-    private lateinit var clientId: String
+    private lateinit var clientIdShikimori: String
 
     @Value("\${shikimori.oauth.client-secret}")
     private lateinit var clientSecret: String
@@ -189,7 +221,7 @@ class AuthService(
                     host = "shikimori.me/oauth/token"
                 }
                 parameter("grant_type", "authorization_code")
-                parameter("client_id", clientId)
+                parameter("client_id", clientIdShikimori)
                 parameter("client_secret", clientSecret)
                 parameter("code", code)
                 parameter("redirect_uri", "$hostUrl/api/auth/oauth2/code/shikimori")
@@ -274,20 +306,17 @@ class AuthService(
             response.status = HttpStatus.CREATED.value()
         }
         val u = usersResource.searchByUsername(shikimoriWhoAmi.nickname, false)[0]
-        println("ZXF = $tempPass")
         val userResource = usersResource[u.id]
         val passwordCred = keycloakService.getCredentialRepresentation(tempPass)
-        println("WW = ${passwordCred.value}")
-        println("WW = ${passwordCred.credentialData}")
-        println("WW = ${passwordCred.secretData}")
         userResource.resetPassword(passwordCred)
-        println("ZXF = $tempPass")
         val auth = authzClient.obtainAccessToken(shikimoriWhoAmi.nickname, tempPass)
         TokenResponse(
             accessToken = auth.token,
-            refreshToken = auth.refreshToken
+            accessExpires = auth.expiresIn,
+            refreshToken = auth.refreshToken,
+            refreshExpires = auth.refreshExpiresIn
         )
-        return RedirectView("https://anifox.club/?accessToken=${auth.token}&refreshToken=${auth.refreshToken}")
+        return RedirectView("https://anifox.club/?accessToken=${auth.token}?accessExpires=${auth.expiresIn}&refreshToken=${auth.refreshToken}?refreshExpires=${auth.refreshExpiresIn}")
     }
 
     fun makeCookieAniFox(
@@ -298,7 +327,9 @@ class AuthService(
         val auth = authzClient.obtainAccessToken(username, password)
         return TokenResponse(
             accessToken = auth.token,
-            refreshToken = auth.refreshToken
+            accessExpires = auth.expiresIn,
+            refreshToken = auth.refreshToken,
+            refreshExpires = auth.refreshExpiresIn
         )
     }
 }

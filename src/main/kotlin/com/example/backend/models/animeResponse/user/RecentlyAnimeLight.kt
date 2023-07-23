@@ -11,4 +11,5 @@ data class RecentlyAnimeLight(
     val date: LocalDateTime,
     val timingInSeconds: Double,
     val episode: EpisodeLight?,
+    val translationId: Int,
 )

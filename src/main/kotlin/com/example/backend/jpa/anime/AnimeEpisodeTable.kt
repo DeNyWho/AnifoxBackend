@@ -10,9 +10,6 @@ data class AnimeEpisodeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    val link: String = "",
-
     @Column(nullable = true, columnDefinition = "TEXT")
     val title: String? = "",
 
@@ -34,9 +31,9 @@ data class AnimeEpisodeTable(
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(schema = "anime")
     @BatchSize(size = 10)
-    val translations: MutableSet<AnimeTranslationTable> = mutableSetOf()
+    val translations: MutableSet<EpisodeTranslation> = mutableSetOf()
 ) {
-    fun addTranslation(translation: AnimeTranslationTable): AnimeEpisodeTable {
+    fun addTranslation(translation: EpisodeTranslation): AnimeEpisodeTable {
         translations.add(translation)
         return this
     }

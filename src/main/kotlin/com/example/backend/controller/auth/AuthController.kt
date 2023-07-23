@@ -85,39 +85,9 @@ class AuthController(
         return authService.authenticateShikimori(code, response)
     }
 
+    @GetMapping("/refreshToken")
+    fun refreshAccessToken(refreshToken: String, response: HttpServletResponse): TokenResponse {
+        return authService.refreshAccessToken(refreshToken, response)
+    }
+
 }
-
-//    @GetMapping("/refreshToken")
-//    fun refreshToken(request: HttpServletRequest, response: HttpServletResponse) {
-//        val refreshTokenString = sessionService.getRefreshToken(request)
-//        if (refreshTokenString != null) {
-//            val accessTokenResponse = keycloak.tokenManager() (refreshTokenString)
-//            sessionService.updateSession(accessTokenResponse, response)
-//            response.status = HttpStatus.OK.value()
-//            return
-//        }
-//        response.status = HttpStatus.UNAUTHORIZED.value()
-//    }
-
-//    @PostMapping("/oauth/token")
-//    fun exchangeKeycloakToken(@RequestParam("grant_type") grantType: String,
-//                              @RequestParam("refresh_token") refreshToken: String,
-//                              response: HttpServletResponse) {
-//        if (grantType != "refresh_token") {
-//            response.status = HttpStatus.BAD_REQUEST.value()
-//            return
-//        }
-//
-//        val accessTokenResponse = keycloak.tokenManager().accessToken
-//            ?: throw BadRequestException("Invalid refresh token")
-//        sessionService.createSession(accessTokenResponse.otherClaims.get(), response)
-//        response.contentType = "application/json"
-//        response.writer.write("""
-//        {
-//            "access_token": "${accessTokenResponse.token}",
-//            "token_type": "bearer",
-//            "refresh_token": "${accessTokenResponse.refreshToken}"
-//        }
-//        """.trimIndent())
-//        response.status = HttpStatus.OK.value()
-//    }

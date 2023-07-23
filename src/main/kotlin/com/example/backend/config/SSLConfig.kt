@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.io.FileInputStream
 import java.security.KeyStore
+import javax.net.ssl.SSLContext
 
 @Configuration
 class SSLConfig(
@@ -29,22 +30,25 @@ class SSLConfig(
 ) {
 
     @Bean
-    fun authzClient(): AuthzClient {
-        val clientCredentials: MutableMap<String, Any?> = HashMap()
-        clientCredentials["secret"] = secret
-
+    fun sslContext(): SSLContext {
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         keyStore.load(FileInputStream(keyStorePath), keyStorePassword.toCharArray())
         val trustStore = KeyStore.getInstance(KeyStore.getDefaultType())
         trustStore.load(FileInputStream(trustStorePath), trustStorePassword.toCharArray())
 
-        val sslContext = SSLContexts.custom()
+        return SSLContexts.custom()
             .loadKeyMaterial(keyStore, keyStorePassword.toCharArray())
             .loadTrustMaterial(trustStore, null)
             .build()
+    }
+
+    @Bean
+    fun authzClient(): AuthzClient {
+        val clientCredentials: MutableMap<String, Any?> = HashMap()
+        clientCredentials["secret"] = secret
 
         val builder = HttpClientBuilder.create()
-        builder.setSSLContext(sslContext)
+        builder.setSSLContext(sslContext())
 
         val configuration = org.keycloak.authorization.client.Configuration(
             authUrl, realm, clientId,

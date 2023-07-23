@@ -2,6 +2,7 @@ package com.example.backend.util.common
 
 import com.example.backend.jpa.anime.AnimeEpisodeTable
 import com.example.backend.jpa.anime.AnimeTranslationTable
+import com.example.backend.jpa.anime.EpisodeTranslation
 import com.example.backend.models.animeResponse.episode.EpisodeLight
 import com.example.backend.models.animeResponse.episode.EpisodeTranslations
 
@@ -17,7 +18,6 @@ fun episodeToEpisodeLight(
                 title = episode.title,
                 description = episode.description,
                 image = episode.image,
-                link = episode.link,
                 number = episode.number,
                 translations = translationsNormal(episode.translations)
             )
@@ -26,13 +26,14 @@ fun episodeToEpisodeLight(
     return episodeLight
 }
 
-fun translationsNormal(translations: MutableSet<AnimeTranslationTable>): List<EpisodeTranslations> {
+fun translationsNormal(translations: MutableSet<EpisodeTranslation>): List<EpisodeTranslations> {
     val readyTranslations = mutableListOf<EpisodeTranslations>()
     translations.forEach { translation ->
         readyTranslations.add(
             EpisodeTranslations(
-                title = translation.title,
-                type = translation.voice
+                link = translation.link,
+                title = translation.translation.title ,
+                type = translation.translation.voice
             )
         )
     }

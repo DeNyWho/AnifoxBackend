@@ -15,4 +15,6 @@ data class RecentlyRequest(
     val date: LocalDateTime,
     @SerialName("episodeNumber")
     val episodeNumber: Int,
+    @SerialName("translationId")
+    val translationId: Int,
 )
