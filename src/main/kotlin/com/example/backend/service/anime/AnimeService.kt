@@ -131,7 +131,7 @@ class AnimeService : AnimeRepositoryImpl {
         }
         install(Logging) {
             logger = Logger.DEFAULT
-            level = LogLevel.HEADERS
+            level = LogLevel.ALL
         }
     }
 
@@ -928,8 +928,12 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val relationIds = mutableListOf<RelationParse>()
 
-                            CoroutineScope(Dispatchers.Default).launch {
-                                relationIds.addAll(relationIdsDeferred.await().orEmpty())
+
+                            runBlocking {
+                                val temp = relationIdsDeferred.await()
+                                if(temp != null) {
+                                    relationIds.addAll(temp)
+                                }
                             }
 
                             val r = mutableListOf<AnimeRelatedTable>()
