@@ -18,11 +18,12 @@ class ScheduleTasks {
 	private lateinit var animeService: AnimeService
 
 	@Scheduled(fixedDelay = 12, timeUnit = TimeUnit.HOURS)
-	fun refreshData(){
+	fun refreshData() {
 		animeService.addTranslationsToDB(listOf(610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002))
 		animeService.addDataToDB("610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
 	}
 }
+
 
 @SpringBootApplication
 @EnableScheduling

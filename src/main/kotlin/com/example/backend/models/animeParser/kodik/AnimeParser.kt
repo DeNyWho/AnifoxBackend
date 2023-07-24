@@ -23,7 +23,7 @@ data class AnimeParser(
     @SerialName("translation")
     val translation: Translation = Translation(),
     @SerialName("last_episode")
-    val lastEpisode: Int,
+    val lastEpisode: Int = 0,
     @SerialName("shikimori_id")
     val shikimoriId: String = "",
     @SerialName("created_at")
@@ -31,7 +31,7 @@ data class AnimeParser(
     @SerialName("updated_at")
     val updatedAt: LocalDateTime = LocalDateTime.now(),
     @SerialName("seasons")
-    val seasons: Map<String, Season>,
+    val seasons: Map<String, Season> = mapOf(),
     @SerialName("material_data")
     var materialData: MaterialData = MaterialData(),
     @SerialName("screenshots")

@@ -11,8 +11,6 @@ fun episodeToEpisodeLight(
 ): List<EpisodeLight> {
     val episodeLight = mutableListOf<EpisodeLight>()
     episodes.forEach { episode ->
-        println("WW = $episode")
-        if(episode.number == 0) println("CURSEd")
         episodeLight.add(
             EpisodeLight(
                 title = episode.title,
@@ -38,5 +36,5 @@ fun translationsNormal(translations: MutableSet<EpisodeTranslation>): List<Episo
             )
         )
     }
-    return readyTranslations
+    return readyTranslations.sortedBy { it.id }
 }
