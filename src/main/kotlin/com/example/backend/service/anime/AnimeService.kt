@@ -48,6 +48,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -379,6 +381,7 @@ class AnimeService : AnimeRepositoryImpl {
             throw NotFoundException("Anime with url = $url not found")
         } else {
             val relatedAnimeList: List<AnimeLightWithType> = anime[0].related.mapNotNull { related ->
+                println("WAFL ANIME = $related")
                 val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
                 val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
                 relatedCriteriaQuery.select(relatedRoot)
@@ -1188,7 +1191,7 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val music: MutableList<AnimeMusicTable> = mutableListOf()
 
-                            CoroutineScope(Dispatchers.Default).launch {
+                            runBlocking {
                                 val jikanData = jikanThemesDefered.await()?.data
 
                                 if (jikanData != null) {
@@ -1227,27 +1230,29 @@ class AnimeService : AnimeRepositoryImpl {
                                 }
                             }
 
-                            val screenshotsDeferred = CoroutineScope(Dispatchers.Default).async {
-                                runCatching {
-                                    client.get {
-                                        headers {
-                                            contentType(ContentType.Application.Json)
-                                        }
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = "shikimori.me/api/animes/${anime.shikimoriId}/screenshots"
-                                        }
-                                    }.body<List<ScreenshotsParse>>().map { screenshot ->
-                                        "https://shikimori.me${screenshot.original}"
+                            val screenshotsFlow = flow {
+                                val screenshots = client.get {
+                                    headers {
+                                        contentType(ContentType.Application.Json)
                                     }
-                                }.getOrElse {
-                                    null
+                                    url {
+                                        protocol = URLProtocol.HTTPS
+                                        host = "shikimori.me/api/animes/${anime.shikimoriId}/screenshots"
+                                    }
+                                }.body<List<ScreenshotsParse>>().map { screenshot ->
+                                    "https://shikimori.me${screenshot.original}"
                                 }
-                            }
+
+                                emit(screenshots)
+                            }.flowOn(Dispatchers.IO)
 
                             val screenShots = mutableListOf<String>()
+
                             CoroutineScope(Dispatchers.Default).launch {
-                                screenShots.addAll(screenshotsDeferred.await()?.toMutableList() ?: mutableListOf())
+                                screenshotsFlow
+                                    .collect {
+                                        screenShots.addAll(it)
+                                    }
                             }
 
                             val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
@@ -1305,7 +1310,6 @@ class AnimeService : AnimeRepositoryImpl {
                                 synonyms = mediaTemp.synonyms.toMutableList(),
                                 otherTitles = otherTitles,
                                 similarAnime = similarIds.take(30).toMutableList(),
-                                related = r.toMutableSet(),
                                 status = mediaTemp.status,
                                 description = mediaTemp.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                 year = if (mediaTemp.airedAt != null) LocalDate.parse(mediaTemp.airedAt).year else anime.materialData.year,
@@ -1341,6 +1345,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
+                            a.addRelated(r)
                             a.addTranslation(translations)
                             a.addEpisodesAll(episodesReady)
                             a.addAllMusic(music)

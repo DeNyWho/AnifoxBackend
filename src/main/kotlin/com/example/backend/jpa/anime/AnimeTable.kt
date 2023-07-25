@@ -160,6 +160,11 @@ data class AnimeTable(
         return this
     }
 
+    fun addRelated(relatedList: List<AnimeRelatedTable>): AnimeTable {
+        related.addAll(relatedList)
+        return this
+    }
+
     fun addMediaAll(mediaAll: List<AnimeMediaTable>): AnimeTable {
         media.addAll(mediaAll)
         return this
