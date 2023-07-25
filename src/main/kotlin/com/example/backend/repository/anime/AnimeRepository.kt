@@ -15,6 +15,7 @@ interface AnimeRepository : JpaRepository<AnimeTable, String> {
 
     fun findByShikimoriId(shikimoriID: Int): Optional<AnimeTable>
 
+
     @Query("Select distinct a.year from AnimeTable a order by a.year desc")
     fun findDistinctByYear(): List<String>
 

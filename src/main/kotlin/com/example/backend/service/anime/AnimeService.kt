@@ -763,7 +763,7 @@ class AnimeService : AnimeRepositoryImpl {
                 parameter("limit", 100)
                 parameter("sort", "shikimori_rating")
                 parameter("order", "desc")
-                parameter("types", "anime-serial, anime" )
+                parameter("types", "anime-serial, anime")
                 parameter("camrip", false)
                 parameter("with_episodes_data", true)
                 parameter("not_blocked_in", "ALL")
@@ -812,6 +812,10 @@ class AnimeService : AnimeRepositoryImpl {
                         !anime.materialData.title.contains("Атака Титанов") &&
                         !anime.materialData.title.contains("Атака титанов") &&
                         anime.shikimoriId.toInt() != 226 &&
+                        anime.shikimoriId.toInt() != 17875 &&
+                        anime.shikimoriId.toInt() != 1072 &&
+                        anime.shikimoriId.toInt() != 6864 &&
+                        anime.shikimoriId.toInt() != 4918 &&
                         anime.shikimoriId.toInt() != 52198 &&
                         anime.shikimoriId.toInt() != 37517 &&
                         anime.shikimoriId.toInt() != 1535 &&
@@ -913,7 +917,14 @@ class AnimeService : AnimeRepositoryImpl {
                                 mediaTemp = mediaDeferred.await()!!
                             }
 
-                            val urlLinking = translit(mediaTemp.russian)
+                            val f = mediaTemp.russianLic
+                            val zx = mediaTemp.russian
+
+                            var urlLinking = translit(if (f != null && checkEnglishLetter(zx)) f else zx)
+
+                            if(animeRepository.findByUrl(urlLinking).isPresent) {
+                                urlLinking = "${translit(if (f != null && checkEnglishLetter(zx)) f else zx)}-${if (mediaTemp.airedAt != null) LocalDate.parse(mediaTemp.airedAt).year else anime.materialData.year}"
+                            }
 
                             val relationIdsDeferred = CoroutineScope(Dispatchers.Default).async {
                                 delay(1000)
@@ -963,24 +974,22 @@ class AnimeService : AnimeRepositoryImpl {
                                 )
                             }
 
-                            val similarIdsDeferred = CoroutineScope(Dispatchers.Default).async {
+                            val similarIdsFlow = flow {
                                 delay(1000)
-                                runCatching {
-                                    client.get {
-                                        headers {
-                                            contentType(ContentType.Application.Json)
-                                        }
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = "shikimori.me/api/animes/${anime.shikimoriId}/similar"
-                                        }
-                                    }.body<List<SimilarParse>>().flatMap { similar ->
-                                        listOfNotNull(similar.id)
-                                    }.map { it }
-                                }.getOrElse {
-                                    null
-                                }
-                            }
+                                val similarIds = client.get {
+                                    headers {
+                                        contentType(ContentType.Application.Json)
+                                    }
+                                    url {
+                                        protocol = URLProtocol.HTTPS
+                                        host = "shikimori.me/api/animes/${anime.shikimoriId}/similar"
+                                    }
+                                }.body<List<SimilarParse>>().flatMap { similar ->
+                                    listOfNotNull(similar.id)
+                                }.map { it }
+
+                                emit(similarIds)
+                            }.flowOn(Dispatchers.IO)
 
                             val media = mediaTemp.videos.map { video ->
                                 if (video.hosting != "vk") {
@@ -1249,30 +1258,25 @@ class AnimeService : AnimeRepositoryImpl {
                             val screenShots = mutableListOf<String>()
 
                             CoroutineScope(Dispatchers.Default).launch {
-                                screenshotsFlow
-                                    .collect {
-                                        screenShots.addAll(it)
-                                    }
+                                screenshotsFlow.collect {
+                                    screenShots.addAll(it)
+                                }
+                            }
+
+                            val similarIds = mutableListOf<Int>()
+
+                            CoroutineScope(Dispatchers.Default).launch {
+                                similarIdsFlow.collect {
+                                    similarIds.addAll(it)
+                                }
                             }
 
                             val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
                                 .withZone(ZoneId.of("Europe/Moscow"))
 
-                            val similarIds = mutableListOf<Int>()
-
-                            CoroutineScope(Dispatchers.Default).launch {
-                                val similarData = similarIdsDeferred.await()
-                                if (similarData != null) {
-                                    similarIds.addAll(similarData)
-                                }
-                            }
-
                             val otherTitles = anime.materialData.otherTitles.toMutableList()
 
-                            otherTitles.add(mediaTemp.russianLic ?: mediaTemp.russian)
-
-                            val f = mediaTemp.russianLic
-                            val zx = mediaTemp.russian
+                            otherTitles.add(if (f != null && checkEnglishLetter(zx)) f else zx)
 
                             val translations = episodesReady.flatMap { episode -> episode.translations.map {
                                 it.translation
@@ -1282,7 +1286,7 @@ class AnimeService : AnimeRepositoryImpl {
 
 
                             val a = AnimeTable(
-                                title = if (f != null && !checkEnglishLetter(f)) f else zx,
+                                title = if (f != null && checkEnglishLetter(zx)) f else zx,
                                 url = urlLinking,
                                 ids = AnimeIds(
                                     aniDb = animeIds.aniDb,
