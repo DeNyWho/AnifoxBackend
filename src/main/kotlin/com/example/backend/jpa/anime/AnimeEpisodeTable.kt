@@ -1,6 +1,8 @@
 package com.example.backend.jpa.anime
 
 import org.hibernate.annotations.BatchSize
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 import javax.persistence.*
 
@@ -27,6 +29,12 @@ data class AnimeEpisodeTable(
 
     @Column(nullable = true)
     val image: String? = "",
+
+    val aired: LocalDate = LocalDate.now(),
+
+    val filler: Boolean = false,
+
+    val recap: Boolean = false,
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(schema = "anime")

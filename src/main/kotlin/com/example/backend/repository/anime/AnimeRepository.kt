@@ -10,23 +10,15 @@ import java.util.*
 @Repository
 interface AnimeRepository : JpaRepository<AnimeTable, String> {
 
+    fun findByShikimoriId(@Param("shikimoriId") shikimoriId: Int): Optional<AnimeTable>
 
-    fun findByTitle(title: String): Optional<AnimeTable>
-
-    fun findByShikimoriId(shikimoriID: Int): Optional<AnimeTable>
+    @Query("SELECT a from AnimeTable a LEFT JOIN FETCH a.episodes where a.shikimoriId = :shikimoriID")
+    fun findByShikimoriIdWithEpisodes(shikimoriID: Int): Optional<AnimeTable>
 
 
     @Query("Select distinct a.year from AnimeTable a order by a.year desc")
     fun findDistinctByYear(): List<String>
 
     fun findByUrl(@Param("url") url: String): Optional<AnimeTable>
-
-
-    @Query("SELECT a FROM AnimeTable a LEFT JOIN FETCH a.rating where a.url = :url")
-    fun findByUrlWithRating(@Param("url") url: String): Optional<AnimeTable>
-
-    @Query("SELECT a FROM AnimeTable a LEFT JOIN FETCH a.otherTitles o WHERE a.url = :url")
-    fun findDetails(@Param("url") url: String): Optional<AnimeTable>
-
 
 }

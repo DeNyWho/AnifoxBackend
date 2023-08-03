@@ -50,6 +50,10 @@ data class AnimeTable(
     @JoinTable(schema = "anime")
     @BatchSize(size = 10)
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
+    @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JoinTable(schema = "anime")
+    @BatchSize(size = 10)
+    val translationsCountEpisodes: MutableSet<AnimeEpisodeTranslationCount> = mutableSetOf(),
     @OneToOne(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
@@ -79,13 +83,6 @@ data class AnimeTable(
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")
     val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
-//    @OneToMany(
-//        mappedBy = "anime",
-//        fetch = FetchType.LAZY,
-//        cascade = [CascadeType.ALL],
-//        orphanRemoval = true
-//    )
-//    val translation: MutableSet<AnimeTranslationTable> = mutableSetOf(),
     var status: String = "",
     @Column(columnDefinition = "TEXT")
     val description: String = "",
@@ -157,6 +154,11 @@ data class AnimeTable(
 ) {
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)
+        return this
+    }
+
+    fun addTranslationCount(translation: List<AnimeEpisodeTranslationCount>): AnimeTable {
+        translationsCountEpisodes.addAll(translation)
         return this
     }
 

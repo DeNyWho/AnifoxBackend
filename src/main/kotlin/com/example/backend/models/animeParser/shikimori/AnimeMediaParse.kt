@@ -21,6 +21,9 @@ data class AnimeMediaParse(
     @SerialName("synonyms")
     val synonyms: List<String?> = listOf(),
     @Nullable
+    @SerialName("rating")
+    val rating: String,
+    @Nullable
     @SerialName("japanese")
     val japanese: List<String?> = listOf(),
     @SerialName("videos")

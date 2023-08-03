@@ -4,6 +4,7 @@ package com.example.backend.service.anime
 import com.example.backend.jpa.anime.*
 import com.example.backend.jpa.user.UserFavoriteAnime
 import com.example.backend.models.ServiceResponse
+import com.example.backend.models.anime.AnimeBlockedType
 import com.example.backend.models.anime.AnimeBufferedImagesSup
 import com.example.backend.models.anime.AnimeImagesTypes
 import com.example.backend.models.anime.AnimeMusicType
@@ -26,9 +27,7 @@ import com.example.backend.models.animeResponse.episode.EpisodeLight
 import com.example.backend.models.animeResponse.light.AnimeLight
 import com.example.backend.models.animeResponse.light.AnimeLightWithType
 import com.example.backend.models.animeResponse.media.AnimeMediaResponse
-import com.example.backend.models.jikan.Jikan
-import com.example.backend.models.jikan.JikanData
-import com.example.backend.models.jikan.JikanThemes
+import com.example.backend.models.jikan.*
 import com.example.backend.models.users.StatusFavourite
 import com.example.backend.repository.anime.*
 import com.example.backend.repository.anime.error.AnimeErrorParserRepository
@@ -51,6 +50,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
+import org.apache.xpath.operations.Bool
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -93,6 +93,9 @@ class AnimeService : AnimeRepositoryImpl {
     lateinit var animeTranslationRepository: AnimeTranslationRepository
 
     @Autowired
+    lateinit var animeTranslationCountRepository: AnimeTranslationCount
+
+    @Autowired
     lateinit var animeEpisodeTranslationRepository: AnimeEpisodeTranslationRepository
 
     @Autowired
@@ -102,6 +105,9 @@ class AnimeService : AnimeRepositoryImpl {
     lateinit var animeRepository: AnimeRepository
 
     @Autowired
+    lateinit var animeBlockedRepository: AnimeBlockedRepository
+
+    @Autowired
     lateinit var animeMusicRepository: AnimeMusicRepository
 
     @Autowired
@@ -109,9 +115,6 @@ class AnimeService : AnimeRepositoryImpl {
 
     @Autowired
     private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
-
-    @Autowired
-    private lateinit var userRatingCountMangaRepository: UserRatingCountMangaRepository
 
     @Autowired
     private lateinit var animeRelatedRepository: AnimeRelatedRepository
@@ -131,10 +134,10 @@ class AnimeService : AnimeRepositoryImpl {
                 coerceInputValues = true
             })
         }
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.ALL
-        }
+//        install(Logging) {
+//            logger = Logger.DEFAULT
+//            level = LogLevel.ALL
+//        }
     }
 
 
@@ -747,9 +750,30 @@ class AnimeService : AnimeRepositoryImpl {
 
     }
 
-    override fun addDataToDB(translationID: String) {
-        var nextPage: String? = "1"
+    fun setBlockedAnime() {
+        val temp = mutableListOf<AnimeBlockedTable>()
+        val blockedIds = listOf(
+            6864, 4918, 52198, 37517, 1535, 34542, 22319, 7088, 10465, 8577,
+            40010, 6987, 30831, 38040, 38924, 6201, 17729, 19429, 24833, 35241,
+            37998, 34177, 34019, 39469, 36632, 32949, 40314, 34048, 16363, 11859,
+            8456, 30679, 35849, 31491, 18039, 3889, 15391, 12581, 14893, 25
+        )
 
+        blockedIds.forEach { id ->
+            temp.add(
+                AnimeBlockedTable(
+                    shikimoriID = id,
+                    type = AnimeBlockedType.ALL
+                )
+            )
+        }
+
+        animeBlockedRepository.saveAll(temp)
+    }
+
+    override fun addDataToDB(translationID: String) {
+        setBlockedAnime()
+        var nextPage: String? = "1"
         var ar = runBlocking {
             client.get {
                 headers {
@@ -811,35 +835,10 @@ class AnimeService : AnimeRepositoryImpl {
                     if (
                         !anime.materialData.title.contains("Атака Титанов") &&
                         !anime.materialData.title.contains("Атака титанов") &&
-                        anime.shikimoriId.toInt() != 226 &&
-                        anime.shikimoriId.toInt() != 17875 &&
-                        anime.shikimoriId.toInt() != 1072 &&
-                        anime.shikimoriId.toInt() != 6864 &&
-                        anime.shikimoriId.toInt() != 4918 &&
-                        anime.shikimoriId.toInt() != 52198 &&
-                        anime.shikimoriId.toInt() != 37517 &&
-                        anime.shikimoriId.toInt() != 1535 &&
-                        anime.shikimoriId.toInt() != 34542 &&
-                        anime.shikimoriId.toInt() != 22319 &&
-                        anime.shikimoriId.toInt() != 7088 &&
-                        anime.shikimoriId.toInt() != 10465 &&
-                        anime.shikimoriId.toInt() != 8577 &&
-                        anime.shikimoriId.toInt() != 40010 &&
-                        anime.shikimoriId.toInt() != 6987 &&
-                        anime.shikimoriId.toInt() != 30831 &&
-                        anime.shikimoriId.toInt() != 38040 &&
-                        anime.shikimoriId.toInt() != 38924 &&
-                        anime.shikimoriId.toInt() != 6201 &&
-                        anime.shikimoriId.toInt() != 17729 &&
-                        anime.shikimoriId.toInt() != 19429 &&
-                        anime.shikimoriId.toInt() != 24833 &&
-                        anime.shikimoriId.toInt() != 35241 &&
-                        anime.shikimoriId.toInt() != 37998 &&
-                        anime.shikimoriId.toInt() != 34177 &&
-                        anime.shikimoriId.toInt() != 34019 &&
-                        anime.shikimoriId.toInt() != 39469 &&
-                        anime.shikimoriId.toInt() != 36632
+                        !animeBlockedRepository.findById(anime.shikimoriId.toInt()).isPresent &&
+                        anime.materialData.shikimoriVotes > 90
                     ) {
+                        println(anime.shikimoriId.toInt())
                         val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())
 
                         if (!tempingAnime.isPresent) {
@@ -847,39 +846,29 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val g = mutableListOf<AnimeGenreTable>()
                             anime.materialData.genres.forEach { genre ->
-                                val genreIs = animeGenreRepository.findByGenre(genre).isPresent
-                                if (genreIs) {
-                                    val temp = animeGenreRepository.findByGenre(genre).get()
-                                    g.add(
-                                        AnimeGenreTable(id = temp.id, genre = temp.genre)
-                                    )
+                                if (genre in listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика")) {
+                                    return@forEach
+                                }
+
+                                val existingGenre = animeGenreRepository.findByGenre(genre).orElse(null)
+                                if (existingGenre != null) {
+                                    g.add(existingGenre)
                                 } else {
-                                    if (genre == "яой" || genre == "эротика" || genre == "хентай" || genre == "Яой" || genre == "Хентай" || genre == "Эротика") {
-                                        return@Loop
-                                    }
-                                    animeGenreRepository.save(
-                                        AnimeGenreTable(genre = genre)
-                                    )
-                                    g.add(
-                                        animeGenreRepository.findByGenre(genre = genre).get()
-                                    )
+                                    val newGenre = AnimeGenreTable(genre = genre)
+                                    animeGenreRepository.save(newGenre)
+                                    g.add(newGenre)
                                 }
                             }
+
                             val st = mutableListOf<AnimeStudiosTable>()
                             anime.materialData.animeStudios.forEach { studio ->
-                                val studioIs = animeStudiosRepository.findByStudio(studio).isPresent
-                                if (studioIs) {
-                                    val temp = animeStudiosRepository.findByStudio(studio).get()
-                                    st.add(
-                                        AnimeStudiosTable(id = temp.id, studio = temp.studio)
-                                    )
+                                val existingStudio = animeStudiosRepository.findByStudio(studio).orElse(null)
+                                if (existingStudio != null) {
+                                    st.add(existingStudio)
                                 } else {
-                                    animeStudiosRepository.save(
-                                        AnimeStudiosTable(studio = studio)
-                                    )
-                                    st.add(
-                                        animeStudiosRepository.findByStudio(studio = studio).get()
-                                    )
+                                    val newStudio = AnimeStudiosTable(studio = studio)
+                                    animeStudiosRepository.save(newStudio)
+                                    st.add(newStudio)
                                 }
                             }
 
@@ -952,27 +941,15 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val r = mutableListOf<AnimeRelatedTable>()
 
-                            relationIds.take(30).forEach {
-                                r.add(
-                                    if (it.anime == null) {
-                                        animeRelatedRepository.save(
-                                            AnimeRelatedTable(
-                                                type = it.relationRussian.toString(),
-                                                shikimoriId = it.manga!!.id,
-                                                typeEn = it.relation.toString()
-                                            )
-                                        )
-                                    } else {
-                                        animeRelatedRepository.save(
-                                            AnimeRelatedTable(
-                                                type = it.relationRussian.toString(),
-                                                shikimoriId = it.anime.id,
-                                                typeEn = it.relation.toString()
-                                            )
-                                        )
-                                    }
+                            val relationsToSave = relationIds.take(30).map { it ->
+                                val shikimoriId = if (it.anime != null) it.anime.id else it.manga!!.id
+                                AnimeRelatedTable(
+                                    type = it.relationRussian.toString(),
+                                    shikimoriId = shikimoriId,
+                                    typeEn = it.relation.toString()
                                 )
                             }
+                            r.addAll(animeRelatedRepository.saveAll(relationsToSave))
 
                             val similarIdsFlow = flow {
                                 delay(1000)
@@ -1043,56 +1020,76 @@ class AnimeService : AnimeRepositoryImpl {
                                     null
                                 }
                             }
+                            var imagesCallback: ((AnimeImagesTypes?, AnimeBufferedImagesSup?) -> Unit)? = null
 
-                            runBlocking {
-                                val kitsuData = kitsuAnime.await()?.data
-                                val jikanData = jikanImage.await()?.data
-                                if (kitsuData != null) {
-                                    animeImages = AnimeImagesTypes(
-                                        large = imageService.saveFileInSThird(
-                                            "images/large/$urlLinking.png",
-                                            URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
-                                            compress = true,
-                                            width = 400,
-                                            height = 640
-                                        ),
-                                        medium = imageService.saveFileInSThird(
-                                            "images/medium/$urlLinking.png",
-                                            URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
-                                            compress = true,
-                                            width = 200,
-                                            height = 440
-                                        ),
-                                        cover = if (kitsuData.attributesKitsu.coverImage.coverLarge != null)
-                                            imageService.saveFileInSThird(
-                                                "images/cover/$urlLinking.png",
-                                                URL(kitsuData.attributesKitsu.coverImage.coverLarge).readBytes(),
+                            // Функция инициализации
+                            fun initImages(callback: (AnimeImagesTypes?, AnimeBufferedImagesSup?) -> Unit) {
+
+                                // Передаем callback
+                                imagesCallback = callback
+
+                                // Запускаем корутину
+                                runBlocking {
+                                    val kitsuData = kitsuAnime.await()?.data
+                                    val jikanData = jikanImage.await()?.data
+                                    if (kitsuData != null) {
+                                        animeImages = AnimeImagesTypes(
+                                            large = imageService.saveFileInSThird(
+                                                "images/large/$urlLinking.png",
+                                                URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
                                                 compress = true,
-                                                width = 800,
-                                                height = 200
-                                            )
-                                        else null,
-                                    )
-                                    image = AnimeBufferedImagesSup(
-                                        large = ImageIO.read(URL(kitsuData.attributesKitsu.posterImage.original)),
-                                        medium = ImageIO.read(URL(kitsuData.attributesKitsu.posterImage.large)),
-                                    )
-                                } else if (jikanData != null) {
-                                    animeImages = AnimeImagesTypes(
-                                        large = imageService.saveFileInSThird(
-                                            "images/large/$urlLinking.png",
-                                            URL(jikanData.images.jikanJpg.largeImageUrl).readBytes()
-                                        ),
-                                        medium = imageService.saveFileInSThird(
-                                            "images/medium/$urlLinking.png",
-                                            URL(jikanData.images.jikanJpg.mediumImageUrl).readBytes()
+                                                width = 400,
+                                                height = 640
+                                            ),
+                                            medium = imageService.saveFileInSThird(
+                                                "images/medium/$urlLinking.png",
+                                                URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
+                                                compress = true,
+                                                width = 200,
+                                                height = 440
+                                            ),
+                                            cover = if (kitsuData.attributesKitsu.coverImage.coverLarge != null)
+                                                imageService.saveFileInSThird(
+                                                    "images/cover/$urlLinking.png",
+                                                    URL(kitsuData.attributesKitsu.coverImage.coverLarge).readBytes(),
+                                                    compress = true,
+                                                    width = 800,
+                                                    height = 200
+                                                )
+                                            else null,
                                         )
-                                    )
-                                    image = AnimeBufferedImagesSup(
-                                        large = ImageIO.read(URL(jikanData.images.jikanJpg.largeImageUrl)),
-                                        medium = ImageIO.read(URL(jikanData.images.jikanJpg.mediumImageUrl)),
-                                    )
+                                        image = AnimeBufferedImagesSup(
+                                            large = ImageIO.read(URL(kitsuData.attributesKitsu.posterImage.original)),
+                                            medium = ImageIO.read(URL(kitsuData.attributesKitsu.posterImage.large)),
+                                        )
+                                    } else if (jikanData != null) {
+                                        animeImages = AnimeImagesTypes(
+                                            large = imageService.saveFileInSThird(
+                                                "images/large/$urlLinking.png",
+                                                URL(jikanData.images.jikanJpg.largeImageUrl).readBytes()
+                                            ),
+                                            medium = imageService.saveFileInSThird(
+                                                "images/medium/$urlLinking.png",
+                                                URL(jikanData.images.jikanJpg.mediumImageUrl).readBytes()
+                                            )
+                                        )
+                                        image = AnimeBufferedImagesSup(
+                                            large = ImageIO.read(URL(jikanData.images.jikanJpg.largeImageUrl)),
+                                            medium = ImageIO.read(URL(jikanData.images.jikanJpg.mediumImageUrl)),
+                                        )
+                                    }
+
+                                        // Вызываем callback с результатами
+                                    imagesCallback?.invoke(animeImages, image)
+
                                 }
+
+                            }
+                            var aI: AnimeImagesTypes? = null
+                            var aB: AnimeBufferedImagesSup? = null
+                            initImages { animeImages, image ->
+                                aI = animeImages
+                                aB = image
                             }
 
                             val episodesReady = mutableListOf<AnimeEpisodeTable>()
@@ -1101,40 +1098,35 @@ class AnimeService : AnimeRepositoryImpl {
                                 "anime-serial" -> {
                                     anime.seasons.forEach { kodikSeason ->
                                         if (kodikSeason.key != "0") {
+                                            val jikanEpisodes = mutableListOf<JikanEpisode>()
                                             val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
-                                            var responseKitsuEpisodes = runBlocking {
-                                                delay(1000)
-                                                client.get {
-                                                    url {
-                                                        protocol = URLProtocol.HTTPS
-                                                        host = "kitsu.io"
-                                                        encodedPath = "/api/edge/anime/${animeIds.kitsu}/episodes"
-                                                    }
-                                                    header("Accept", "application/vnd.api+json")
-                                                    parameter("page%5Boffset%5D", 0)
-                                                    parameter("page%5Blimit%5D", 20)
-                                                    parameter("sort", "number")
-                                                }.body<KitsuDefaults<EpisodesKitsu>>()
-                                            }
 
-                                            while (responseKitsuEpisodes.data != null) {
-                                                kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
-                                                responseKitsuEpisodes =
-                                                    if (responseKitsuEpisodes.links.next != null) runBlocking {
-                                                        delay(1000)
-                                                        client.get {
-                                                            url {
-                                                                protocol = URLProtocol.HTTPS
-                                                                host = "kitsu.io"
-                                                                encodedPath =
-                                                                    responseKitsuEpisodes.links.next?.replace(
-                                                                        "https://kitsu.io",
-                                                                        ""
-                                                                    ).toString()
-                                                            }
-                                                            header("Accept", "application/vnd.api+json")
-                                                        }.body<KitsuDefaults<EpisodesKitsu>>()
-                                                    } else KitsuDefaults()
+                                            // Run kitsu.io and jikan.moe API calls in parallel using async and await
+                                            runBlocking {
+                                                val deferredKitsu = async {
+                                                    val kitsuAsyncTask = async { fetchKitsuEpisodes("api/edge/anime/${animeIds.kitsu}/episodes") }
+
+                                                    var responseKitsuEpisodes = kitsuAsyncTask.await()
+                                                    while (responseKitsuEpisodes.data != null) {
+                                                        kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
+                                                        val kitsuUrl = responseKitsuEpisodes.links.next?.replace("https://kitsu.io", "").toString()
+                                                        responseKitsuEpisodes = if(kitsuUrl != "null") fetchKitsuEpisodes(kitsuUrl) else KitsuDefaults()
+                                                    }
+                                                }
+                                                val deferredJikan = async {
+                                                    val jikanAsyncTask = async { fetchJikanEpisodes(1, anime.shikimoriId) }
+
+                                                    var responseJikanEpisodes = jikanAsyncTask.await()
+                                                    var page = 1
+                                                    jikanEpisodes.addAll(responseJikanEpisodes.data)
+                                                    while (responseJikanEpisodes.data.isNotEmpty()) {
+                                                        page++
+                                                        responseJikanEpisodes = fetchJikanEpisodes(page, anime.shikimoriId)
+                                                        jikanEpisodes.addAll(responseJikanEpisodes.data)
+                                                    }
+                                                }
+                                                deferredJikan.await()
+                                                deferredKitsu.await()
                                             }
 
                                             episodesReady.addAll(
@@ -1146,6 +1138,7 @@ class AnimeService : AnimeRepositoryImpl {
                                                         urlLinking,
                                                         kodikSeason.value.episodes,
                                                         kitsuEpisodes,
+                                                        jikanEpisodes,
                                                         animeImages!!.medium
                                                     )
                                                 }
@@ -1163,7 +1156,8 @@ class AnimeService : AnimeRepositoryImpl {
                                             null,
                                             null,
                                             null,
-                                            animeImages!!.medium
+                                            animeImages!!.medium,
+                                            null
                                         )
                                         episode.addTranslation(
                                             animeEpisodeTranslationRepository.save(
@@ -1200,46 +1194,47 @@ class AnimeService : AnimeRepositoryImpl {
 
                             val music: MutableList<AnimeMusicTable> = mutableListOf()
 
-                            runBlocking {
+                            CoroutineScope(Dispatchers.Default).launch {
                                 val jikanData = jikanThemesDefered.await()?.data
+                                val musicToSave = mutableListOf<AnimeMusicTable>()
 
                                 if (jikanData != null) {
                                     jikanData.endings.forEach { ending ->
                                         if (ending != null) {
                                             val endingNormalize = jikanThemesNormalize(ending)
-                                            music.add(
-                                                animeMusicRepository.save(
-                                                    AnimeMusicTable(
-                                                        url = "https://music.youtube.com/search?q=$endingNormalize",
-                                                        name = endingNormalize,
-                                                        episodes = mergeEpisodes(ending),
-                                                        type = AnimeMusicType.Ending,
-                                                        hosting = "YoutubeMusic"
-                                                    )
+                                            musicToSave.add(
+                                                AnimeMusicTable(
+                                                    url = "https://music.youtube.com/search?q=$endingNormalize",
+                                                    name = endingNormalize,
+                                                    episodes = mergeEpisodes(ending),
+                                                    type = AnimeMusicType.Ending,
+                                                    hosting = "YoutubeMusic"
                                                 )
                                             )
                                         }
                                     }
+
                                     jikanData.openings.forEach { opening ->
                                         if (opening != null) {
                                             val openingNormalize = jikanThemesNormalize(opening)
-                                            music.add(
-                                                animeMusicRepository.save(
-                                                    AnimeMusicTable(
-                                                        url = "https://music.youtube.com/search?q=$openingNormalize",
-                                                        name = openingNormalize,
-                                                        episodes = mergeEpisodes(opening),
-                                                        type = AnimeMusicType.Opening,
-                                                        hosting = "YoutubeMusic"
-                                                    )
+                                            musicToSave.add(
+                                                AnimeMusicTable(
+                                                    url = "https://music.youtube.com/search?q=$openingNormalize",
+                                                    name = openingNormalize,
+                                                    episodes = mergeEpisodes(opening),
+                                                    type = AnimeMusicType.Opening,
+                                                    hosting = "YoutubeMusic"
                                                 )
                                             )
                                         }
                                     }
+
+                                    animeMusicRepository.saveAll(musicToSave)
                                 }
                             }
 
                             val screenshotsFlow = flow {
+                                delay(1500)
                                 val screenshots = client.get {
                                     headers {
                                         contentType(ContentType.Application.Json)
@@ -1256,16 +1251,12 @@ class AnimeService : AnimeRepositoryImpl {
                             }.flowOn(Dispatchers.IO)
 
                             val screenShots = mutableListOf<String>()
+                            val similarIds = mutableListOf<Int>()
 
-                            CoroutineScope(Dispatchers.Default).launch {
+                            runBlocking {
                                 screenshotsFlow.collect {
                                     screenShots.addAll(it)
                                 }
-                            }
-
-                            val similarIds = mutableListOf<Int>()
-
-                            CoroutineScope(Dispatchers.Default).launch {
                                 similarIdsFlow.collect {
                                     similarIds.addAll(it)
                                 }
@@ -1278,12 +1269,28 @@ class AnimeService : AnimeRepositoryImpl {
 
                             otherTitles.add(if (f != null && checkEnglishLetter(zx)) f else zx)
 
-                            val translations = episodesReady.flatMap { episode -> episode.translations.map {
-                                it.translation
-                            } }
+                            val translations = episodesReady
+                                .flatMap { episode ->
+                                    episode.translations
+                                        .map {
+                                            it.translation
+                                        }
+                                }
                                 .distinct()
                                 .toMutableList()
 
+                            val translationCounts = episodesReady
+                                .flatMap { episode -> episode.translations }
+                                .groupBy { translation -> translation.translation.id }
+                                .mapValues { (_, translations) -> translations.size }
+
+                            val translationsCountReady = translationCounts.map { (translationId, count) ->
+                                AnimeEpisodeTranslationCount(
+                                    translation = animeTranslationRepository.findById(translationId).get(),
+                                    countEpisodes = count
+                                )
+                            }.let { animeTranslationCountRepository.saveAll(it) }
+                                .toList()
 
                             val a = AnimeTable(
                                 title = if (f != null && checkEnglishLetter(zx)) f else zx,
@@ -1322,20 +1329,24 @@ class AnimeService : AnimeRepositoryImpl {
                                 airedAt = if (mediaTemp.airedAt != null) LocalDate.parse(mediaTemp.airedAt) else anime.materialData.airedAt,
                                 releasedAt = if (mediaTemp.releasedAt != null) LocalDate.parse(mediaTemp.releasedAt) else anime.materialData.releasedAt,
                                 episodesCount = mediaTemp.episodes,
-                                episodesAires = if (mediaTemp.status == "released") mediaTemp.episodes else mediaTemp.episodesAired,
+                                episodesAires = if (mediaTemp.status == "released") mediaTemp.episodes else episodesReady.size,
                                 type = anime.materialData.animeType,
                                 updatedAt = anime.updatedAt,
-                                minimalAge = anime.materialData.minimalAge,
+                                minimalAge = when (mediaTemp.rating) {
+                                    "g" -> 0
+                                    "pg" -> 12
+                                    "pg_13" -> 16
+                                    "r" -> 18
+                                    "r_plus" -> 18
+                                    else -> 0
+                                },
                                 screenshots = screenShots,
-                                ratingMpa = when (anime.materialData.ratingMpa) {
-                                    "PG" -> "PG"
-                                    "Rx" -> "R+"
-                                    "R+" -> "R+"
-                                    "PG-13" -> "PG-13"
+                                ratingMpa = when (mediaTemp.rating) {
+                                    "g" -> "G"
                                     "pg" -> "PG"
-                                    "R" -> "R"
-                                    "pg13" -> "PG-13"
-                                    "G" -> "G"
+                                    "pg_13" -> "PG-13"
+                                    "r" -> "R"
+                                    "r_plus" -> "R+"
                                     else -> ""
                                 },
                                 shikimoriId = anime.shikimoriId.toInt(),
@@ -1349,6 +1360,7 @@ class AnimeService : AnimeRepositoryImpl {
                                 },
                                 accentColor = getMostCommonColor(image?.large!!)
                             )
+                            a.addTranslationCount(translationsCountReady)
                             a.addRelated(r)
                             a.addTranslation(translations)
                             a.addEpisodesAll(episodesReady)
@@ -1366,10 +1378,61 @@ class AnimeService : AnimeRepositoryImpl {
                             val executionTime = endTime - startTime
                             println("Время выполнения запроса: ${executionTime} мс")
                         } else {
+                            val temping =
+                                if (tempingAnime.get().status == "ongoing") animeRepository.findByShikimoriIdWithEpisodes(
+                                    anime.shikimoriId.toInt()
+                                ).get() else tempingAnime.get()
+                            val urlLinking = temping.url
+
+                            if(temping.status == "ongoing") {
+                                val episodesReady = mutableListOf<AnimeEpisodeTable>()
+
+                                when(anime.type) {
+                                    "anime-serial" -> {
+                                        anime.seasons.forEach { kodikSeason ->
+                                            if (kodikSeason.key != "0") {
+                                                val a = kodikSeason.value.episodes
+                                                val uniqueEpisodes = mutableMapOf<String, Episode>()
+
+                                                kodikSeason.value.episodes.filterNot { (key, _) ->
+                                                    temping.episodes.any { it.number == key.toInt() }
+                                                }.forEach { (key, value) ->
+                                                    uniqueEpisodes[key] = value
+                                                }
+
+                                                uniqueEpisodes.forEach { (key, episode) ->
+                                                    episodesReady.add(
+                                                        runBlocking {
+                                                            processEpisode(
+                                                                "anime-serial",
+                                                                anime.shikimoriId,
+                                                                urlLinking,
+                                                                key.toInt(),
+                                                                null,
+                                                                null,
+                                                                null,
+                                                                temping.images.medium,
+                                                                null
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                                println("ZDECYA TEST BUL = $episodesReady")
+                                            }
+                                        }
+                                    }
+                                }
+
+//                                temping.addEpisodesAll(episodesReady)
+                            }
 //                            val a = animeRepository.findByShikimoriIdWithTranslation(anime.shikimoriId.toInt()).get()
                         }
                     }
                 } catch (e: Exception) {
+                    e.stackTrace.forEach {
+                        println(it)
+                    }
+                    println("WTFASZXCSAD = ${e.message}")
                     animeErrorParserRepository.save(
                         AnimeErrorParserTable(
                             message = e.message,
@@ -1391,6 +1454,30 @@ class AnimeService : AnimeRepositoryImpl {
             }
             nextPage = ar.nextPage
         }
+    }
+
+    suspend fun fetchKitsuEpisodes(url: String): KitsuDefaults<EpisodesKitsu> {
+        delay(1000)
+        return client.get {
+            url {
+                protocol = URLProtocol.HTTPS
+                host = "kitsu.io"
+                encodedPath = url
+            }
+            header("Accept", "application/vnd.api+json")
+        }.body<KitsuDefaults<EpisodesKitsu>>()
+    }
+
+    suspend fun fetchJikanEpisodes(page: Int, shikimoriId: String): JikanDefaults<JikanEpisode> {
+        delay(1000)
+        return client.get {
+            url {
+                protocol = URLProtocol.HTTPS
+                host = "api.jikan.moe"
+                encodedPath = "/v4/anime/${shikimoriId}/episodes"
+            }
+            parameter("page", page)
+        }.body<JikanDefaults<JikanEpisode>>()
     }
 
 
@@ -1438,7 +1525,16 @@ class AnimeService : AnimeRepositoryImpl {
 
 
     // Главная функция для обработки всех эпизодов
-    suspend fun processEpisodes(type: String, shikimoriId: String, playerLink: String, urlLinking: String, kodikEpisodes: Map<String, Episode>, kitsuEpisodes: List<EpisodesKitsu>, imageDefault: String): List<AnimeEpisodeTable> {
+    suspend fun processEpisodes(
+        type: String,
+        shikimoriId: String,
+        playerLink: String,
+        urlLinking: String,
+        kodikEpisodes: Map<String, Episode>,
+        kitsuEpisodes: List<EpisodesKitsu>,
+        jikanEpisodes: List<JikanEpisode>,
+        imageDefault: String
+    ): List<AnimeEpisodeTable> {
         val episodeReady = mutableListOf<AnimeEpisodeTable>()
 
         val kitsuEpisodesMapped = mutableMapOf<String, EpisodesKitsu?>()
@@ -1452,7 +1548,7 @@ class AnimeService : AnimeRepositoryImpl {
                 val number = episode.attributes?.number!!
                 val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
                 kitsuEpisodesMapped[number.toString()] = kitsuEpisode
-                translatedTitleMapped[number.toString()] = kitsuEpisode?.attributes?.titles?.enToUs ?: kitsuEpisode?.attributes?.titles?.en ?: ""
+                translatedTitleMapped[number.toString()] = jikanEpisodes[number-1].title
                 translatedDescriptionMapped[number.toString()] = kitsuEpisode?.attributes?.description ?: ""
             }
         } else {
@@ -1514,7 +1610,8 @@ class AnimeService : AnimeRepositoryImpl {
                         null,
                         null,
                         null,
-                        imageDefault
+                        imageDefault,
+                        jikanEpisodes[episodeKey.toInt()]
                     )
                 } else {
                     processEpisode(
@@ -1525,7 +1622,8 @@ class AnimeService : AnimeRepositoryImpl {
                         kitsuEpisodesMapped[episodeKey],
                         translatedTitleMapped[episodeKey],
                         translatedDescriptionMapped[episodeKey],
-                        imageDefault
+                        imageDefault,
+                        jikanEpisodes[episodeKey.toInt() - 1]
                     )
                 }
             }
@@ -1533,6 +1631,8 @@ class AnimeService : AnimeRepositoryImpl {
 
         val processedEpisodes = jobs.awaitAll()
         val sortedEpisodes = processedEpisodes.sortedBy { it.number }
+
+        // check translations
         val animeVariations = runBlocking {
             client.get {
                 headers {
@@ -1559,22 +1659,25 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse<AnimeParser>>()
         }
 
+        val episodeTranslationsToSave = mutableListOf<EpisodeTranslation>()
+
         animeVariations.result.forEach { anime ->
             sortedEpisodes.forEach { episode ->
                 if (episode.number <= anime.lastEpisode) {
-                    episode.addTranslation(
-                        animeEpisodeTranslationRepository.save(
-                            EpisodeTranslation(
-                                translation = animeTranslationRepository.findById(if (anime.translation.id != 1002) anime.translation.id else 643)
-                                    .get(),
-                                link = "${anime.link}?episode=${episode.number}",
-                            )
-                        )
+                    val translationId = if (anime.translation.id != 1002) anime.translation.id else 643
+                    val episodeTranslation = EpisodeTranslation(
+                        translation = animeTranslationRepository.findById(translationId).get(),
+                        link = "${anime.link}?episode=${episode.number}"
                     )
+                    episode.addTranslation(episodeTranslation)
+                    episodeTranslationsToSave.add(episodeTranslation)
                 }
             }
         }
-        episodeReady.addAll(processedEpisodes)
+
+        animeEpisodeTranslationRepository.saveAll(episodeTranslationsToSave)
+
+        episodeReady.addAll(sortedEpisodes)
 
         return episodeReady
     }
@@ -1587,7 +1690,8 @@ class AnimeService : AnimeRepositoryImpl {
         kitsuEpisode: EpisodesKitsu?,
         titleRu: String?,
         descriptionRu: String?,
-        imageDefault: String
+        imageDefault: String,
+        jikanEpisode: JikanEpisode?
     ): AnimeEpisodeTable {
         println("EPISODE EPISODE EPISODE")
         return if (kitsuEpisode != null) {
@@ -1622,23 +1726,33 @@ class AnimeService : AnimeRepositoryImpl {
                 else -> episode
             }
 
+            val airedDate = jikanEpisode?.aired ?: kitsuEpisode.attributes?.airDate ?: "${LocalDate.now()}"
+
             return AnimeEpisodeTable(
                 title = if(titleRu != null && titleRu.length > 3) titleRu else "$episode",
                 titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
                 description = descriptionRu,
                 descriptionEn = kitsuEpisode.attributes?.description ?: "",
                 number = kitsuNumber,
-                image = if(imageEpisode.length > 5) imageEpisode else imageDefault
+                image = if(imageEpisode.length > 5) imageEpisode else imageDefault,
+                filler = jikanEpisode?.filler ?: false,
+                recap = jikanEpisode?.recap ?: false,
+                aired = LocalDate.parse(if(airedDate.length > 10) airedDate.substring(0, 10) else airedDate, DateTimeFormatter.ISO_DATE)
             )
 
         } else {
+            val airedDate = jikanEpisode?.aired ?: "${LocalDate.now()}"
+
             AnimeEpisodeTable(
                 title = episode.toString(),
                 titleEn = episode.toString(),
                 description = null,
                 descriptionEn = null,
                 number = episode,
-                image = imageDefault
+                image = imageDefault,
+                filler = jikanEpisode?.filler ?: false,
+                recap = jikanEpisode?.recap ?: false,
+                aired = LocalDate.parse(if(airedDate.length > 10) airedDate.substring(0, 10) else airedDate, DateTimeFormatter.ISO_DATE)
             )
         }
     }
