@@ -37,6 +37,9 @@ dependencies {
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("org.keycloak:keycloak-core:20.0.0")
     implementation("net.coobird:thumbnailator:0.4.20")
+    implementation("org.hibernate:hibernate-search-orm:5.11.12.Final")
+    implementation("commons-codec:commons-codec:1.16.0")
+
     with(Dependencies.Spring.KeyCloak){
         implementation(keycloakAdminClient)
         implementation(keycloakSpring)

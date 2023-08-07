@@ -72,14 +72,14 @@ data class AnimeTable(
     )
     val music: MutableSet<AnimeMusicTable> = mutableSetOf(),
     val year: Int = 0,
-    val nextEpisode: LocalDateTime? = null,
+    var nextEpisode: LocalDateTime? = null,
     val episodesCount: Int = 0,
-    val episodesAires: Int = 0,
+    var episodesAires: Int = 0,
     val shikimoriId: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val airedAt: LocalDate = LocalDate.now(),
     val releasedAt: LocalDate = LocalDate.now(),
-    val updatedAt: LocalDateTime = LocalDateTime.now(),
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")
     val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
@@ -154,11 +154,25 @@ data class AnimeTable(
 ) {
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)
+        translation.forEach { newTranslation ->
+            val existingTranslation = translations.find { it.id == newTranslation.id }
+            if (existingTranslation == null) {
+                translations.add(newTranslation)
+            }
+        }
         return this
     }
 
     fun addTranslationCount(translation: List<AnimeEpisodeTranslationCount>): AnimeTable {
-        translationsCountEpisodes.addAll(translation)
+        translation.forEach { newTranslation ->
+            val existingTranslation = translationsCountEpisodes.find { it.translation == newTranslation.translation }
+            if (existingTranslation == null) {
+                translationsCountEpisodes.add(newTranslation)
+            }
+            else {
+                existingTranslation.countEpisodes = newTranslation.countEpisodes
+            }
+        }
         return this
     }
 
@@ -173,7 +187,23 @@ data class AnimeTable(
     }
 
     fun addEpisodesAll(episodesAll: List<AnimeEpisodeTable>) : AnimeTable {
-        episodes.addAll(episodesAll)
+        episodesAll.forEach { newEpisode ->
+            val existingEpisode = episodes.find { it.number == newEpisode.number }
+            if (existingEpisode == null) {
+                episodes.add(newEpisode)
+            }
+            else {
+                existingEpisode.translations = newEpisode.translations
+                existingEpisode.title = newEpisode.title
+                existingEpisode.titleEn = newEpisode.titleEn
+                existingEpisode.description = newEpisode.description
+                existingEpisode.descriptionEn = newEpisode.descriptionEn
+                existingEpisode.image = newEpisode.image
+                existingEpisode.aired = newEpisode.aired
+                existingEpisode.filler = newEpisode.filler
+                existingEpisode.recap = newEpisode.recap
+            }
+        }
         return this
     }
     fun addAllAnimeGenre(genre: List<AnimeGenreTable>): AnimeTable {

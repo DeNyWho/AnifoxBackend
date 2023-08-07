@@ -2,6 +2,7 @@ package com.example.backend.controller.anime
 
 import com.example.backend.jpa.anime.*
 import com.example.backend.models.ServiceResponse
+import com.example.backend.models.anime.AnimeTranslationCount
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
 import com.example.backend.models.animeResponse.episode.EpisodeLight
@@ -42,7 +43,7 @@ class AnimeController {
         @Parameter(name = "genres", description = "Require genres IDS", required = false)
         genres: List<String>?,
         @Schema(name = "status", required = false, description = "Must be one of: released | ongoing", nullable = true) status: String?,
-        @Schema(name = "order", required = false, description = "Must be one of: random | popular | views", nullable = true) order: String?,
+        @Schema(name = "order", required = false, description = "Must be one of: random | popular | views | shikimoriRating | dateASC | dateDESC", nullable = true) order: String?,
         @Schema(name = "searchQuery", required = false, nullable = true) searchQuery: String?,
         @Schema(name = "season", required = false, nullable = true, description = "Must be one of: Winter | Spring | Summer | Fall") season: String?,
         @Schema(name = "ratingMpa", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") ratingMpa: String?,
@@ -75,6 +76,14 @@ class AnimeController {
         } catch (e: ChangeSetPersister.NotFoundException) {
             ServiceResponse(status = HttpStatus.NOT_FOUND, message = e.message!!)
         }
+    }
+
+    @GetMapping("{url}/translations/count")
+    @Operation(summary = "anime translations count")
+    fun getAnimeTranslationsCount(
+        @PathVariable url: String
+    ): List<AnimeTranslationCount> {
+        return animeService.getAnimeTranslationsCount(url)
     }
 
     @GetMapping("{url}/related")

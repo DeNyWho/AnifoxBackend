@@ -22,4 +22,5 @@ interface UserRepositoryImpl {
     fun addToRecentlyAnime(token: String, url: String, recently: RecentlyRequest, response: HttpServletResponse)
     fun getRecentlyAnimeList(token: String, pageNum: Int, pageSize: Int): List<RecentlyAnimeLight>
 
+    fun getRecentlyAnimeByUrl(token: String, pageNum: Int, pageSize: Int, url: String): RecentlyAnimeLight
 }

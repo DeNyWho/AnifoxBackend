@@ -45,4 +45,6 @@ interface AnimeRepositoryImpl {
     fun getAnimeEpisodesWithPaging(url: String, pageNumber: Int, pageSize: Int, sort: String?): List<EpisodeLight>
     fun getAnimeEpisodeByNumberAndAnime(url: String, number: Int): AnimeEpisodeTable
     fun addTranslationsToDB(transltionsIDs: List<Int>)
+    fun getAnimeTranslationsCount(url: String): Any
+    fun updateEpisodes(translationID: String)
 }

@@ -198,6 +198,17 @@ class UserService : UserRepositoryImpl {
         return recentlyTableToRecentlyAnimeLight(userRecentlyRepository.findByUser(user))
     }
 
+
+    override fun getRecentlyAnimeByUrl(token: String, pageNum: Int, pageSize: Int, url: String): RecentlyAnimeLight {
+        val anime = checkAnime(url)
+        val user = checkUser(token)
+        val recently = userRecentlyRepository.findByUserAndAnime(user, anime)
+        if(recently.isPresent)
+            return recentlyTableToRecentlyAnimeLightSingle(recently.get())
+
+        throw NotFoundException("Recently not found")
+    }
+
     override fun whoAmi(token: String): WhoAmi {
         val user = checkUser(token)
 
@@ -398,6 +409,16 @@ class UserService : UserRepositoryImpl {
         }
 
         return recentlyReady
+    }
+
+    fun recentlyTableToRecentlyAnimeLightSingle(recently: UserRecentlyAnime): RecentlyAnimeLight {
+        return RecentlyAnimeLight(
+            anime = animeTableToAnimeLight(recently.anime),
+            date = recently.date,
+            timingInSeconds = recently.timingInSeconds,
+            episode = episodeToEpisodeLight(listOf(recently.episode))[0],
+            translationId = recently.selectedTranslation.translation.id
+        )
     }
 
 }

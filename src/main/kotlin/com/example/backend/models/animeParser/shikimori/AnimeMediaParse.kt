@@ -39,5 +39,7 @@ data class AnimeMediaParse(
     @SerialName("released_on")
     val releasedAt: String? = null,
     @SerialName("next_episode_at")
-    val nextEpisodeAt: String? = null
+    val nextEpisodeAt: String? = null,
+    @SerialName("rates_statuses_stats")
+    val usersRatesStats: List<AnimeFavoriteListShikimori> = listOf()
 )

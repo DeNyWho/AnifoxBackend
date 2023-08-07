@@ -13,36 +13,40 @@ data class AnimeEpisodeTable(
     val id: String = UUID.randomUUID().toString(),
 
     @Column(nullable = true, columnDefinition = "TEXT")
-    val title: String? = "",
+    var title: String? = "",
 
     @Column(nullable = true, columnDefinition = "TEXT")
-    val titleEn: String? = "",
+    var titleEn: String? = "",
 
     @Column(nullable = true, columnDefinition = "TEXT")
-    val descriptionEn: String? = "",
+    var descriptionEn: String? = "",
 
     @Column(nullable = true, columnDefinition = "TEXT")
-    val description: String? = "",
+    var description: String? = "",
 
     @Column(nullable = false)
     val number: Int = 0,
 
     @Column(nullable = true)
-    val image: String? = "",
+    var image: String? = "",
 
-    val aired: LocalDate = LocalDate.now(),
+    @Column(nullable = true)
+    var aired: LocalDate? = LocalDate.now(),
 
-    val filler: Boolean = false,
+    var filler: Boolean = false,
 
-    val recap: Boolean = false,
+    var recap: Boolean = false,
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(schema = "anime")
     @BatchSize(size = 20)
-    val translations: MutableSet<EpisodeTranslation> = mutableSetOf()
+    var translations: MutableSet<EpisodeTranslation> = mutableSetOf()
 ) {
     fun addTranslation(translation: EpisodeTranslation): AnimeEpisodeTable {
-        translations.add(translation)
+        val existingTranslation = translations.find { translation.translation == it.translation }
+        if(existingTranslation == null) {
+            translations.add(translation)
+        }
         return this
     }
 }

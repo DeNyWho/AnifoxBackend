@@ -14,5 +14,5 @@ data class AnimeEpisodeTranslationCount(
     @JoinColumn(name = "translation_id", referencedColumnName = "id")
     val translation: AnimeTranslationTable = AnimeTranslationTable(),
 
-    val countEpisodes: Int = 0
+    var countEpisodes: Int = 0
 )
