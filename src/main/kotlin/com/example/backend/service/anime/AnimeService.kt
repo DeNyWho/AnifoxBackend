@@ -65,6 +65,7 @@ import java.util.*
 import javax.imageio.ImageIO
 import javax.persistence.*
 import javax.persistence.criteria.*
+import org.springframework.transaction.annotation.Transactional
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 
@@ -400,7 +401,6 @@ class AnimeService : AnimeRepositoryImpl {
             throw NotFoundException("Anime with url = $url not found")
         } else {
             val relatedAnimeList: List<AnimeLightWithType> = anime[0].related.mapNotNull { related ->
-                println("WAFL ANIME = $related")
                 val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
                 val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
                 relatedCriteriaQuery.select(relatedRoot)
@@ -776,7 +776,6 @@ class AnimeService : AnimeRepositoryImpl {
                 checkKodikTranslation(t.id, t.title, "voice")
             }
         }
-
     }
 
     fun setBlockedAnime() {
@@ -785,7 +784,9 @@ class AnimeService : AnimeRepositoryImpl {
             6864, 4918, 52198, 37517, 1535, 34542, 22319, 7088, 10465, 8577,
             40010, 6987, 30831, 38040, 38924, 6201, 17729, 19429, 24833, 35241,
             37998, 34177, 34019, 39469, 36632, 32949, 40314, 34048, 16363, 11859,
-            8456, 30679, 35849, 31491, 18039, 3889, 15391, 12581, 14893, 25
+            8456, 30679, 35849, 31491, 18039, 3889, 15391, 12581, 14893, 25, 40010,
+            6791, 9624, 9515, 6392, 36560, 23423, 21679, 10582, 11209, 9744, 35000,
+            9201
         )
 
         blockedIds.forEach { id ->
@@ -800,8 +801,36 @@ class AnimeService : AnimeRepositoryImpl {
         animeBlockedRepository.saveAll(temp)
     }
 
+    @Transactional
+    fun checkBlockedAnime() {
+        animeBlockedRepository.findAll().forEach { blocked ->
+            animeRepository.findByShikimoriId(blocked.shikimoriID).let { anime ->
+                anime.get().apply {
+                    related.clear()
+                    episodes.clear()
+                    translationsCountEpisodes.clear()
+                    favorites.clear()
+                    rating.clear()
+                    music.clear()
+                    translations.clear()
+                    genres.clear()
+                    media.clear()
+                    studios.clear()
+                    titleEn.clear()
+                    titleJapan.clear()
+                    synonyms.clear()
+                    otherTitles.clear()
+                    similarAnime.clear()
+                    screenshots.clear()
+                    ids = AnimeIds()
+                    images = AnimeImages()
+                }
+                animeRepository.delete(anime.get())
+            }
+        }
+    }
+
     override fun addDataToDB(translationID: String) {
-        setBlockedAnime()
         var nextPage: String? = "1"
         var ar = runBlocking {
             client.get {
@@ -829,12 +858,14 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse<AnimeParser>>()
         }
 
+        println("WTF?!@#")
+
         while (nextPage != null) {
             ar.result.distinctBy { it.shikimoriId }.forEach Loop@ { animeTemp ->
                 try {
-                    val anime = checkKodikSingle(animeTemp.shikimoriId, translationID)
+                    val anime = checkKodikSingle(35000.toString(), translationID)
 
-                    val shikimori = checkShikimori(animeTemp.shikimoriId)
+                    val shikimori = checkShikimori(35000.toString())
 
                     var userRatesStats = 0
 
@@ -842,15 +873,11 @@ class AnimeService : AnimeRepositoryImpl {
                         userRatesStats += it.value
                     }
 
-                    println(anime.shikimoriId)
+                    println("WHAT?!@# ${!animeBlockedRepository.findById(35000).isPresent}")
 
                     if (
                         !anime.materialData.title.contains("Атака Титанов") &&
-                        !anime.materialData.title.contains("Атака титанов") &&
-                        !animeBlockedRepository.findById(anime.shikimoriId.toInt()).isPresent &&
-                        anime.materialData.shikimoriVotes > 90 &&
-                        userRatesStats > 1000 &&
-                        shikimori != null
+                        !anime.materialData.title.contains("Атака титанов") && !animeBlockedRepository.findById(35000).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null
                     ) {
                         println(anime.shikimoriId.toInt())
                         val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())
@@ -1593,11 +1620,9 @@ class AnimeService : AnimeRepositoryImpl {
         val tempTranslatedTitle = mutableListOf<TextMicRequest>()
         val tempTranslatedDescription = mutableListOf<TextMicRequest>()
 
-        println("ASD@#WQE = $jikanEpisodes")
         if(jikanEpisodes.size >= kodikEpisodes.size) {
             jikanEpisodes.map { episode ->
                 val number = episode.id
-                println("ZXCSAD = ${number}")
                 val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
                 kitsuEpisodesMapped[number.toString()] = kitsuEpisode
                 translatedTitleMapped[number.toString()] = jikanEpisodes[number-1].title
@@ -1605,26 +1630,26 @@ class AnimeService : AnimeRepositoryImpl {
             }
         } else {
             kodikEpisodes.map { (episodeKey, episode) ->
-                val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
-                kitsuEpisodesMapped[episodeKey] = kitsuEpisode
-                println("ASD = ${episodeKey}")
-                translatedTitleMapped[episodeKey] = when(episodeKey) {
-                    "0" -> {
-                        println("ZXC A = ${episodeKey}")
-                        if(kodikEpisodes["0"] != null && jikanEpisodes[episodeKey.toInt()].id != 0)
-                            episodeKey
-                        else jikanEpisodes[episodeKey.toInt()].title
-                    }
-                    "1" -> {
-                        jikanEpisodes[episodeKey.toInt() - 1].title
-                    }
-                    else -> {
-                        println("ZXC C = ${episodeKey}")
-                        jikanEpisodes[episodeKey.toInt() - 1].title
+                if(episodeKey.toInt() <= kitsuEpisodes.size) {
+                    val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
+                    kitsuEpisodesMapped[episodeKey] = kitsuEpisode
+                    translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
+                }
+                if (episodeKey.toInt() <= jikanEpisodes.size) {
+                    translatedTitleMapped[episodeKey] = when (episodeKey) {
+                        "0" -> {
+                            if (kodikEpisodes["0"] != null && jikanEpisodes[episodeKey.toInt()].id != 0)
+                                episodeKey
+                            else jikanEpisodes[episodeKey.toInt()].title
+                        }
+                        "1" -> {
+                            jikanEpisodes[episodeKey.toInt() - 1].title
+                        }
+                        else -> {
+                            jikanEpisodes[episodeKey.toInt() - 1].title
+                        }
                     }
                 }
-                println("ZXCZXDSAD = $translatedTitleMapped")
-                translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
             }
         }
 
@@ -1729,7 +1754,7 @@ class AnimeService : AnimeRepositoryImpl {
                     "anime_genres",
                     "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
                 )
-                parameter("translation_id", "610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002")
+                parameter("translation_id", "610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002, 1978, 1291, 1272, 1946")
             }.body<AnimeResponse<AnimeParser>>()
         }
 
@@ -1738,7 +1763,12 @@ class AnimeService : AnimeRepositoryImpl {
         animeVariations.result.forEach { anime ->
             episodes.forEach { episode ->
                 if (episode.number <= anime.lastEpisode || anime.lastEpisode == 0) {
-                    val translationId = if (anime.translation.id != 1002) anime.translation.id else 643
+                    val translationId = when(anime.translation.id) {
+                        1002 -> {
+                            643
+                        }
+                        else -> anime.translation.id
+                    }
                     val episodeTranslation = EpisodeTranslation(
                         translation = animeTranslationRepository.findById(translationId).get(),
                         link = if(type == "anime-serial") "${anime.link}?episode=${episode.number}" else anime.link
@@ -1955,34 +1985,28 @@ class AnimeService : AnimeRepositoryImpl {
                     animeTranslationRepository.save(
                         AnimeTranslationTable(
                             id = translationId,
-                            title = "Субтитры",
+                            title = "Субтитры Anilibria",
                             voice = "sub"
                         )
                     )
                 }
                 1291 -> {
-                    val studioCheck = animeTranslationRepository.findById(1272).isPresent
-                    if(studioCheck) {
-                        animeTranslationRepository.findById(1272).get()
-                    } else {
+                    animeTranslationRepository.save(
                         AnimeTranslationTable(
-                            id = 1272,
-                            title = "Субтитры",
+                            id = translationId,
+                            title = "Субтитры Crunchyroll",
                             voice = "sub"
                         )
-                    }
+                    )
                 }
                 1946 -> {
-                    val studioCheck = animeTranslationRepository.findById(1272).isPresent
-                    if(studioCheck) {
-                        animeTranslationRepository.findById(1272).get()
-                    } else {
+                    animeTranslationRepository.save(
                         AnimeTranslationTable(
-                            id = 1272,
-                            title = "Субтитры",
+                            id = translationId,
+                            title = "Субтитры Netflix",
                             voice = "sub"
                         )
-                    }
+                    )
                 }
                 else -> {
                     animeTranslationRepository.save(

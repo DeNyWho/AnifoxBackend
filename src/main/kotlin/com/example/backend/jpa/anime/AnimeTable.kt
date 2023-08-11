@@ -59,7 +59,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    val ids: AnimeIds = AnimeIds(),
+    var ids: AnimeIds = AnimeIds(),
     @ManyToMany(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL]
@@ -91,7 +91,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    val images: AnimeImages = AnimeImages(),
+    var images: AnimeImages = AnimeImages(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
     @Column(columnDefinition = "text")
