@@ -38,6 +38,7 @@ data class AnimeTable(
     val otherTitles: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_similar", schema = "anime")
+    @BatchSize(size = 10)
     val similarAnime: MutableList<Int> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
@@ -45,6 +46,7 @@ data class AnimeTable(
         orphanRemoval = true,
     )
     @JoinTable(schema = "anime")
+    @BatchSize(size = 10)
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinTable(schema = "anime")
@@ -82,6 +84,7 @@ data class AnimeTable(
     var updatedAt: LocalDateTime = LocalDateTime.now(),
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")
+    @BatchSize(size = 20)
     val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
     var status: String = "",
     @Column(columnDefinition = "TEXT")
@@ -95,6 +98,7 @@ data class AnimeTable(
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
     @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
     val screenshots: MutableList<String> = mutableListOf(),
     @ManyToMany(
         fetch = FetchType.EAGER,

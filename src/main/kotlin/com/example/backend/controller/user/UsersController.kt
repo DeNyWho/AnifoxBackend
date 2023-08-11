@@ -94,13 +94,11 @@ class UsersController(
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/anime/{url}/recently")
     fun getRecentlyAnimeByUrl(
-        @RequestParam(defaultValue = "0", name = "pageNum")  pageNum: @Min(0) @Max(500) Int,
-        @RequestParam(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
         @RequestHeader (value = "Authorization") token: String,
         @PathVariable url: String,
         response: HttpServletResponse
     ): RecentlyAnimeLight  {
-        return userService.getRecentlyAnimeByUrl(token, pageNum, pageSize, url)
+        return userService.getRecentlyAnimeByUrl(token, url)
     }
 
 

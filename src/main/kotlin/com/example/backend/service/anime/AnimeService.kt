@@ -284,13 +284,16 @@ class AnimeService : AnimeRepositoryImpl {
             )
         }
         if (!translationIds.isNullOrEmpty()) {
-            val translationJoin = root.join<AnimeTable, AnimeTranslationTable>("translation")
+            val translationJoin = root.join<AnimeTable, AnimeTranslationTable>("translations")
+
             val translationIdsPredicate = criteriaBuilder.isTrue(
-                translationJoin.get<AnimeTranslationTable>("id").`in`(translationIds.mapNotNull { it.toIntOrNull() })
+                translationJoin.get<AnimeTranslationTable>("id").`in`(
+                    translationIds.mapNotNull { it.toIntOrNull() }.toList()
+                )
             )
+
             predicates.add(translationIdsPredicate)
         }
-
         if (predicates.isNotEmpty()) {
             if (searchQuery == null) {
                 criteriaQuery.distinct(true).where(criteriaBuilder.and(*predicates.toTypedArray()))
@@ -471,12 +474,6 @@ class AnimeService : AnimeRepositoryImpl {
                 status = HttpStatus.OK
             )
         }
-
-        return ServiceResponse(
-            data = null,
-            message = "Anime with url = $url not found",
-            status = HttpStatus.NOT_FOUND
-        )
     }
 
     override fun getAnimeRating(url: String): List<RatingResponse> {
@@ -858,14 +855,12 @@ class AnimeService : AnimeRepositoryImpl {
             }.body<AnimeResponse<AnimeParser>>()
         }
 
-        println("WTF?!@#")
-
         while (nextPage != null) {
             ar.result.distinctBy { it.shikimoriId }.forEach Loop@ { animeTemp ->
                 try {
-                    val anime = checkKodikSingle(35000.toString(), translationID)
+                    val anime = checkKodikSingle(animeTemp.shikimoriId, translationID)
 
-                    val shikimori = checkShikimori(35000.toString())
+                    val shikimori = checkShikimori(animeTemp.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -873,11 +868,9 @@ class AnimeService : AnimeRepositoryImpl {
                         userRatesStats += it.value
                     }
 
-                    println("WHAT?!@# ${!animeBlockedRepository.findById(35000).isPresent}")
-
                     if (
                         !anime.materialData.title.contains("Атака Титанов") &&
-                        !anime.materialData.title.contains("Атака титанов") && !animeBlockedRepository.findById(35000).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null
+                        !anime.materialData.title.contains("Атака титанов") && !animeBlockedRepository.findById(animeTemp.shikimoriId.toInt()).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null
                     ) {
                         println(anime.shikimoriId.toInt())
                         val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())

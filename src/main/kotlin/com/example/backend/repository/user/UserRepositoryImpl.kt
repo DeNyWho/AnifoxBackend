@@ -21,6 +21,6 @@ interface UserRepositoryImpl {
     fun setMangaRating(token: String, id: String, rating: Int, response: HttpServletResponse)
     fun addToRecentlyAnime(token: String, url: String, recently: RecentlyRequest, response: HttpServletResponse)
     fun getRecentlyAnimeList(token: String, pageNum: Int, pageSize: Int): List<RecentlyAnimeLight>
+    fun getRecentlyAnimeByUrl(token: String, url: String): RecentlyAnimeLight
 
-    fun getRecentlyAnimeByUrl(token: String, pageNum: Int, pageSize: Int, url: String): RecentlyAnimeLight
 }

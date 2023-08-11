@@ -199,7 +199,7 @@ class UserService : UserRepositoryImpl {
     }
 
 
-    override fun getRecentlyAnimeByUrl(token: String, pageNum: Int, pageSize: Int, url: String): RecentlyAnimeLight {
+    override fun getRecentlyAnimeByUrl(token: String, url: String): RecentlyAnimeLight {
         val anime = checkAnime(url)
         val user = checkUser(token)
         val recently = userRecentlyRepository.findByUserAndAnime(user, anime)
