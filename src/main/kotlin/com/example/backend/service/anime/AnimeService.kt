@@ -1391,7 +1391,7 @@ class AnimeService : AnimeRepositoryImpl {
                     animeErrorParserRepository.save(
                         AnimeErrorParserTable(
                             message = e.message,
-                            cause = "",
+                            cause = "ANIME PARSE",
                             shikimoriId = animeTemp.shikimoriId.toInt()
                         )
                     )
@@ -1415,113 +1415,127 @@ class AnimeService : AnimeRepositoryImpl {
     override fun updateEpisodes(translationID: String){
         val animeBaseList = animeRepository.findByIdForEpisodesUpdate("ongoing")
 
-        animeBaseList.forEach { animeBase ->
-            val anime = checkKodikSingle(animeBase.shikimoriId.toString(), translationID)
+        animeBaseList.forEach Loop@ { animeBase ->
+            try {
+                val anime = checkKodikSingle(animeBase.shikimoriId.toString(), translationID)
 
-            val shikimori = checkShikimori(animeBase.shikimoriId.toString())
+                val shikimori = checkShikimori(animeBase.shikimoriId.toString())
 
-            if(animeBase.nextEpisode != null || !animeBase.updatedAt.isBefore(LocalDateTime.now().minusWeeks(1))) {
-                val animeIds: AnimeIds = animeBase.ids
-                val animeImages: AnimeImages = animeBase.images
-                val episodesReady = mutableListOf<AnimeEpisodeTable>()
+                if(animeBase.nextEpisode != null || !animeBase.updatedAt.isBefore(LocalDateTime.now().minusWeeks(1))) {
+                    val animeIds: AnimeIds = animeBase.ids
+                    val animeImages: AnimeImages = animeBase.images
+                    val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
-                when(anime.type) {
-                    "anime-serial" -> {
-                        anime.seasons.forEach { kodikSeason ->
-                            if (kodikSeason.key != "0") {
-                                val jikanEpisodes = mutableListOf<JikanEpisode>()
-                                val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
+                    when(anime.type) {
+                        "anime-serial" -> {
+                            anime.seasons.forEach { kodikSeason ->
+                                if (kodikSeason.key != "0") {
+                                    val jikanEpisodes = mutableListOf<JikanEpisode>()
+                                    val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
 
-                                // Run kitsu.io and jikan.moe API calls in parallel using async and await
-                                runBlocking {
-                                    val deferredKitsu = async {
-                                        val kitsuAsyncTask =
-                                            async { fetchKitsuEpisodes("api/edge/anime/${animeIds.kitsu}/episodes") }
-
-                                        var responseKitsuEpisodes = kitsuAsyncTask.await()
-                                        while (responseKitsuEpisodes.data != null) {
-                                            kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
-                                            val kitsuUrl =
-                                                responseKitsuEpisodes.links.next?.replace("https://kitsu.io", "")
-                                                    .toString()
-                                            responseKitsuEpisodes =
-                                                if (kitsuUrl != "null") fetchKitsuEpisodes(kitsuUrl) else KitsuDefaults()
-                                        }
-                                    }
-                                    val deferredJikan = async {
-                                        val jikanAsyncTask = async { fetchJikanEpisodes(1, anime.shikimoriId) }
-
-                                        var responseJikanEpisodes = jikanAsyncTask.await()
-                                        var page = 1
-                                        jikanEpisodes.addAll(responseJikanEpisodes.data)
-                                        while (responseJikanEpisodes.data.isNotEmpty()) {
-                                            page++
-                                            responseJikanEpisodes = fetchJikanEpisodes(page, anime.shikimoriId)
-                                            jikanEpisodes.addAll(responseJikanEpisodes.data)
-                                        }
-                                    }
-                                    deferredJikan.await()
-                                    deferredKitsu.await()
-                                }
-
-                                episodesReady.addAll(
+                                    // Run kitsu.io and jikan.moe API calls in parallel using async and await
                                     runBlocking {
-                                        processEpisodes(
-                                            type = "anime-serial",
-                                            anime.shikimoriId,
-                                            anime.link,
-                                            animeBase.url,
-                                            kodikSeason.value.episodes,
-                                            kitsuEpisodes,
-                                            jikanEpisodes,
-                                            animeImages.medium
-                                        )
+                                        val deferredKitsu = async {
+                                            val kitsuAsyncTask =
+                                                async { fetchKitsuEpisodes("api/edge/anime/${animeIds.kitsu}/episodes") }
+
+                                            var responseKitsuEpisodes = kitsuAsyncTask.await()
+                                            while (responseKitsuEpisodes.data != null) {
+                                                kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
+                                                val kitsuUrl =
+                                                    responseKitsuEpisodes.links.next?.replace("https://kitsu.io", "")
+                                                        .toString()
+                                                responseKitsuEpisodes =
+                                                    if (kitsuUrl != "null") fetchKitsuEpisodes(kitsuUrl) else KitsuDefaults()
+                                            }
+                                        }
+                                        val deferredJikan = async {
+                                            val jikanAsyncTask = async { fetchJikanEpisodes(1, anime.shikimoriId) }
+
+                                            var responseJikanEpisodes = jikanAsyncTask.await()
+                                            var page = 1
+                                            jikanEpisodes.addAll(responseJikanEpisodes.data)
+                                            while (responseJikanEpisodes.data.isNotEmpty()) {
+                                                page++
+                                                responseJikanEpisodes = fetchJikanEpisodes(page, anime.shikimoriId)
+                                                jikanEpisodes.addAll(responseJikanEpisodes.data)
+                                            }
+                                        }
+                                        deferredJikan.await()
+                                        deferredKitsu.await()
                                     }
-                                )
+
+                                    episodesReady.addAll(
+                                        runBlocking {
+                                            processEpisodes(
+                                                type = "anime-serial",
+                                                anime.shikimoriId,
+                                                anime.link,
+                                                animeBase.url,
+                                                kodikSeason.value.episodes,
+                                                kitsuEpisodes,
+                                                jikanEpisodes,
+                                                animeImages.medium
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                val translations = episodesReady
-                    .flatMap { episode ->
-                        episode.translations
-                            .map {
-                                it.translation
-                            }
+                    val translations = episodesReady
+                        .flatMap { episode ->
+                            episode.translations
+                                .map {
+                                    it.translation
+                                }
+                        }
+                        .distinct()
+                        .toMutableList()
+
+                    val translationCounts = episodesReady
+                        .flatMap { episode -> episode.translations }
+                        .groupBy { translation -> translation.translation.id }
+                        .mapValues { (_, translations) -> translations.size }
+
+                    val translationsCountReady = translationCounts.map { (translationId, count) ->
+                        AnimeEpisodeTranslationCount(
+                            translation = animeTranslationRepository.findById(translationId).get(),
+                            countEpisodes = count
+                        )
+                    }.toList()
+                    val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+                        .withZone(ZoneId.of("Europe/Moscow"))
+
+                    animeBase.episodesAires = episodesReady.size
+                    animeBase.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
+                    if(episodesReady.size == animeBase.episodesCount && !animeBase.updatedAt.isBefore(LocalDateTime.now().minusWeeks(1)))
+                        animeBase.status = "released"
+                    if (shikimori != null) {
+                        animeBase.nextEpisode = if (shikimori.nextEpisodeAt != null) {
+                            LocalDateTime.parse(shikimori.nextEpisodeAt, formatterUpdated)
+                        } else {
+                            null
+                        }
                     }
-                    .distinct()
-                    .toMutableList()
-
-                val translationCounts = episodesReady
-                    .flatMap { episode -> episode.translations }
-                    .groupBy { translation -> translation.translation.id }
-                    .mapValues { (_, translations) -> translations.size }
-
-                val translationsCountReady = translationCounts.map { (translationId, count) ->
-                    AnimeEpisodeTranslationCount(
-                        translation = animeTranslationRepository.findById(translationId).get(),
-                        countEpisodes = count
+                    animeBase.addTranslationCount(translationsCountReady)
+                    animeBase.addTranslation(translations)
+                    animeBase.addEpisodesAll(episodesReady)
+                    animeRepository.save(animeBase)
+                }
+            } catch (e: Exception) {
+                e.stackTrace.forEach {
+                    println(it)
+                }
+                animeErrorParserRepository.save(
+                    AnimeErrorParserTable(
+                        message = e.message,
+                        cause = "EPISODE UPDATE",
+                        shikimoriId = animeBase.shikimoriId
                     )
-                }.toList()
-                val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                    .withZone(ZoneId.of("Europe/Moscow"))
-
-                animeBase.episodesAires = episodesReady.size
-                animeBase.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
-                if(episodesReady.size == animeBase.episodesCount && !animeBase.updatedAt.isBefore(LocalDateTime.now().minusWeeks(1)))
-                    animeBase.status = "released"
-                if (shikimori != null) {
-                    animeBase.nextEpisode = if (shikimori.nextEpisodeAt != null) {
-                        LocalDateTime.parse(shikimori.nextEpisodeAt, formatterUpdated)
-                    } else {
-                        null
-                    }
-                }
-                animeBase.addTranslationCount(translationsCountReady)
-                animeBase.addTranslation(translations)
-                animeBase.addEpisodesAll(episodesReady)
-                animeRepository.save(animeBase)
+                )
+                return@Loop
             }
         }
     }
