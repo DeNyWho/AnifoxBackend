@@ -16,7 +16,7 @@ interface AnimeRepository : JpaRepository<AnimeTable, String> {
     fun findByIdForEpisodesUpdate(status: String): List<AnimeTable>
 
     @Query("Select a from AnimeTable a LEFT JOIN FETCH a.translations RIGHT JOIN FETCH a.translationsCountEpisodes JOIN FETCH a.episodes where a.shikimoriId = :shikimoriID")
-    fun findByIdForEpisodesUpdateWithShikimoriId(shikimoriID: Int): List<AnimeTable>
+    fun findByIdForEpisodesUpdateWithShikimoriId(shikimoriID: Int): AnimeTable
 
     @Query("SELECT a from AnimeTable a LEFT JOIN FETCH a.episodes where a.shikimoriId = :shikimoriID")
     fun findByShikimoriIdWithEpisodes(shikimoriID: Int): Optional<AnimeTable>

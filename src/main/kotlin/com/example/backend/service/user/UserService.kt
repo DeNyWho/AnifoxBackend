@@ -150,15 +150,36 @@ class UserService : UserRepositoryImpl {
         val existingRecently = userRecentlyRepository.findByUserAndAnime(user, anime)
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
 
-        if (!existingFavorite.isPresent) {
+        val favoriteAnime = existingFavorite.orElse(null)
+
+        if (favoriteAnime == null) {
+            val newStatus =
+                if(anime.episodesCount != episode.number && anime.status == "ongoing")
+                    StatusFavourite.Watching else StatusFavourite.Watched
+
             userFavoriteAnimeRepository.save(
                 UserFavoriteAnime(
                     user = user,
                     anime = anime,
-                    status = StatusFavourite.Watching,
+                    status = newStatus,
                     episode = episode
                 )
             )
+        } else {
+            favoriteAnime.episode = episode
+
+            when (favoriteAnime.status) {
+                StatusFavourite.Watching -> {
+                    if (anime.episodesCount == episode.number && anime.status == "released") {
+                        favoriteAnime.status = StatusFavourite.Watched
+                    }
+                }
+                StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> {
+                    favoriteAnime.status = StatusFavourite.Watching
+                }
+            }
+
+            userFavoriteAnimeRepository.save(favoriteAnime)
         }
 
         if (existingRecently.isPresent) {
