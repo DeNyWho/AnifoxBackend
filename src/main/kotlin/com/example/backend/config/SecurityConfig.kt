@@ -156,6 +156,7 @@ class SecurityConfig : KeycloakWebSecurityConfigurerAdapter() {
             .authorizeRequests()
             .antMatchers(
                 "/api/anime/**",
+                "/api/test/**",
                 "/api/manga/**",
                 "/api/shikimori/**",
                 "/images/**",

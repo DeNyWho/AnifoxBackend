@@ -1437,7 +1437,7 @@ class AnimeService : AnimeRepositoryImpl {
 
 
     override fun updateEpisodes(translationID: String){
-        val animeBaseList = animeRepository.findByIdForEpisodesUpdate("ongoing").distinct()
+        val animeBaseList = animeRepository.findByIdForEpisodesUpdate("ongoing")
 
         animeBaseList.forEach Loop@ { animeTemp ->
             try {
