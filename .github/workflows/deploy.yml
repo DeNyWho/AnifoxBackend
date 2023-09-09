@@ -35,7 +35,7 @@ jobs:
         run: chmod +x gradlew
           
       - name: Set up Docker
-        uses: docker-practice/actions-setup-docker@v1
+        uses: docker-practice/actions-setup-docker@master
 
       - name: Gradlew Build
         run: ./gradlew clean build -x test
