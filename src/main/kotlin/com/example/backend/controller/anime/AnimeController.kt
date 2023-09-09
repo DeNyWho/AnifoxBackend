@@ -2,6 +2,7 @@ package com.example.backend.controller.anime
 
 import com.example.backend.jpa.anime.*
 import com.example.backend.models.ServiceResponse
+import com.example.backend.models.anime.AnimeBlockedType
 import com.example.backend.models.anime.AnimeTranslationCount
 import com.example.backend.models.animeResponse.common.RatingResponse
 import com.example.backend.models.animeResponse.detail.AnimeDetail
@@ -20,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.crossstore.ChangeSetPersister
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
@@ -33,6 +35,16 @@ class AnimeController {
 
     @Autowired
     lateinit var animeService: AnimeService
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("addToBlocked")
+    fun addBlockedAnime(
+        @RequestHeader (value = "Authorization") token: String,
+        @RequestParam shikimoriId: Int,
+        @RequestParam blockedType: AnimeBlockedType
+    ) {
+        animeService.setBlockedAnime(shikimoriId, blockedType)
+    }
 
     @GetMapping
     @Operation(summary = "get all anime")

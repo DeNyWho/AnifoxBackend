@@ -3,7 +3,10 @@ package com.example.backend.models.animeResponse.detail
 
 import com.example.backend.jpa.anime.AnimeGenreTable
 import com.example.backend.jpa.anime.AnimeStudiosTable
+import com.example.backend.jpa.anime.AnimeTranslationTable
 import com.example.backend.models.anime.AnimeImagesTypes
+import com.example.backend.models.animeParser.kodik.AnimeTranslations
+import com.example.backend.models.users.StatusFavourite
 import com.example.backend.util.LocalDateSerializer
 import com.example.backend.util.LocalDateTimeSerializer
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -37,4 +40,5 @@ data class AnimeDetail(
     val status: String? = null,
     val ratingMpa: String? = null,
     val minimalAge: Int? = null,
+    val translations: List<AnimeTranslationTable> = listOf(),
 )

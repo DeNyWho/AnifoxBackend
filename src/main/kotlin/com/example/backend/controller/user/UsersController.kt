@@ -23,6 +23,7 @@ import javax.validation.constraints.Min
 class UsersController(
     private val userService: UserService
 ) {
+
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("/anime/{url}/favorite")
     fun addToFavoriteAnime(

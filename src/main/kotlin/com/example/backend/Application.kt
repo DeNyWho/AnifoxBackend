@@ -25,11 +25,10 @@ class ScheduleTasks {
 
 	@Scheduled(fixedDelay = 12, timeUnit = TimeUnit.HOURS)
 	fun checkBlocked() {
-		animeService.setBlockedAnime()
 		animeService.checkBlockedAnime()
 	}
 
-	@Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
+ 	@Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
 	fun updateData() {
 		animeService.updateEpisodes("610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002, 1978, 1291, 1272, 1946")
 	}

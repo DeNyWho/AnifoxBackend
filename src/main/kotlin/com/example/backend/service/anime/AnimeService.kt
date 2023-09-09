@@ -46,8 +46,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
-import org.hibernate.CacheMode
-import org.hibernate.search.jpa.Search
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -775,33 +773,16 @@ class AnimeService : AnimeRepositoryImpl {
         }
     }
 
-    fun setBlockedAnime() {
-        val temp = mutableListOf<AnimeBlockedTable>()
-        val blockedIds = listOf(
-            6864, 4918, 52198, 37517, 1535, 34542, 22319, 7088, 10465, 8577,
-            40010, 6987, 30831, 38040, 38924, 6201, 17729, 19429, 24833, 35241,
-            37998, 34177, 34019, 39469, 36632, 32949, 40314, 34048, 16363, 11859,
-            8456, 30679, 35849, 31491, 18039, 3889, 15391, 12581, 14893, 25, 40010,
-            6791, 9624, 9515, 6392, 36560, 23423, 21679, 10582, 11209, 9744, 35000,
-            9201
+    fun setBlockedAnime(shikimoriId: Int, typeBlocked: AnimeBlockedType) {
+        val blockedTable = animeBlockedRepository.save(
+            AnimeBlockedTable(
+                shikimoriID = shikimoriId,
+                type = typeBlocked
+            )
         )
 
-        blockedIds.forEach { id ->
-            temp.add(
-                AnimeBlockedTable(
-                    shikimoriID = id,
-                    type = AnimeBlockedType.ALL
-                )
-            )
-        }
-
-        animeBlockedRepository.saveAll(temp)
-    }
-
-    @Transactional
-    fun checkBlockedAnime() {
-        animeBlockedRepository.findAll().forEach { blocked ->
-            animeRepository.findByShikimoriId(blocked.shikimoriID).let { anime ->
+        animeRepository.findByShikimoriId(blockedTable.shikimoriID).let { anime ->
+            if (anime.isPresent) {
                 anime.get().apply {
                     related.clear()
                     episodes.clear()
@@ -823,6 +804,37 @@ class AnimeService : AnimeRepositoryImpl {
                     images = AnimeImages()
                 }
                 animeRepository.delete(anime.get())
+            }
+        }
+    }
+
+    @Transactional
+    fun checkBlockedAnime() {
+        animeBlockedRepository.findAll().forEach { blocked ->
+            animeRepository.findByShikimoriId(blocked.shikimoriID).let { anime ->
+                if (anime.isPresent) {
+                    anime.get().apply {
+                        related.clear()
+                        episodes.clear()
+                        translationsCountEpisodes.clear()
+                        favorites.clear()
+                        rating.clear()
+                        music.clear()
+                        translations.clear()
+                        genres.clear()
+                        media.clear()
+                        studios.clear()
+                        titleEn.clear()
+                        titleJapan.clear()
+                        synonyms.clear()
+                        otherTitles.clear()
+                        similarAnime.clear()
+                        screenshots.clear()
+                        ids = AnimeIds()
+                        images = AnimeImages()
+                    }
+                    animeRepository.delete(anime.get())
+                }
             }
         }
     }
@@ -1438,13 +1450,14 @@ class AnimeService : AnimeRepositoryImpl {
 
     override fun updateEpisodes(translationID: String){
         val animeBaseList = animeRepository.findByIdForEpisodesUpdate("ongoing")
+        println("START UPDATE ITEMS = ${animeBaseList.size}")
 
         animeBaseList.forEach Loop@ { animeTemp ->
             try {
                 val animeBase = animeRepository.findByIdForEpisodesUpdateWithShikimoriId(animeTemp.shikimoriId)
-                val anime = checkKodikSingle(animeBase.shikimoriId.toString(), translationID)
+                val anime = checkKodikSingle(animeTemp.shikimoriId.toString(), translationID)
 
-                val shikimori = checkShikimori(animeBase.shikimoriId.toString())
+                val shikimori = checkShikimori(animeTemp.shikimoriId.toString())
 
                 if(animeBase.nextEpisode != null || !animeBase.updatedAt.isBefore(LocalDateTime.now().minusWeeks(1))) {
                     val animeIds: AnimeIds = animeBase.ids
@@ -1458,7 +1471,6 @@ class AnimeService : AnimeRepositoryImpl {
                                     val jikanEpisodes = mutableListOf<JikanEpisode>()
                                     val kitsuEpisodes = mutableListOf<EpisodesKitsu>()
 
-                                    // Run kitsu.io and jikan.moe API calls in parallel using async and await
                                     runBlocking {
                                         val deferredKitsu = async {
                                             val kitsuAsyncTask =
