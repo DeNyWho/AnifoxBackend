@@ -1,0 +1,115 @@
+server:
+  port:
+    ${PORT:12200}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: false
+  ssl:
+    enabled: true
+    protocol: TLS
+    key-store-type: PKCS12
+    key-store-provider: SUN
+    trust-store-type: PKCS12
+    trust-store-provider: SUN
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    deep-linking: true
+  default-flat-param-object: true
+
+keycloak:
+  ssl-required: external
+  bearer-only: true
+  truststore: ${server.ssl.trust-store}
+  truststore-password: ${server.ssl.trust-store-password}
+  credentials:
+    provider: secret
+  config:
+    file: keycloak
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  sql:
+    init:
+      platform: postgres
+  task:
+    scheduling:
+      pool:
+        size: 10
+  main:
+    allow-circular-references: true
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+  security:
+    user:
+      password: admin
+      name: admin
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          starttls:
+            enable: true
+          ssl:
+            enable: true
+  jpa:
+    open-in-view: true
+    database: POSTGRESQL
+    generate-ddl: true
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQL9Dialect
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        enable_lazy_load_no_trans: true
+        show_sql: true
+        temp:
+          use_jdbc_metadata_defaults: true
+        jdbc:
+          lab:
+            non_contextual_creation: true
+        event:
+          entity_copy_observer: allow
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
+          ehcache:
+            config: classpath:ehcache.xml
+
+logging:
+  level:
+    org:
+      hibernate:
+        sql: debug
+        type:
+          descriptor:
+            sql:
+              BasicBinder: debug
+      springframework:
+        security: info
+        web: info
+        data:
+          jpa: info

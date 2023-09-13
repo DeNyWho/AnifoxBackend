@@ -22,6 +22,28 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
     implementation(libs.jakarta.api)
+    implementation(libs.jakarta.persistence)
+
+    implementation(libs.springdoc.openapi.ui)
+    implementation(libs.springdoc.openapi.data.rest)
+    implementation(libs.springdoc.openapi.kotlin)
+
+    implementation(libs.keycloak.admin.client)
+    implementation(libs.keycloak.spring.boot)
+    implementation(libs.keycloak.core)
+
+    implementation(libs.spring.boot.starter.data.jpa)
+//    implementation(libs.spring.boot.starter.data.elasticsearch)
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.mail)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.client)
+    implementation(libs.spring.boot.starter.validation)
+    implementation(libs.spring.boot.starter.tomcat)
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.jandex)
+
+    runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.assertk)
