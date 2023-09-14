@@ -4,6 +4,7 @@ import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.plugin.spring)
     alias(libs.plugins.kotlin.plugin.jpa)
     alias(libs.plugins.spring.boot)
@@ -21,12 +22,14 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
+    implementation(libs.kotlin.serialization)
+
+    implementation(libs.mapstruct)
+
     implementation(libs.jakarta.api)
     implementation(libs.jakarta.persistence)
 
-    implementation(libs.springdoc.openapi.ui)
-    implementation(libs.springdoc.openapi.data.rest)
-    implementation(libs.springdoc.openapi.kotlin)
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
 
     implementation(libs.keycloak.admin.client)
     implementation(libs.keycloak.spring.boot)

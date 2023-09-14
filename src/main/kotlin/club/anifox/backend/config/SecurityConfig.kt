@@ -28,13 +28,11 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy
 
-
 @Configuration
 @EnableWebSecurity
 @KeycloakConfiguration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
-class SecurityConfig<ClientRegistrationRepository> {
-
+class SecurityConfig {
 
     @Autowired
     fun configureGlobal(auth: AuthenticationManagerBuilder) {
@@ -112,36 +110,34 @@ class SecurityConfig<ClientRegistrationRepository> {
                 it.requestMatchers(EndpointRequest.toAnyEndpoint())
             }
             .authorizeHttpRequests { auth ->
-            auth.requestMatchers(
-                "/api/anime/**",
-                "/api/test/**",
-                "/api/shikimori/**",
-                "/images/**",
-                "/api/auth/**",
-                "/api/auth/oauth2/code/**",
-                "/api/auth/shikimori/**",
-                "/swagger-ui/**",
-                "/v3/**",
-                "/swagger-resources",
-                "/swagger-resources/**",
-                "/configuration/**",
-                "/swagger-ui/**",
-                "/webjars/**"
-            ).permitAll()
-            auth.requestMatchers("/api/**/admin/**").hasAuthority(ADMIN)
-            auth.requestMatchers("/api/users/**").hasAnyAuthority(ADMIN, USER)
-            auth.anyRequest().authenticated()
+                auth.requestMatchers(
+                    "/api/anime/**",
+                    "/api/test/**",
+                    "/api/shikimori/**",
+                    "/images/**",
+                    "/api/auth/**",
+                    "/api/auth/oauth2/code/**",
+                    "/api/auth/shikimori/**",
+                    "/swagger-ui/**",
+                    "/v3/**",
+                    "/swagger-resources",
+                    "/swagger-resources/**",
+                    "/configuration/**",
+                    "/swagger-ui/**",
+                    "/webjars/**",
+                ).permitAll()
+                auth.requestMatchers("/api/**/admin/**").hasAuthority(ADMIN)
+                auth.requestMatchers("/api/users/**").hasAnyAuthority(ADMIN, USER)
+                auth.anyRequest().authenticated()
             }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
         return http.build()
     }
 
-
     companion object {
         private const val AUTHORITY_MAPPER_PREFIX = "ROLE_"
         private const val ADMIN = "ADMIN"
         private const val USER = "USER"
     }
-
 }

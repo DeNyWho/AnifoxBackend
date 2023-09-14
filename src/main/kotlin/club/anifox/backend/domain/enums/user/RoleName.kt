@@ -1,4 +1,4 @@
-package club.anifox.backend.domain.model.enums.user
+package club.anifox.backend.domain.enums.user
 
 enum class RoleName {
     ROLE_USER,

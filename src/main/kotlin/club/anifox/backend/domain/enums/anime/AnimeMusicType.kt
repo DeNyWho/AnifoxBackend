@@ -1,4 +1,4 @@
-package club.anifox.backend.domain.model.enums.anime
+package club.anifox.backend.domain.enums.anime
 
 enum class AnimeMusicType {
     Ending,

@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.entity.user
 
-import club.anifox.backend.domain.model.enums.user.TypeUser
+import club.anifox.backend.domain.enums.user.TypeUser
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column

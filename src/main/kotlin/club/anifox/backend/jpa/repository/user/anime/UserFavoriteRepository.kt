@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.repository.user.anime
 
-import club.anifox.backend.domain.model.enums.user.StatusFavourite
+import club.anifox.backend.domain.enums.user.StatusFavourite
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
 import club.anifox.backend.jpa.entity.user.UserTable

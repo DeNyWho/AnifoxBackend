@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.entity.anime
 
-import club.anifox.backend.domain.model.enums.anime.AnimeMusicType
+import club.anifox.backend.domain.enums.anime.AnimeMusicType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType

@@ -18,7 +18,10 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     deep-linking: true
+    enabled: true
   default-flat-param-object: true
+  api-docs:
+    enabled: true
 
 keycloak:
   ssl-required: external

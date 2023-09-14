@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.entity.anime
 
-import club.anifox.backend.domain.model.enums.anime.AnimeBlockedType
+import club.anifox.backend.domain.enums.anime.AnimeBlockedType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType

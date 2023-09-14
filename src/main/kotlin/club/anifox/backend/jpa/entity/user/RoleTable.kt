@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.entity.user
 
-import club.anifox.backend.domain.model.enums.user.RoleName
+import club.anifox.backend.domain.enums.user.RoleName
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType

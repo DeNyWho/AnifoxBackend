@@ -14,7 +14,6 @@ import java.io.FileInputStream
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
 
-
 @Configuration
 class SSLConfig(
     @Value("\${keycloak.auth-server-url}") private val authUrl: String,
@@ -26,7 +25,7 @@ class SSLConfig(
     @Value("\${server.ssl.key-store}") private val keyStorePath: String,
     @Value("\${server.ssl.key-store-password}") private val keyStorePassword: String,
     @Value("\${server.ssl.trust-store}") private val trustStorePath: String,
-    @Value("\${server.ssl.trust-store-password}") private val trustStorePassword: String
+    @Value("\${server.ssl.trust-store-password}") private val trustStorePassword: String,
 ) {
 
     @Bean
@@ -52,7 +51,7 @@ class SSLConfig(
 
         val configuration = org.keycloak.authorization.client.Configuration(
             authUrl, realm, clientId,
-            clientCredentials, builder.build()
+            clientCredentials, builder.build(),
         )
 
         return AuthzClient.create(configuration)
@@ -78,9 +77,9 @@ class SSLConfig(
                                     load(it, keyStorePassword.toCharArray())
                                 }
                             },
-                        keyStorePassword.toCharArray()
+                        keyStorePassword.toCharArray(),
                     )
-                    .build()
+                    .build(),
             )
             .build()
         return config
