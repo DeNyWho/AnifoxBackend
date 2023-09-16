@@ -21,6 +21,8 @@ data class KodikAnimeDto(
     val translation: KodikTranslationDto = KodikTranslationDto(),
     @SerialName("last_episode")
     val lastEpisode: Int = 0,
+    @SerialName("episodes_count")
+    val episodesCount: Int = 0,
     @SerialName("shikimori_id")
     val shikimoriId: String = "",
     @SerialName("created_at")

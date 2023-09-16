@@ -504,6 +504,8 @@ class AnimeParseComponent {
                                 }
                             }
 
+                            println("GOING TO NEXT")
+
 
                             val jikanThemesDefered = CoroutineScope(Dispatchers.Default).async {
                                 delay(1000)
@@ -590,7 +592,7 @@ class AnimeParseComponent {
                                     screenShots.addAll(it)
                                 }
                                 similarIdsFlow.collect {
-                                    similarIds.addAll(it)
+                                    similarIds.addAll(it.take(30))
                                 }
                             }
 
@@ -652,7 +654,7 @@ class AnimeParseComponent {
                                 titleJapan = shikimori.japanese.toMutableList(),
                                 synonyms = shikimori.synonyms.toMutableList(),
                                 otherTitles = otherTitles,
-                                similarAnime = similarIds.take(30).toMutableList(),
+                                similarAnime = similarIds,
                                 status = shikimori.status,
                                 description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                 year = if (shikimori.airedAt != null) LocalDate.parse(shikimori.airedAt).year else anime.materialData.year,
@@ -855,6 +857,7 @@ class AnimeParseComponent {
         }
 
         val processedEpisodes = jobs.awaitAll()
+        println("ZZ WAFL TEST DVA")
         val sortedEpisodes = processedEpisodes.sortedBy { it.number }
 
         episodeReady.addAll(addEpisodeTranslations(sortedEpisodes, shikimoriId, "anime-serial"))
@@ -974,26 +977,31 @@ class AnimeParseComponent {
         val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()
 
         animeVariations.result.forEach { anime ->
-            episodes.filter { it.number <= anime.lastEpisode || anime.lastEpisode == 0 }
-                .forEach { episode ->
-                    val translationId = when (anime.translation.id) {
-                        1002 -> 643
-                        else -> anime.translation.id
-                    }
+            val episodeNumbers = anime.seasons.values
+                .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
+                .filter { it <= anime.lastEpisode || anime.lastEpisode == 0 }
 
+            val translationId = when (anime.translation.id) {
+                1002 -> 643
+                else -> anime.translation.id
+            }
+            val translation = animeTranslationRepository.findById(translationId).get()
+
+            episodeNumbers.forEach { episodeNumber ->
+                val episode = episodes.find { it.number == episodeNumber }
+                episode?.let {
                     val episodeTranslation = EpisodeTranslationTable(
-                        translation = animeTranslationRepository.findById(translationId).get(),
-                        link = if(type == "anime-serial") "${anime.link}?episode=${episode.number}" else anime.link
+                        translation = translation,
+                        link = if (type == "anime-serial") "${anime.link}?episode=${episode.number}" else anime.link
                     )
-
                     episode.translations.add(episodeTranslation)
                     episodeTranslationsToSave.add(episodeTranslation)
+                    println("Episode RREADY = ${episode}")
                 }
-
+            }
         }
 
         animeEpisodeTranslationRepository.saveAll(episodeTranslationsToSave)
-
         return episodes
     }
 
