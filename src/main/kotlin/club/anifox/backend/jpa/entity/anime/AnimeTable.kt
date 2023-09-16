@@ -145,7 +145,7 @@ data class AnimeTable(
         inverseJoinColumns = [JoinColumn(name = "studio_id", referencedColumnName = "id")],
         schema = "anime",
     )
-    var studios: MutableSet<AnimeStudiosTable> = mutableSetOf(),
+    var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
     val shikimoriRating: Double = 0.0,
     val shikimoriVotes: Int = 0,
     val ratingMpa: String = "",
@@ -232,7 +232,7 @@ data class AnimeTable(
         return this
     }
 
-    fun addAllAnimeStudios(studio: List<AnimeStudiosTable>): AnimeTable {
+    fun addAllAnimeStudios(studio: List<AnimeStudioTable>): AnimeTable {
         studios.addAll(studio)
         return this
     }

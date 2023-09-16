@@ -8,7 +8,7 @@ import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
-import club.anifox.backend.jpa.entity.anime.AnimeStudiosTable
+import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
@@ -121,7 +121,7 @@ class AnimeSearchComponent {
         if (!studio.isNullOrEmpty()) {
             val studioTable = animeStudiosRepository.findByStudio(studio)
                 .orElseThrow { throw NotFoundException("Studio not found") }
-            val studioPredicate = criteriaBuilder.isMember(studioTable, root.get<List<AnimeStudiosTable>>("studios"))
+            val studioPredicate = criteriaBuilder.isMember(studioTable, root.get<List<AnimeStudioTable>>("studios"))
             predicates.add(studioPredicate)
         }
 

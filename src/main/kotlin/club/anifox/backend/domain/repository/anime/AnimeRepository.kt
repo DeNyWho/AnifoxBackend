@@ -23,4 +23,7 @@ interface AnimeRepository {
         translations: List<String>?,
         studio: String?,
     ): List<AnimeLight>
+
+    fun parseTranslations(transltionsIDs: List<Int>)
+    fun parseAnime(transltionsIDs: String)
 }

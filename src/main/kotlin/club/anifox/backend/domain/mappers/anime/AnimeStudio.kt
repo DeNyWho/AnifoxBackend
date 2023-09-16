@@ -1,9 +1,9 @@
 package club.anifox.backend.domain.mappers.anime
 
 import club.anifox.backend.domain.model.anime.AnimeStudio
-import club.anifox.backend.jpa.entity.anime.AnimeStudiosTable
+import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 
-fun AnimeStudiosTable.toStudio(): AnimeStudio {
+fun AnimeStudioTable.toStudio(): AnimeStudio {
     return AnimeStudio(
         id = id,
         studio = studio,

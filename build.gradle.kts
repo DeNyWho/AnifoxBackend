@@ -35,6 +35,13 @@ dependencies {
     implementation(libs.keycloak.spring.boot)
     implementation(libs.keycloak.core)
 
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.json)
+    implementation(libs.ktor.client.java)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
     implementation(libs.spring.boot.starter.data.jpa)
 //    implementation(libs.spring.boot.starter.data.elasticsearch)
     implementation(libs.spring.boot.starter.actuator)
@@ -45,6 +52,8 @@ dependencies {
     implementation(libs.spring.boot.starter.tomcat)
     implementation(libs.spring.boot.starter.web)
     implementation(libs.jandex)
+    implementation(libs.thumbnailator)
+    implementation(libs.aws.java.sdk.s3)
 
     runtimeOnly(libs.postgresql)
 
