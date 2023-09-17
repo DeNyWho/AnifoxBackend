@@ -6,6 +6,6 @@ import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 fun AnimeStudioTable.toStudio(): AnimeStudio {
     return AnimeStudio(
         id = id,
-        studio = studio,
+        name = name,
     )
 }

@@ -16,16 +16,16 @@ data class ShikimoriMediaDto(
     val description: String = "",
     @Nullable
     @SerialName("english")
-    val english: List<String?> = listOf(),
+    val english: List<String> = listOf(),
     @Nullable
     @SerialName("synonyms")
-    val synonyms: List<String?> = listOf(),
+    val synonyms: List<String> = listOf(),
     @Nullable
     @SerialName("rating")
     val rating: String,
     @Nullable
     @SerialName("japanese")
-    val japanese: List<String?> = listOf(),
+    val japanese: List<String> = listOf(),
     @SerialName("videos")
     val videos: List<ShikimoriVideoParse> = listOf(),
     @SerialName("fandubbers")

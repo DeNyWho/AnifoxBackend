@@ -1,4 +1,5 @@
 @file:UseSerializers(LocalDateTimeSerializer::class)
+
 package club.anifox.backend.domain.dto.anime.kodik
 
 import club.anifox.backend.util.serializer.LocalDateTimeSerializer
@@ -32,7 +33,7 @@ data class KodikAnimeDto(
     @SerialName("seasons")
     val seasons: Map<String, KodikSeasonDto> = mapOf(),
     @SerialName("material_data")
-    var materialData: MaterialData = MaterialData(),
+    var materialData: KodikMaterialDataDto = KodikMaterialDataDto(),
     @SerialName("screenshots")
     val screenshots: List<String> = listOf(),
 )

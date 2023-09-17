@@ -8,6 +8,6 @@ import java.util.*
 
 @Repository
 interface AnimeGenreRepository : JpaRepository<AnimeGenreTable, String> {
-    @Query("Select g from AnimeGenreTable g where g.genre = :genre")
+    @Query("Select g from AnimeGenreTable g where g.name = :genre")
     fun findByGenre(genre: String): Optional<AnimeGenreTable>
 }

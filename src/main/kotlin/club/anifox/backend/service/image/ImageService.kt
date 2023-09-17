@@ -7,15 +7,11 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.ObjectMetadata
 import net.coobird.thumbnailator.Thumbnails
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.*
 import javax.imageio.ImageIO
-
 
 @Service
 class ImageService {
@@ -38,13 +34,13 @@ class ImageService {
     fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0): String {
         val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
             .withEndpointConfiguration(
-                AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1")
+                AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1"),
             )
             .withPathStyleAccessEnabled(true)
             .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKeyS3, secretKeyS3))) // <--- заменить
             .build()
 
-        val readyData = if(compress) compressImage(imageBytes = data, width, height) else data
+        val readyData = if (compress) compressImage(imageBytes = data, width, height) else data
 
         val inputStream = ByteArrayInputStream(readyData)
         val metadata = ObjectMetadata().apply {
@@ -54,7 +50,6 @@ class ImageService {
 
         return "$domainS3/$filePath"
     }
-
 
     private fun compressImage(imageBytes: ByteArray, width: Int, height: Int): ByteArray {
         val image = ImageIO.read(ByteArrayInputStream(imageBytes))

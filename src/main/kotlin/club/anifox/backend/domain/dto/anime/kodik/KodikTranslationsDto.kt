@@ -10,5 +10,5 @@ data class KodikTranslationsDto(
     @SerialName("title")
     val title: String,
     @SerialName("count")
-    val count: Int
+    val count: Int,
 )

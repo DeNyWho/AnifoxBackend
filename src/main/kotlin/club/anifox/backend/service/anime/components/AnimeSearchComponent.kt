@@ -5,7 +5,7 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.exception.common.NotFoundException
-import club.anifox.backend.domain.mappers.anime.toAnimeLight
+import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
@@ -74,7 +74,7 @@ class AnimeSearchComponent {
         }
     }
 
-    fun findAnime(
+    private fun findAnime(
         pageable: Pageable,
         status: AnimeStatus?,
         searchQuery: String?,

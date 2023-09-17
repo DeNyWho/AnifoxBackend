@@ -4,7 +4,10 @@ import club.anifox.backend.domain.enums.anime.AnimeOrder
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeLight
+import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 import club.anifox.backend.service.anime.AnimeService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -15,6 +18,7 @@ import jakarta.validation.constraints.Min
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -31,8 +35,16 @@ class AnimeController {
     @GetMapping
     @Operation(summary = "get all anime")
     fun getAnime(
-        @Schema(defaultValue = "0", name = "pageNum") pageNum: @Min(0) @Max(500) Int,
-        @Schema(defaultValue = "48", name = "pageSize") pageSize: @Min(1) @Max(500) Int,
+        @Schema(defaultValue = "0", name = "pageNum")
+        pageNum:
+            @Min(0)
+            @Max(500)
+            Int,
+        @Schema(defaultValue = "48", name = "pageSize")
+        pageSize:
+            @Min(1)
+            @Max(500)
+            Int,
         @RequestParam(name = "genres", required = false)
         @Parameter(name = "genres", description = "Require genres IDS", required = false)
         genres: List<String>?,
@@ -66,5 +78,27 @@ class AnimeController {
             translations = translations,
             studio = studio,
         )
+    }
+
+    @GetMapping("{url}")
+    @Operation(summary = "detail anime")
+    fun getAnimeDetails(
+        @PathVariable url: String,
+    ): AnimeDetail {
+        return animeService.getAnimeDetails(url)
+    }
+
+    @GetMapping("{url}/translations/count")
+    @Operation(summary = "anime translations count")
+    fun getAnimeTranslationCount(
+        @PathVariable url: String,
+    ): List<AnimeTranslationCount> {
+        return animeService.getAnimeTranslationsCount(url)
+    }
+
+    @GetMapping("translations")
+    @Operation(summary = "anime translations")
+    fun getAnimeTranslations(): List<AnimeTranslationTable> {
+        return animeService.getAnimeTranslations()
     }
 }

@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TranslatedTextDto(
     @SerialName("translations")
-    val translations: List<TranslatedTextMicrosoftDto> = listOf()
+    val translations: List<TranslatedTextMicrosoftDto> = listOf(),
 )

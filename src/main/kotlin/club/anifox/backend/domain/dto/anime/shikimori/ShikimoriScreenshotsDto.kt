@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ShikimoriScreenshotsDto(
     @SerialName("original")
-    val original: String = ""
+    val original: String = "",
 )

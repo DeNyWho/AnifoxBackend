@@ -6,6 +6,6 @@ import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 fun AnimeGenreTable.toGenre(): AnimeGenre {
     return AnimeGenre(
         id = id,
-        genre = genre,
+        name = name,
     )
 }

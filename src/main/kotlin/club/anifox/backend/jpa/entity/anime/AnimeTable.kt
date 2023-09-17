@@ -1,5 +1,8 @@
 package club.anifox.backend.jpa.entity.anime
 
+import club.anifox.backend.domain.enums.anime.AnimeSeason
+import club.anifox.backend.domain.enums.anime.AnimeStatus
+import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
 import jakarta.persistence.Cacheable
 import jakarta.persistence.CascadeType
@@ -7,6 +10,8 @@ import jakarta.persistence.CollectionTable
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
@@ -26,29 +31,31 @@ import java.util.*
 data class AnimeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-    val type: String = "",
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    val type: AnimeType = AnimeType.Tv,
     @Column(columnDefinition = "TEXT")
     val url: String = "",
     @Column(columnDefinition = "TEXT")
-    val link: String = "",
+    val playerLink: String = "",
     @Column(columnDefinition = "TEXT")
     val title: String = "",
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_titleEnglish", schema = "anime")
     @Column(columnDefinition = "text")
-    val titleEn: MutableList<String?> = mutableListOf(),
+    val titleEn: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_titleJapan", schema = "anime")
     @Column(columnDefinition = "text")
-    val titleJapan: MutableList<String?> = mutableListOf(),
+    val titleJapan: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_synonyms", schema = "anime")
     @Column(columnDefinition = "text")
-    val synonyms: MutableList<String?> = mutableListOf(),
+    val synonyms: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_otherTitles", schema = "anime")
     @Column(columnDefinition = "text")
-    val otherTitles: MutableList<String> = mutableListOf(),
+    val titleOther: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_similar", schema = "anime")
     @BatchSize(size = 10)
@@ -89,17 +96,19 @@ data class AnimeTable(
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
     val episodesCount: Int = 0,
-    var episodesAires: Int = 0,
+    var episodesAired: Int = 0,
     val shikimoriId: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val airedAt: LocalDate = LocalDate.now(),
-    val releasedAt: LocalDate = LocalDate.now(),
+    val airedOn: LocalDate = LocalDate.now(),
+    val releasedOn: LocalDate = LocalDate.now(),
     var updatedAt: LocalDateTime = LocalDateTime.now(),
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")
     @BatchSize(size = 20)
     val translations: MutableSet<AnimeTranslationTable> = mutableSetOf(),
-    var status: String = "",
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    var status: AnimeStatus = AnimeStatus.Ongoing,
     @Column(columnDefinition = "TEXT")
     val description: String = "",
     @OneToOne(
@@ -150,7 +159,9 @@ data class AnimeTable(
     val shikimoriVotes: Int = 0,
     val ratingMpa: String = "",
     val minimalAge: Int = 0,
-    val season: String = "",
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    val season: AnimeSeason = AnimeSeason.Summer,
     val accentColor: String = "",
     @OneToMany(
         mappedBy = "anime",

@@ -3,7 +3,6 @@ package club.anifox.backend.domain.dto.anime.kitsu.episode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
 @Serializable
 data class KitsuEpisodeAttributesDto(
     @SerialName("description")
@@ -17,5 +16,5 @@ data class KitsuEpisodeAttributesDto(
     @SerialName("airdate")
     val airDate: String? = null,
     @SerialName("thumbnail")
-    val thumbnail: KitsuEpisodeThumbnail? = null
+    val thumbnail: KitsuEpisodeThumbnail? = null,
 )

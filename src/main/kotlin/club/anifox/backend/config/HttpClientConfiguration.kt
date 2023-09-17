@@ -24,13 +24,13 @@ class HttpClientConfiguration {
                     Json {
                         ignoreUnknownKeys = true
                         coerceInputValues = true
-                    }
+                    },
                 )
             }
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.ALL
-        }
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.ALL
+            }
         }
     }
 }

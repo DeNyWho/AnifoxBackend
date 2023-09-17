@@ -5,13 +5,11 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.request.headers
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-
 
 @Component
 class AnimeKodikComponent {
@@ -44,11 +42,15 @@ class AnimeKodikComponent {
                 parameter("with_material_data", true)
                 parameter(
                     "anime_genres",
-                    "безумие, боевые искусства, вампиры, военное, гарем, демоны, детектив, детское, дзёсей, драма, игры, исторический, комедия, космос, машины, меха, музыка, пародия, повседневность, полиция, приключения, психологическое, романтика, самураи, сверхъестественное, спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер, ужасы, фантастика, фэнтези, школа, экшен"
+                    "безумие, боевые искусства, вампиры, военное, гарем, демоны," +
+                        "детектив, детское, дзёсей, драма, игры, исторический, комедия," +
+                        "космос, машины, меха, музыка, пародия, повседневность, полиция," +
+                        "приключения, психологическое, романтика, самураи, сверхъестественное," +
+                        "спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер," +
+                        "ужасы, фантастика, фэнтези, школа, экшен",
                 )
                 parameter("translation_id", translationID)
             }.body<KodikResponseDto<KodikAnimeDto>>()
         }.result[0]
     }
-
 }

@@ -11,6 +11,8 @@ object Constants {
     const val KODIK = "kodikapi.com"
     const val KODIK_LIST = "/list"
     const val KODIK_SEARCH = "/search"
+    const val KODIK_TRANSLATIONS = "/translations"
+    const val KODIK_VERSION = "/v2"
 
     const val KITSU = "kitsu.io"
     const val KITSU_API = "/api"

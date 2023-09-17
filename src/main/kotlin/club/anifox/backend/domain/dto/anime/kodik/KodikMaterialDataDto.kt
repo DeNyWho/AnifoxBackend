@@ -1,4 +1,5 @@
 @file:UseSerializers(LocalDateSerializer::class)
+
 package club.anifox.backend.domain.dto.anime.kodik
 
 import club.anifox.backend.util.serializer.LocalDateSerializer
@@ -8,7 +9,7 @@ import kotlinx.serialization.UseSerializers
 import java.time.LocalDate
 
 @Serializable
-data class MaterialData(
+data class KodikMaterialDataDto(
     @SerialName("anime_title")
     val title: String = "",
     @SerialName("title_en")

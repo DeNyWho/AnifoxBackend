@@ -10,5 +10,5 @@ import java.util.*
 data class AnimeStudioTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-    val studio: String = "",
+    val name: String = "",
 )

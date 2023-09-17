@@ -21,7 +21,7 @@ class AnimeShikimoriComponent {
                 client.get {
                     url {
                         protocol = URLProtocol.HTTPS
-                        host = "shikimori.me/api/animes/${shikimoriId}"
+                        host = "shikimori.me/api/animes/$shikimoriId"
                     }
                 }.body<ShikimoriMediaDto>()
             }

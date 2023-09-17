@@ -14,5 +14,5 @@ data class JikanEpisodeDto(
     @SerialName("filler")
     val filler: Boolean = false,
     @SerialName("recap")
-    val recap: Boolean = false
+    val recap: Boolean = false,
 )

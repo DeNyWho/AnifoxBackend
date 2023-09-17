@@ -24,5 +24,5 @@ data class HaglundIdsDto(
     @SerialName("themoviedb")
     val theMovieDb: Int? = null,
     @SerialName("myanimelist")
-    val myAnimeList: Int? = null
+    val myAnimeList: Int? = null,
 )

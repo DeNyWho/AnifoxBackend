@@ -10,5 +10,5 @@ import java.util.*
 data class AnimeGenreTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-    val genre: String = "",
+    val name: String = "",
 )

@@ -1,13 +1,18 @@
 package club.anifox.backend.service.anime.components
 
+import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto
 import club.anifox.backend.domain.dto.anime.kodik.KodikTranslationsDto
+import club.anifox.backend.domain.mappers.anime.toAnimeTranslation
+import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
+import club.anifox.backend.util.AnimeUtils
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.request.headers
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,10 +28,33 @@ class AnimeTranslationsComponent {
     @Autowired
     private lateinit var animeTranslationRepository: AnimeTranslationRepository
 
+    @Autowired
+    private lateinit var animeRepository: AnimeRepository
+
+    @Autowired
+    private lateinit var animeUtils: AnimeUtils
+
     @Value("\${anime.ko.token}")
     private lateinit var animeToken: String
 
-    fun addTranslationsToDB(transltionsIDs: List<Int>) {
+    fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount> {
+        val anime = animeUtils.checkAnime(url, animeRepository)
+
+        val translationsCountEpisodes: Set<AnimeEpisodeTranslationCountTable> = anime.translationsCountEpisodes
+
+        return translationsCountEpisodes.map { translationEpisodes ->
+            AnimeTranslationCount(
+                translation = translationEpisodes.translation.toAnimeTranslation(),
+                countEpisodes = translationEpisodes.countEpisodes,
+            )
+        }
+    }
+
+    fun getAnimeTranslations(): List<AnimeTranslationTable> {
+        return animeTranslationRepository.findAll()
+    }
+
+    fun addTranslationsToDB(translationsIDs: List<Int>) {
         val translations = runBlocking {
             client.get {
                 headers {
@@ -34,13 +62,14 @@ class AnimeTranslationsComponent {
                 }
                 url {
                     protocol = URLProtocol.HTTPS
-                    host = "kodikapi.com/translations/v2"
+                    host = Constants.KODIK
+                    encodedPath = "${Constants.KODIK_TRANSLATIONS}${Constants.KODIK_VERSION}"
                 }
                 parameter("token", animeToken)
                 parameter("types", "anime, anime-serial")
             }.body<KodikResponseDto<KodikTranslationsDto>>()
         }
-        transltionsIDs.forEach { translation ->
+        translationsIDs.forEach { translation ->
             val t = translations.result.find { it.id == translation }
             if (t != null) {
                 checkKodikTranslation(t.id, t.title, "voice")
@@ -50,19 +79,19 @@ class AnimeTranslationsComponent {
 
     private fun checkKodikTranslation(translationId: Int, title: String, voice: String): AnimeTranslationTable {
         val translationCheck = animeTranslationRepository.findById(translationId).isPresent
-        return if(translationCheck) {
+        return if (translationCheck) {
             animeTranslationRepository.findById(translationId).get()
         } else {
-            when(translationId) {
+            when (translationId) {
                 1002 -> {
                     val studioCheck = animeTranslationRepository.findById(643).isPresent
-                    if(studioCheck) {
+                    if (studioCheck) {
                         animeTranslationRepository.findById(643).get()
                     } else {
                         AnimeTranslationTable(
                             id = 643,
                             title = "Studio Band",
-                            voice = voice
+                            voice = voice,
                         )
                     }
                 }
@@ -71,8 +100,8 @@ class AnimeTranslationsComponent {
                         AnimeTranslationTable(
                             id = translationId,
                             title = "Субтитры Anilibria",
-                            voice = "sub"
-                        )
+                            voice = "sub",
+                        ),
                     )
                 }
                 1291 -> {
@@ -80,8 +109,8 @@ class AnimeTranslationsComponent {
                         AnimeTranslationTable(
                             id = translationId,
                             title = "Субтитры Crunchyroll",
-                            voice = "sub"
-                        )
+                            voice = "sub",
+                        ),
                     )
                 }
                 1946 -> {
@@ -89,8 +118,8 @@ class AnimeTranslationsComponent {
                         AnimeTranslationTable(
                             id = translationId,
                             title = "Субтитры Netflix",
-                            voice = "sub"
-                        )
+                            voice = "sub",
+                        ),
                     )
                 }
                 else -> {
@@ -98,8 +127,8 @@ class AnimeTranslationsComponent {
                         AnimeTranslationTable(
                             id = translationId,
                             title = title,
-                            voice = voice
-                        )
+                            voice = voice,
+                        ),
                     )
                 }
             }

@@ -50,8 +50,11 @@ class SSLConfig(
         builder.setSSLContext(sslContext())
 
         val configuration = org.keycloak.authorization.client.Configuration(
-            authUrl, realm, clientId,
-            clientCredentials, builder.build(),
+            authUrl,
+            realm,
+            clientId,
+            clientCredentials,
+            builder.build(),
         )
 
         return AuthzClient.create(configuration)

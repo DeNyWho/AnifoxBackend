@@ -8,6 +8,6 @@ import java.util.*
 
 @Repository
 interface AnimeStudiosRepository : JpaRepository<AnimeStudioTable, String> {
-    @Query("Select s from AnimeStudioTable s where :studio = s.studio")
+    @Query("Select s from AnimeStudioTable s where s.name = :studio")
     fun findByStudio(studio: String): Optional<AnimeStudioTable>
 }
