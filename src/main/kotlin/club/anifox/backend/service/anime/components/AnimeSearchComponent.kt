@@ -1,9 +1,9 @@
 package club.anifox.backend.service.anime.components
 
-import club.anifox.backend.domain.enums.anime.AnimeOrder
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -13,6 +13,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import io.ktor.util.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
@@ -41,12 +42,12 @@ class AnimeSearchComponent {
     @Autowired
     private lateinit var animeGenreRepository: AnimeGenreRepository
 
-    fun getAnime(
+    fun getAnimeSearch(
         pageNum: Int,
         pageSize: Int,
         genres: List<String>?,
         status: AnimeStatus?,
-        order: AnimeOrder?,
+        filter: AnimeSearchFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -68,7 +69,7 @@ class AnimeSearchComponent {
             genres = genres,
             translationIds = translations,
             studio = studio,
-            order = order,
+            filter = filter,
         ).map {
             it.toAnimeLight()
         }
@@ -86,7 +87,7 @@ class AnimeSearchComponent {
         genres: List<String>?,
         studio: String?,
         translationIds: List<String>?,
-        order: AnimeOrder?,
+        filter: AnimeSearchFilter?,
     ): List<AnimeTable> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
@@ -95,7 +96,7 @@ class AnimeSearchComponent {
 
         val predicates: MutableList<Predicate> = mutableListOf()
         if (status != null) {
-            predicates.add(criteriaBuilder.equal(root.get<String>("status"), status.name))
+            predicates.add(criteriaBuilder.equal(root.get<String>("status"), AnimeStatus.valueOf(status.name)))
         }
 
         if (!ratingMpa.isNullOrEmpty()) {
@@ -103,11 +104,11 @@ class AnimeSearchComponent {
         }
 
         if (season != null) {
-            predicates.add(criteriaBuilder.equal(root.get<String>("season"), season.name))
+            predicates.add(criteriaBuilder.equal(root.get<String>("season"), AnimeSeason.valueOf(season.name)))
         }
 
         if (type != null) {
-            predicates.add(criteriaBuilder.equal(root.get<String>("type"), type.name))
+            predicates.add(criteriaBuilder.equal(root.get<String>("type"), AnimeType.valueOf(type.name)))
         }
 
         if (minimalAge != null) {
@@ -196,27 +197,24 @@ class AnimeSearchComponent {
             }
         }
 
-        val sort: List<Order> = when (order) {
-            AnimeOrder.Popular -> {
-                listOf(
-                    criteriaBuilder.desc(root.get<AnimeTable>("views")),
-                    criteriaBuilder.desc(root.get<AnimeTable>("countRate")),
-                )
-            }
-            AnimeOrder.DateASC -> {
+        val sort: List<Order> = when (filter) {
+//            AnimeSearchFilter.Popular -> {
+//                listOf(
+//                    criteriaBuilder.desc(root.get<AnimeTable>("views")),
+//                    criteriaBuilder.desc(root.get<AnimeTable>("countRate")),
+//                )
+//            }
+            AnimeSearchFilter.DateASC -> {
                 listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedAt")))
             }
-            AnimeOrder.DateDESC -> {
+            AnimeSearchFilter.DateDESC -> {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedAt")))
             }
-            AnimeOrder.ShikimoriRating -> {
+            AnimeSearchFilter.ShikimoriRating -> {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))
             }
-            AnimeOrder.Random -> {
+            AnimeSearchFilter.Random -> {
                 listOf(criteriaBuilder.asc(criteriaBuilder.function("random", AnimeTable::class.java)))
-            }
-            AnimeOrder.Views -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("views")))
             }
             else -> emptyList()
         }

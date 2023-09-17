@@ -2,6 +2,7 @@ package club.anifox.backend.controller.exception
 
 import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.exception.common.ConflictException
+import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpStatus
@@ -15,6 +16,14 @@ import java.net.ConnectException
 
 @ControllerAdvice
 class ApiExceptionHandler : ResponseEntityExceptionHandler() {
+
+    @ExceptionHandler(NoContentException::class)
+    fun handleNoContentException(response: HttpServletResponse, ex: NoContentException, request: WebRequest) {
+        response.status = HttpStatus.NO_CONTENT.value()
+        response.contentType = MediaType.APPLICATION_JSON_VALUE
+        response.writer.write("{\"message\": \"${ex.message}\"}")
+        response.writer.flush()
+    }
 
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequest(response: HttpServletResponse, ex: BadRequestException, request: WebRequest) {
