@@ -52,6 +52,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.kodik.AnimeKodikComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import club.anifox.backend.service.image.ImageService
+import club.anifox.backend.util.mdFive
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -356,14 +357,14 @@ class AnimeParseComponent {
                                             kitsuData != null -> {
                                                 animeImages = AnimeImagesTypes(
                                                     large = imageService.saveFileInSThird(
-                                                        "images/large/$urlLinking.png",
+                                                        "images/anime/large/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                         URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
                                                         compress = true,
                                                         width = 400,
                                                         height = 640,
                                                     ),
                                                     medium = imageService.saveFileInSThird(
-                                                        "images/medium/$urlLinking.png",
+                                                        "images/anime/medium/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                         URL(kitsuData.attributesKitsu.posterImage.original).readBytes(),
                                                         compress = true,
                                                         width = 200,
@@ -372,7 +373,7 @@ class AnimeParseComponent {
                                                     cover = try {
                                                         if (kitsuData.attributesKitsu.coverImage.coverLarge != null) {
                                                             imageService.saveFileInSThird(
-                                                                "images/cover/$urlLinking.png",
+                                                                "images/anime/cover/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                                 URL(kitsuData.attributesKitsu.coverImage.coverLarge).readBytes(),
                                                                 compress = true,
                                                                 width = 800,
@@ -393,11 +394,11 @@ class AnimeParseComponent {
                                             jikanData != null -> {
                                                 animeImages = AnimeImagesTypes(
                                                     large = imageService.saveFileInSThird(
-                                                        "images/large/$urlLinking.png",
+                                                        "images/anime/large/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                         URL(jikanData.images.jikanJpg.largeImageUrl).readBytes(),
                                                     ),
                                                     medium = imageService.saveFileInSThird(
-                                                        "images/medium/$urlLinking.png",
+                                                        "images/anime/medium/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                         URL(jikanData.images.jikanJpg.mediumImageUrl).readBytes(),
                                                     ),
                                                 )
@@ -411,11 +412,11 @@ class AnimeParseComponent {
                                         if (jikanData != null) {
                                             animeImages = AnimeImagesTypes(
                                                 large = imageService.saveFileInSThird(
-                                                    "images/large/$urlLinking.png",
+                                                    "images/anime/large/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                     URL(jikanData.images.jikanJpg.largeImageUrl).readBytes(),
                                                 ),
                                                 medium = imageService.saveFileInSThird(
-                                                    "images/medium/$urlLinking.png",
+                                                    "images/anime/medium/$urlLinking/${mdFive(UUID.randomUUID().toString())}.png",
                                                     URL(jikanData.images.jikanJpg.mediumImageUrl).readBytes(),
                                                 ),
                                             )
@@ -913,14 +914,14 @@ class AnimeParseComponent {
                 when {
                     kitsuEpisode.attributes?.thumbnail?.large != null -> {
                         imageService.saveFileInSThird(
-                            "images/episodes/$url/$episode.png",
+                            "images/anime/episodes/$url/${mdFive(episode.toString())}.png",
                             URL(kitsuEpisode.attributes.thumbnail.large).readBytes(),
                             compress = false,
                         )
                     }
                     kitsuEpisode.attributes?.thumbnail?.original != null -> {
                         imageService.saveFileInSThird(
-                            "images/episodes/$url/$episode.png",
+                            "images/anime/episodes/$url/${mdFive(episode.toString())}.png",
                             URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
                             compress = true,
                             width = 400,

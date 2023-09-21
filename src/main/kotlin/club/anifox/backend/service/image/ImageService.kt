@@ -37,7 +37,7 @@ class ImageService {
                 AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1"),
             )
             .withPathStyleAccessEnabled(true)
-            .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKeyS3, secretKeyS3))) // <--- заменить
+            .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKeyS3, secretKeyS3)))
             .build()
 
         val readyData = if (compress) compressImage(imageBytes = data, width, height) else data

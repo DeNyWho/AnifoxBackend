@@ -23,7 +23,7 @@ data class UserTable(
     val id: String = UUID.randomUUID().toString(),
 
     @Column(nullable = false)
-    val username: String = "",
+    val login: String = "",
 
     @Column(nullable = true)
     val password: String? = null,
