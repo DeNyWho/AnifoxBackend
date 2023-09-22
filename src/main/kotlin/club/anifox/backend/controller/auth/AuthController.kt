@@ -61,12 +61,12 @@ class AuthController(
         return authService.authenticate(loginRequest = loginRequest, res)
     }
 
-    @PostMapping("/registration")
+    @PostMapping("registration")
     fun registration(@RequestBody signUpRequest: CreateUserRequest, response: HttpServletResponse) {
         return authService.registration(signUpRequest, response)
     }
 
-    @GetMapping("/refreshToken")
+    @GetMapping("refreshToken")
     fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
         return authService.refreshAccessToken(refreshToken, response)
     }

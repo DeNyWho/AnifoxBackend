@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface UserFavoriteRepository : JpaRepository<UserFavoriteAnimeTable, String> {
+interface UserFavoriteAnimeRepository : JpaRepository<UserFavoriteAnimeTable, String> {
     fun findByUserAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): Optional<UserFavoriteAnimeTable>
     fun findByUserAndStatus(@Param("user") user: UserTable, @Param("status") status: StatusFavourite, pageable: Pageable): List<UserFavoriteAnimeTable>
 }

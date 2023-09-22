@@ -164,6 +164,8 @@ class AuthComponent(
             accessExpires = auth.expiresIn,
             refreshExpires = auth.refreshExpiresIn,
         )
+
+        response.status = HttpStatus.CREATED.value()
     }
 
     private fun insertNewRole(
@@ -187,7 +189,7 @@ class AuthComponent(
         cookieAccess.domain = "anifox.club"
         cookieAccess.path = "/"
 
-        val cookieRefresh = Cookie("access_token", refreshToken)
+        val cookieRefresh = Cookie("refresh_token", refreshToken)
         cookieRefresh.maxAge = refreshExpires.toInt()
         cookieRefresh.domain = "anifox.club"
         cookieRefresh.path = "/"

@@ -5,14 +5,12 @@ import club.anifox.backend.domain.model.user.request.CreateUserRequest
 import club.anifox.backend.domain.repository.auth.AuthRepository
 import club.anifox.backend.service.auth.components.AuthComponent
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class AuthService : AuthRepository {
-
-    @Autowired
-    private lateinit var authComponent: AuthComponent
+class AuthService(
+    private val authComponent: AuthComponent,
+) : AuthRepository {
 
     override fun authenticate(loginRequest: AuthenticationRequest, res: HttpServletResponse) {
         authComponent.authenticate(userIdentifier = loginRequest.userIdentifier, password = loginRequest.password, res)
