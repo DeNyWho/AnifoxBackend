@@ -97,8 +97,8 @@ class UserAnimeInteractionsComponent {
                 anime = anime,
                 status = status,
                 updateDate = LocalDateTime.now(),
-                episode = episode
-            )
+                episode = episode,
+            ),
         )
         response.status = HttpStatus.CREATED.value()
     }
@@ -122,7 +122,7 @@ class UserAnimeInteractionsComponent {
     fun getRecommendations(
         token: String,
         pageNum: Int,
-        pageSize: Int
+        pageSize: Int,
     ): List<AnimeLight> {
         val user = userUtils.checkUser(token)
 
@@ -144,7 +144,7 @@ class UserAnimeInteractionsComponent {
         query.maxResults = pageableFavorite.pageSize
         val favorite = query.resultList
 
-        if(favorite.isNotEmpty()) {
+        if (favorite.isNotEmpty()) {
             return recommendationProcess(favorite, PageRequest.of(pageNum, pageSize))
         }
 
@@ -166,7 +166,7 @@ class UserAnimeInteractionsComponent {
             predicates.add(genrePredicate)
         }
 
-        for(studio in studios) {
+        for (studio in studios) {
             val studioPredicate = criteriaBuilder.isMember(studio, root.get<List<AnimeStudioTable>>("studios"))
             predicates.add(studioPredicate)
         }

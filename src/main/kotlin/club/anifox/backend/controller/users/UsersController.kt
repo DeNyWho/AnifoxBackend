@@ -64,13 +64,13 @@ class UsersController(
     fun getAnimeRecommendations(
         @RequestHeader(value = "Authorization") token: String,
         @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
-        @Min(0)
-        @Max(500)
-        Int,
+            @Min(0)
+            @Max(500)
+            Int,
         @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
-        @Min(1)
-        @Max(500)
-        Int,
+            @Min(1)
+            @Max(500)
+            Int,
     ): List<AnimeLight> {
         return userService.getRecommendations(token, pageNum, pageSize)
     }
