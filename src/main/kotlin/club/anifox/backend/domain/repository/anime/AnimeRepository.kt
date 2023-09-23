@@ -33,8 +33,8 @@ interface AnimeRepository {
         studio: String?,
     ): List<AnimeLight>
 
-    fun parseTranslations(transltionsIDs: List<Int>)
-    fun parseAnime(transltionsIDs: String)
+    fun parseTranslations(translationsIDs: List<Int>)
+    fun parseAnime(translationsIDs: String)
     fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount>
     fun getAnimeTranslations(): List<AnimeTranslationTable>
     fun getAnimeDetails(url: String): AnimeDetail

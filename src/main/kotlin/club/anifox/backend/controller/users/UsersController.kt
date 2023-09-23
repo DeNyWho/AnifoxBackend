@@ -5,6 +5,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.recently.AnimeRecently
 import club.anifox.backend.domain.model.anime.recently.AnimeRecentlyRequest
 import club.anifox.backend.service.user.UserService
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
@@ -58,7 +59,24 @@ class UsersController(
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @PostMapping("/anime/{url}/recently")
+    @GetMapping("recommendations")
+    @Operation(summary = "recommendation anime")
+    fun getAnimeRecommendations(
+        @RequestHeader(value = "Authorization") token: String,
+        @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
+        @Min(0)
+        @Max(500)
+        Int,
+        @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
+        @Min(1)
+        @Max(500)
+        Int,
+    ): List<AnimeLight> {
+        return userService.getRecommendations(token, pageNum, pageSize)
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @PostMapping("anime/{url}/recently")
     fun addToRecentlyAnime(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
@@ -69,7 +87,7 @@ class UsersController(
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("/anime/recently")
+    @GetMapping("anime/recently")
     fun getRecentlyAnime(
         @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
             @Min(0)

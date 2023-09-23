@@ -1,6 +1,7 @@
 package club.anifox.backend.config
 
 import jakarta.persistence.EntityManagerFactory
+import jakarta.persistence.criteria.CriteriaBuilder
 import org.hibernate.jpa.HibernatePersistenceProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.domain.EntityScan
@@ -52,5 +53,10 @@ class JpaConfig(
     @Bean
     fun transactionManager(entityManagerFactory: EntityManagerFactory): PlatformTransactionManager {
         return JpaTransactionManager(entityManagerFactory)
+    }
+
+    @Bean
+    fun getCriteriaBuilder(entityManagerFactory: EntityManagerFactory): CriteriaBuilder {
+        return entityManagerFactory.criteriaBuilder
     }
 }

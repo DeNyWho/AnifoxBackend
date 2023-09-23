@@ -89,6 +89,11 @@ class SecurityConfig {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            .requiresChannel { requiresChannel ->
+                requiresChannel
+                    .anyRequest()
+                    .requiresSecure()
+            }
             .sessionManagement {
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }

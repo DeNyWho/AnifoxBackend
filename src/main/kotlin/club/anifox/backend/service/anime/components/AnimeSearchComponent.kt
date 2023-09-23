@@ -89,9 +89,9 @@ class AnimeSearchComponent {
         translationIds: List<String>?,
         filter: AnimeSearchFilter?,
     ): List<AnimeTable> {
-        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
         criteriaQuery.select(root)
 
         val predicates: MutableList<Predicate> = mutableListOf()

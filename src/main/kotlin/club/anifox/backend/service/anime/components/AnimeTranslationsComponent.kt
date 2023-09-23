@@ -38,7 +38,7 @@ class AnimeTranslationsComponent {
     private lateinit var animeToken: String
 
     fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount> {
-        val anime = animeUtils.checkAnime(url, animeRepository)
+        val anime = animeUtils.checkAnime(url)
 
         val translationsCountEpisodes: Set<AnimeEpisodeTranslationCountTable> = anime.translationsCountEpisodes
 

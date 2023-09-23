@@ -52,7 +52,7 @@ class AnimeCommonComponent {
     private lateinit var animeUtils: AnimeUtils
 
     fun getAnimeByUrl(url: String): AnimeDetail {
-        val anime = animeUtils.checkAnime(url, animeRepository)
+        val anime = animeUtils.checkAnime(url)
         return anime.toAnimeDetail()
     }
 
@@ -189,7 +189,7 @@ class AnimeCommonComponent {
     }
 
     fun getAnimeEpisodes(url: String, pageNum: Int, pageSize: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
-        val anime: AnimeTable = animeUtils.checkAnime(url, animeRepository)
+        val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)

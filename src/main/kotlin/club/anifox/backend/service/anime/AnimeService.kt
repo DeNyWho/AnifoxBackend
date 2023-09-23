@@ -99,11 +99,11 @@ class AnimeService : AnimeRepository {
         return animeTranslationsComponent.getAnimeTranslations()
     }
 
-    override fun parseTranslations(transltionsIDs: List<Int>) {
-        animeTranslationsComponent.addTranslationsToDB(transltionsIDs)
+    override fun parseTranslations(translationsIDs: List<Int>) {
+        animeTranslationsComponent.addTranslationsToDB(translationsIDs)
     }
 
-    override fun parseAnime(transltionsIDs: String) {
-        animeParseComponent.addDataToDB(transltionsIDs)
+    override fun parseAnime(translationsIDs: String) {
+        animeParseComponent.addDataToDB(translationsIDs)
     }
 }
