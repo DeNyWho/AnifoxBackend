@@ -1,131 +1,88 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.7.20"
-    id("org.springframework.boot") version "2.7.11"
-    id("io.spring.dependency-management") version Dependencies.Versions.springDep
-    kotlin("jvm") version "1.7.20"
-    kotlin("plugin.spring") version Dependencies.Versions.kotlin
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.plugin.spring)
+    alias(libs.plugins.kotlin.plugin.jpa)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.boot.deps)
 }
 
-springBoot {
-    mainClass.set("com.example.backend.ApplicationKt")
-}
-tasks.getByName<Jar>("jar") {
-    enabled = false
-}
-
-group = "com.example"
+group = "club.anifox"
 version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_17
 
-repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
-    maven(Dependencies.MultiPlatform.composeMaven)
-    maven(Dependencies.MultiPlatform.gradleMaven)
-    maven(Dependencies.MultiPlatform.jitpack)
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
-    implementation("com.amazonaws:aws-java-sdk-s3:1.12.500")
-    implementation("org.bitbucket.b_c:jose4j:0.9.3")
-    implementation("org.springframework.security:spring-security-jwt:1.1.1.RELEASE")
-    implementation("org.springframework.security:spring-security-oauth2-resource-server")
-    implementation("org.springframework.security:spring-security-oauth2-jose")
-    implementation("org.keycloak:keycloak-core:20.0.0")
-    implementation("net.coobird:thumbnailator:0.4.20")
-    implementation("org.hibernate:hibernate-search-orm:5.11.12.Final")
-    implementation("commons-codec:commons-codec:1.16.0")
+    implementation(libs.spring.boot.starter.data.jpa)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlin.logging)
+    implementation(libs.kotlin.serialization)
 
-    with(Dependencies.Spring.KeyCloak){
-        implementation(keycloakAdminClient)
-        implementation(keycloakSpring)
+    implementation(libs.mapstruct)
+
+    implementation(libs.jakarta.api)
+    implementation(libs.jakarta.persistence)
+
+    implementation(libs.springdoc.openapi.starter.webmvc.ui)
+
+    implementation(libs.keycloak.admin.client)
+    implementation(libs.keycloak.spring.boot)
+    implementation(libs.keycloak.core)
+
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.json)
+    implementation(libs.ktor.client.java)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.spring.boot.starter.data.jpa)
+//    implementation(libs.spring.boot.starter.data.elasticsearch)
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.mail)
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.client)
+    implementation(libs.spring.boot.starter.validation)
+    implementation(libs.spring.boot.starter.tomcat)
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.jandex)
+    implementation(libs.thumbnailator)
+    implementation(libs.aws.java.sdk.s3)
+
+    runtimeOnly(libs.postgresql)
+
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.assertk)
+}
+
+ktlint {
+    android = false
+    ignoreFailures = false
+    reporters {
+        reporter(ReporterType.PLAIN)
+        reporter(ReporterType.JSON)
     }
-    with(Dependencies.Spring.Cache){
-        implementation(ehcache)
-        implementation(javaxCache)
-    }
-    with(Dependencies.Spring.Oauth){
-        implementation(securityConf)
-        implementation(securityOauthCore)
-        implementation(securityOauthClient)
-        implementation(securityOauthAutoConfigure)
-        implementation(jjwtApi)
-        runtimeOnly(jjwtImpl)
-        runtimeOnly(jjwtJackson)
-        implementation(web)
-    }
-    with(Dependencies.Ktor){
-        implementation(clientCore)
-        implementation(clientJava)
-        implementation(clientLogging)
-        implementation(clientJson)
-        implementation(json)
-        implementation(contentNegotiation)
-    }
-    with(Dependencies.MultiPlatform){
-        implementation(kotlinxSerializationJson)
-    }
-    with(Dependencies.Spring.Defaults){
-        implementation(actuator)
-        implementation(web)
-        implementation(dataJpa)
-        implementation(mail)
-        implementation(thymeleaf)
-        implementation(migration)
-        implementation(starterValidation)
-        implementation(security)
-        implementation(cache)
-        implementation(jwt)
-        implementation(mail)
-        implementation(webSpr)
-        implementation(webMVC)
-        implementation(validation)
-        implementation(springCore)
-        implementation(springСontext)
-        runtimeOnly(postgreSQLRun)
-    }
-    with(Dependencies.Spring.swagger){
-        implementation(swaggerUi)
-        implementation(swaggerOpenApi)
-        implementation(swaggerDataRest)
-    }
-    with(Dependencies.Spring.ImageIO){
-        implementation(bmp)
-        implementation(tiff)
-        implementation(jpeg)
-        implementation(psd)
-        implementation(pdf)
-        implementation(hdr)
-        implementation(servlet)
-    }
-    with(Dependencies.Spring){
-        implementation(amazon)
-        implementation(logging)
-        implementation(skrapeIT)
-        implementation(jackson)
-        implementation(gson)
-        implementation(tomcat)
-        implementation(guava)
-        implementation(uniRest)
-        implementation(commonsIO)
-        implementation(commonsText)
-        implementation(javax)
-        implementation(jakarta)
-        implementation(hibernate)
-    }
+}
+
+allOpen {
+    annotation("javax.persistence.Entity")
+    annotation("javax.persistence.MappedSuperclass")
+    annotation("javax.persistence.Embeddable")
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "18"
+        freeCompilerArgs += "-Xjsr305=strict"
+        jvmTarget = "17"
     }
-    kotlinOptions.jvmTarget = "18"
 }
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }

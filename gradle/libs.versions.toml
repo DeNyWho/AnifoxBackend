@@ -1,0 +1,69 @@
+[versions]
+kotlin = "1.9.10"
+kotlin-logging = "4.0.1"
+kotlin-serialization = "1.6.0"
+spring-boot = "3.1.3"
+spring-boot-deps-management = "1.1.3"
+assertk = "0.26.1"
+ktlint = "11.5.1"
+jakarta-api = "6.0.0"
+jakarta-persistence = "3.1.0"
+swagger = "2.2.0"
+keycloak = "22.0.2"
+mapstruct = "1.5.5.Final"
+ktor = "2.3.4"
+amazon-s3 = "1.12.500"
+thumbnailator = "0.4.20"
+
+[libraries]
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlin-serialization"}
+jakarta-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-api" }
+jakarta-persistence = { module = "jakarta.persistence:jakarta.persistence-api", version.ref = "jakarta-persistence" }
+
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+
+springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "swagger" }
+
+aws-java-sdk-s3 = { module = "com.amazonaws:aws-java-sdk-s3", version.ref = "amazon-s3"}
+
+thumbnailator = { module = "net.coobird:thumbnailator", version.ref = "thumbnailator"}
+
+keycloak-core = { module = "org.keycloak:keycloak-core", version.ref = "keycloak" }
+keycloak-admin-client = { module = "org.keycloak:keycloak-admin-client", version.ref = "keycloak" }
+keycloak-spring-boot = { module = "org.keycloak:keycloak-spring-boot-starter", version.ref = "keycloak" }
+
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
+
+postgresql = { module = "org.postgresql:postgresql"}
+jandex = { module = "org.jboss:jandex", version.ref = "spring-boot"}
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-data-elasticsearch = { module = "org.springframework.boot:spring-boot-starter-data-elasticsearch" }
+spring-boot-starter-tomcat = { module = "org.springframework.boot:spring-boot-starter-tomcat" }
+spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
+spring-boot-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
+
+#Tests
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
+
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-plugin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-plugin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-boot-deps = { id = "io.spring.dependency-management", version.ref = "spring-boot-deps-management" }

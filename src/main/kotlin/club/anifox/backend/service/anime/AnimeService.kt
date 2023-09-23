@@ -1,0 +1,109 @@
+package club.anifox.backend.service.anime
+
+import club.anifox.backend.domain.enums.anime.AnimeSeason
+import club.anifox.backend.domain.enums.anime.AnimeStatus
+import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.model.anime.AnimeGenre
+import club.anifox.backend.domain.model.anime.AnimeMedia
+import club.anifox.backend.domain.model.anime.AnimeStudio
+import club.anifox.backend.domain.model.anime.detail.AnimeDetail
+import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.light.AnimeLight
+import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.domain.repository.anime.AnimeRepository
+import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.service.anime.components.AnimeCommonComponent
+import club.anifox.backend.service.anime.components.AnimeSearchComponent
+import club.anifox.backend.service.anime.components.AnimeTranslationsComponent
+import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
+
+@Service
+class AnimeService : AnimeRepository {
+
+    @Autowired
+    private lateinit var animeSearchComponent: AnimeSearchComponent
+
+    @Autowired
+    private lateinit var animeCommonComponent: AnimeCommonComponent
+
+    @Autowired
+    private lateinit var animeTranslationsComponent: AnimeTranslationsComponent
+
+    @Autowired
+    private lateinit var animeParseComponent: AnimeParseComponent
+
+    override fun getAnime(
+        pageNum: Int,
+        pageSize: Int,
+        genres: List<String>?,
+        status: AnimeStatus?,
+        filter: AnimeSearchFilter?,
+        searchQuery: String?,
+        season: AnimeSeason?,
+        ratingMpa: String?,
+        minimalAge: Int?,
+        type: AnimeType?,
+        year: List<Int>?,
+        translations: List<String>?,
+        studio: String?,
+    ): List<AnimeLight> {
+        return animeSearchComponent.getAnimeSearch(pageNum, pageSize, genres, status, filter, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
+    }
+
+    override fun getAnimeDetails(url: String): AnimeDetail {
+        return animeCommonComponent.getAnimeByUrl(url)
+    }
+
+    override fun getAnimeSimilar(url: String): List<AnimeLight> {
+        return animeCommonComponent.getAnimeSimilar(url)
+    }
+
+    override fun getAnimeRelated(url: String): List<AnimeRelationLight> {
+        return animeCommonComponent.getAnimeRelated(url)
+    }
+
+    override fun getAnimeScreenshots(url: String): List<String> {
+        return animeCommonComponent.getAnimeScreenshots(url)
+    }
+
+    override fun getAnimeEpisodes(url: String, pageNum: Int, pageSize: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
+        return animeCommonComponent.getAnimeEpisodes(url, pageNum, pageSize, sort)
+    }
+
+    override fun getAnimeMedia(url: String): List<AnimeMedia> {
+        return animeCommonComponent.getAnimeMedia(url)
+    }
+
+    override fun getAnimeYears(): List<String> {
+        return animeCommonComponent.getAnimeYears()
+    }
+
+    override fun getAnimeStudios(): List<AnimeStudio> {
+        return animeCommonComponent.getAnimeStudios()
+    }
+
+    override fun getAnimeGenres(): List<AnimeGenre> {
+        return animeCommonComponent.getAnimeGenres()
+    }
+
+    override fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount> {
+        return animeTranslationsComponent.getAnimeTranslationsCount(url)
+    }
+
+    override fun getAnimeTranslations(): List<AnimeTranslationTable> {
+        return animeTranslationsComponent.getAnimeTranslations()
+    }
+
+    override fun parseTranslations(translationsIDs: List<Int>) {
+        animeTranslationsComponent.addTranslationsToDB(translationsIDs)
+    }
+
+    override fun parseAnime(translationsIDs: String) {
+        animeParseComponent.addDataToDB(translationsIDs)
+    }
+}
