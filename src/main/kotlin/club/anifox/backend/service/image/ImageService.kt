@@ -16,9 +16,6 @@ import javax.imageio.ImageIO
 @Service
 class ImageService {
 
-    @Value("\${host_url}")
-    lateinit var host: String
-
     @Value("\${access_key_s3}")
     lateinit var accessKeyS3: String
 
