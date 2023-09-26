@@ -28,7 +28,7 @@ class ImageService {
     @Value("\${domain_s3}")
     lateinit var domainS3: String
 
-    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0): String {
+    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false): String {
         val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
             .withEndpointConfiguration(
                 AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1"),
@@ -43,6 +43,11 @@ class ImageService {
         val metadata = ObjectMetadata().apply {
             contentLength = readyData.size.toLong()
         }
+
+        if (newImage) {
+            s3.deleteObject(bucketNameS3, filePath)
+        }
+
         s3.putObject(bucketNameS3, filePath, inputStream, metadata)
 
         return "$domainS3/$filePath"

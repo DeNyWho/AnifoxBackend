@@ -13,7 +13,6 @@ import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
-import io.ktor.util.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.Expression

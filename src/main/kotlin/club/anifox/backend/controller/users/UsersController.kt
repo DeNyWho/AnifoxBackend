@@ -25,11 +25,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @CrossOrigin("*")
 @Tag(name = "UsersApi", description = "All about users")
+@PreAuthorize("hasRole('ROLE_USER')")
 @RequestMapping("/api/users/")
 class UsersController(
     private val userService: UserService,
 ) {
-    @PreAuthorize("hasRole('ROLE_USER')")
+
     @PostMapping("anime/{url}/favorite")
     fun addToFavoriteAnime(
         @RequestHeader(value = "Authorization") token: String,
@@ -41,7 +42,6 @@ class UsersController(
         userService.addToFavoritesAnime(token, url, status, episodeNumber, response)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("anime/favorite/{status}")
     fun getFavoriteAnimeByStatus(
         @RequestHeader(value = "Authorization") token: String,
@@ -58,7 +58,6 @@ class UsersController(
         return userService.getFavoritesAnimeByStatus(token, status, pageNum, pageSize)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("recommendations")
     @Operation(summary = "recommendation anime")
     fun getAnimeRecommendations(
@@ -75,7 +74,6 @@ class UsersController(
         return userService.getRecommendations(token, pageNum, pageSize)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("anime/{url}/recently")
     fun addToRecentlyAnime(
         @RequestHeader(value = "Authorization") token: String,
@@ -86,7 +84,6 @@ class UsersController(
         userService.addToRecentlyAnime(token, url, recently, response)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("anime/recently")
     fun getRecentlyAnime(
         @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
@@ -103,7 +100,6 @@ class UsersController(
         return userService.getRecentlyAnimeAll(token, pageNum, pageSize)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("anime/{url}/recently")
     fun getRecentlyAnimeByUrl(
         @RequestHeader(value = "Authorization") token: String,
@@ -113,7 +109,6 @@ class UsersController(
         return userService.getRecentlyAnimeByUrl(token, url)
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping("anime/{url}/rating")
     fun setAnimeRating(
         @RequestHeader(value = "Authorization") token: String,

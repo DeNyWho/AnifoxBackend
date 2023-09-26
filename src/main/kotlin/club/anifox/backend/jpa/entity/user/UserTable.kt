@@ -32,10 +32,10 @@ data class UserTable(
     val email: String? = null,
 
     @Column(nullable = true)
-    val image: String? = null,
+    var image: String? = null,
 
     @Column(nullable = true)
-    val nickName: String? = null,
+    var nickName: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = true)
