@@ -32,7 +32,7 @@ class AccountInteractionComponent {
             height = 400,
             newImage = true,
         )
-
+0
         userRepository.save(user)
     }
 

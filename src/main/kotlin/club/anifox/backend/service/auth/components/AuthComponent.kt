@@ -26,6 +26,8 @@ import org.keycloak.admin.client.resource.UserResource
 import org.keycloak.authorization.client.AuthzClient
 import org.keycloak.representations.idm.RoleRepresentation
 import org.keycloak.representations.idm.UserRepresentation
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.BadCredentialsException
@@ -44,7 +46,7 @@ class AuthComponent(
     @Value("\${keycloak.credentials.secret}") private val secret: String,
     @Value("\${keycloak.auth-server-url}") private val authServer: String,
     private val authzClient: AuthzClient,
-    private val client: HttpClient,
+    private val httpClient: HttpClient,
 ) {
     fun authenticate(userIdentifier: String, password: String, response: HttpServletResponse) {
         val user = if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
@@ -79,7 +81,7 @@ class AuthComponent(
         }
 
         val refresh = runBlocking {
-            client.post("${authServer}realms/$realm/protocol/openid-connect/token") {
+            httpClient.post("${authServer}realms/$realm/protocol/openid-connect/token") {
                 headers {
                     contentType(ContentType.Application.FormUrlEncoded)
                 }
@@ -97,6 +99,7 @@ class AuthComponent(
     }
 
     fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
+        println("SDAF = $signUpRequest")
         if (userRepository.findByEmail(signUpRequest.email).isPresent) {
             throw BadCredentialsException("Email already exists")
         }
@@ -129,29 +132,40 @@ class AuthComponent(
             usersResource.create(user).use { res ->
                 userCreateResponseDto.statusCode = res.status
                 userCreateResponseDto.status = res.statusInfo.toString()
+                println(res.status)
+                println(res.cookies)
                 if (res.status == HttpStatus.CREATED.value()) {
                     val userId = CreatedResponseUtil.getCreatedId(res)
-
+                    println(userId)
                     userCreateResponseDto.userId = userId
                     val passwordCred = keycloakService.getCredentialRepresentation(signUpRequest.password)
+                    println("WTF = ${usersResource[userId]}")
+                    println("WTF = $passwordCred")
                     val userResource = usersResource[userId]
+                    println("WTF = ${userResource.credentials()}")
                     userResource.resetPassword(passwordCred)
+                    println("ZXC")
                     insertNewRole(role.name.name, realmResource, userResource)
+                    println("ZXCWER")
 
                     val userEntity = UserTable(
                         email = signUpRequest.email,
                         login = signUpRequest.login,
                         password = passwordEncoder.encode(signUpRequest.password),
                         roles = mutableSetOf(),
-                        nickName = signUpRequest.nickName,
+                        image = "",
+                        nickName = signUpRequest.nickname,
                         typeUser = TypeUser.AniFox,
                     )
+
+                    println("HERE SAFED!@#")
 
                     userEntity.roles.add(role)
                     userRepository.save(userEntity)
                 }
             }
         } catch (e: Exception) {
+            println(e.message)
             throw BadRequestException("${e.message}")
         }
 

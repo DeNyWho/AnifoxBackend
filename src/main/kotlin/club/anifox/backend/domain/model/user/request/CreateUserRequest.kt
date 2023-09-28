@@ -7,5 +7,5 @@ data class CreateUserRequest(
     val login: String,
     val email: String,
     val password: String,
-    val nickName: String,
+    val nickname: String,
 )

@@ -20,11 +20,11 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @CrossOrigin("*")
 @Tag(name = "AuthApi", description = "All about auth")
-@RequestMapping("/api/auth/")
+@RequestMapping("/api/auth")
 class AuthController(
     private val authService: AuthService,
 ) {
-    @PostMapping("authentication")
+    @PostMapping("/authentication")
     @ApiResponses(
         value = [
             ApiResponse(
@@ -61,12 +61,13 @@ class AuthController(
         return authService.authenticate(loginRequest = loginRequest, res)
     }
 
-    @PostMapping("registration")
+    @PostMapping("/registration")
     fun registration(@RequestBody signUpRequest: CreateUserRequest, response: HttpServletResponse) {
+        println("WWW")
         return authService.registration(signUpRequest, response)
     }
 
-    @GetMapping("refreshToken")
+    @GetMapping("/refreshToken")
     fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
         return authService.refreshAccessToken(refreshToken, response)
     }
