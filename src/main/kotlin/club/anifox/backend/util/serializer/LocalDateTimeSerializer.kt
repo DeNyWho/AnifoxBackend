@@ -11,7 +11,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
-    private val dtf: DateTimeFormatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneOffset.UTC)
+    private val dtf: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneOffset.UTC)
 
     override fun serialize(encoder: Encoder, value: LocalDateTime) {
         encoder.encodeString(value.format(dtf))
