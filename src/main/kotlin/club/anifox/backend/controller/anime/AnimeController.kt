@@ -6,6 +6,7 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
+import club.anifox.backend.domain.model.anime.AnimeMedia
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
@@ -121,8 +122,8 @@ class AnimeController {
     @Operation(summary = "anime media")
     fun getAnimeMedia(
         @PathVariable url: String,
-    ): List<String> {
-        return animeService.getAnimeScreenshots(url)
+    ): List<AnimeMedia> {
+        return animeService.getAnimeMedia(url)
     }
 
     @GetMapping("{url}/episodes")
