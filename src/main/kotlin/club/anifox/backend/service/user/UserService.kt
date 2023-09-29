@@ -30,6 +30,10 @@ class UserService(
         return userAnimeInteractionsComponent.getRecentlyAnimeList(token = token, pageNum = pageNum, pageSize = pageSize)
     }
 
+    override fun updatePreferredGenres(token: String, genres: List<String>, response: HttpServletResponse) {
+        return userAnimeInteractionsComponent.updatePreferredGenres(token = token, genres = genres, response = response)
+    }
+
     override fun getRecommendations(token: String, pageNum: Int, pageSize: Int): List<AnimeLight> {
         return userAnimeInteractionsComponent.getRecommendations(token = token, pageNum = pageNum, pageSize = pageSize)
     }

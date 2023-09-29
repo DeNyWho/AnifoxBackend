@@ -1,6 +1,7 @@
 package club.anifox.backend.jpa.entity.user
 
 import club.anifox.backend.domain.enums.user.TypeUser
+import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -50,6 +51,12 @@ data class UserTable(
     )
     val roles: MutableSet<RoleTable> = mutableSetOf(),
 
+    @ManyToMany(
+        fetch = FetchType.EAGER,
+        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
+    )
+    var preferredGenres: MutableSet<AnimeGenreTable> = mutableSetOf(),
+
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "user",
@@ -65,4 +72,9 @@ data class UserTable(
         orphanRemoval = true,
     )
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
-)
+) {
+    fun addPreferredGenres(genres: List<AnimeGenreTable>): UserTable {
+        preferredGenres.addAll(genres)
+        return this
+    }
+}

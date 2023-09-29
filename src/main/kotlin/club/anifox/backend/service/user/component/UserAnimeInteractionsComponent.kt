@@ -233,6 +233,17 @@ class UserAnimeInteractionsComponent {
         animeRepository.save(anime)
     }
 
+    fun updatePreferredGenres(token: String, genres: List<String>, response: HttpServletResponse) {
+        val user = userUtils.checkUser(token)
+        val genresExist = animeUtils.checkGenres(genres)
+
+        if (genresExist.isEmpty()) {
+            throw NotFoundException("Genres not found")
+        }
+
+        user.addPreferredGenres(genresExist)
+    }
+
     fun addRecently(token: String, url: String, recently: AnimeRecentlyRequest, response: HttpServletResponse) {
         val user = userUtils.checkUser(token)
         val anime = animeUtils.checkAnime(url)

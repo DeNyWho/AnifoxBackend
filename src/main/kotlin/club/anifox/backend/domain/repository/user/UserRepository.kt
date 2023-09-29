@@ -14,4 +14,5 @@ interface UserRepository {
     fun getFavoritesAnimeByStatus(token: String, status: StatusFavourite, pageNum: Int, pageSize: Int): List<AnimeLight>
     fun addToRecentlyAnime(token: String, url: String, recently: AnimeRecentlyRequest, response: HttpServletResponse)
     fun getRecommendations(token: String, pageNum: Int, pageSize: Int): List<AnimeLight>
+    fun updatePreferredGenres(token: String, genres: List<String>, response: HttpServletResponse)
 }

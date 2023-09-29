@@ -24,14 +24,14 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @CrossOrigin("*")
-@Tag(name = "UsersApi", description = "All about users")
+@Tag(name = "UsersAnimeApi", description = "All about user anime")
 @PreAuthorize("hasRole('ROLE_USER')")
-@RequestMapping("/api/users/")
-class UsersController(
+@RequestMapping("/api/users/anime/")
+class UsersAnimeController(
     private val userService: UserService,
 ) {
 
-    @PostMapping("anime/{url}/favorite")
+    @PostMapping("{url}/favorite")
     fun addToFavoriteAnime(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
@@ -42,7 +42,7 @@ class UsersController(
         userService.addToFavoritesAnime(token, url, status, episodeNumber, response)
     }
 
-    @GetMapping("anime/favorite/{status}")
+    @GetMapping("favorite/{status}")
     fun getFavoriteAnimeByStatus(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable status: StatusFavourite,
@@ -74,7 +74,7 @@ class UsersController(
         return userService.getRecommendations(token, pageNum, pageSize)
     }
 
-    @PostMapping("anime/{url}/recently")
+    @PostMapping("{url}/recently")
     fun addToRecentlyAnime(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
@@ -84,7 +84,16 @@ class UsersController(
         userService.addToRecentlyAnime(token, url, recently, response)
     }
 
-    @GetMapping("anime/recently")
+    @PostMapping("genres")
+    fun updatePreferredGenres(
+        @RequestHeader(value = "Authorization") token: String,
+        @RequestBody genres: List<String>,
+        response: HttpServletResponse,
+    ) {
+        userService.updatePreferredGenres(token, genres, response)
+    }
+
+    @GetMapping("recently")
     fun getRecentlyAnime(
         @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
             @Min(0)
@@ -100,7 +109,7 @@ class UsersController(
         return userService.getRecentlyAnimeAll(token, pageNum, pageSize)
     }
 
-    @GetMapping("anime/{url}/recently")
+    @GetMapping("{url}/recently")
     fun getRecentlyAnimeByUrl(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
@@ -109,7 +118,7 @@ class UsersController(
         return userService.getRecentlyAnimeByUrl(token, url)
     }
 
-    @PostMapping("anime/{url}/rating")
+    @PostMapping("{url}/rating")
     fun setAnimeRating(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,

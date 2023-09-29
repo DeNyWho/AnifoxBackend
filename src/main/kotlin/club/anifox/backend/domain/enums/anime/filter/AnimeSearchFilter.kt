@@ -5,5 +5,5 @@ enum class AnimeSearchFilter {
     DateASC,
     DateDESC,
     ShikimoriRating,
-    Random,
+//    Random,
 }

@@ -201,17 +201,17 @@ class AnimeSearchComponent {
 //                )
 //            }
             AnimeSearchFilter.DateASC -> {
-                listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedAt")))
+                listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
             }
             AnimeSearchFilter.DateDESC -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedAt")))
+                listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
             }
             AnimeSearchFilter.ShikimoriRating -> {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))
             }
-            AnimeSearchFilter.Random -> {
-                listOf(criteriaBuilder.asc(criteriaBuilder.function("random", AnimeTable::class.java)))
-            }
+//            AnimeSearchFilter.Random -> {
+//                listOf(criteriaBuilder.desc(criteriaBuilder.function("random()", AnimeTable::class.java)))
+//            }
             else -> emptyList()
         }
 

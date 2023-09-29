@@ -2,11 +2,15 @@ package club.anifox.backend.util
 
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import jakarta.persistence.EntityManager
 import jakarta.persistence.criteria.CriteriaBuilder
+import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import jakarta.persistence.criteria.Predicate
+import jakarta.persistence.criteria.Root
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,6 +21,25 @@ class AnimeUtils(
 
     fun checkAnime(url: String): AnimeTable {
         return animeRepository.findByUrl(url).orElseThrow { NotFoundException("Anime not found") }
+    }
+
+    fun checkGenres(genres: List<String>): List<AnimeGenreTable> {
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeGenreTable> = criteriaBuilder.createQuery(AnimeGenreTable::class.java)
+        val root: Root<AnimeGenreTable> = criteriaQuery.from(AnimeGenreTable::class.java)
+
+        val predicates: List<Predicate> = genres.map { id ->
+            criteriaBuilder.equal(root.get<String>("id"), id)
+        }
+
+        val finalPredicate: Predicate = criteriaBuilder.or(*predicates.toTypedArray())
+
+        criteriaQuery.select(root)
+            .where(finalPredicate)
+
+        val query = entityManager.createQuery(criteriaQuery)
+
+        return query.resultList
     }
 
     fun checkEpisode(url: String, episodeNumber: Int): AnimeEpisodeTable {
