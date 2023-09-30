@@ -35,7 +35,7 @@ class AccountController(
     @PostMapping("nickname")
     fun changeNickName(
         @RequestHeader(value = "Authorization") token: String,
-        @RequestParam(name = "nick_name") newNickName: String,
+        @RequestParam(name = "nickname") newNickName: String,
         response: HttpServletResponse,
     ) {
         accountService.changeNickName(token, newNickName, response)

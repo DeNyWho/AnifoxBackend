@@ -3,13 +3,13 @@ package club.anifox.backend.controller.auth
 import club.anifox.backend.domain.model.user.request.AuthenticationRequest
 import club.anifox.backend.domain.model.user.request.CreateUserRequest
 import club.anifox.backend.service.auth.AuthService
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
-import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,6 +25,22 @@ class AuthController(
     private val authService: AuthService,
 ) {
     @PostMapping("/authentication")
+    @Operation(
+        requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = [
+                Content(
+                    mediaType = "application/json",
+                    examples = [
+                        ExampleObject(
+                            value = "{ \"user_identifier\": "
+                                + "\"user OR email\","
+                                + "\"password\": \"String123!\" }"
+                        )
+                    ]
+                )
+            ]
+        )
+    )
     @ApiResponses(
         value = [
             ApiResponse(
@@ -54,7 +70,7 @@ class AuthController(
         ],
     )
     fun authenticate(
-        @Valid @RequestBody
+        @RequestBody
         loginRequest: AuthenticationRequest,
         res: HttpServletResponse,
     ) {
