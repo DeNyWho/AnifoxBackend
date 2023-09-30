@@ -32,14 +32,14 @@ class AuthController(
                     mediaType = "application/json",
                     examples = [
                         ExampleObject(
-                            value = "{ \"user_identifier\": "
-                                + "\"user OR email\","
-                                + "\"password\": \"String123!\" }"
-                        )
-                    ]
-                )
-            ]
-        )
+                            value = "{ \"user_identifier\": " +
+                                "\"user OR email\"," +
+                                "\"password\": \"String123!\" }",
+                        ),
+                    ],
+                ),
+            ],
+        ),
     )
     @ApiResponses(
         value = [
