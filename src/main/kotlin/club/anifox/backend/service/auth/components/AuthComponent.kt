@@ -66,7 +66,7 @@ class AuthComponent(
                 refreshExpires = auth.refreshExpiresIn,
             )
         } catch (e: Exception) {
-            throw BadCredentialsException("Bad Request: ${e.message}}")
+            throw BadRequestException("${e.message}}")
         }
     }
 

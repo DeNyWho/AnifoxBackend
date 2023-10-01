@@ -56,10 +56,10 @@ class AnimeController {
         genres: List<String>?,
         status: AnimeStatus?,
         filter: AnimeSearchFilter?,
-        @Schema(name = "searchQuery", required = false, nullable = true) searchQuery: String?,
+        @Schema(name = "search_query", required = false, nullable = true) searchQuery: String?,
         season: AnimeSeason?,
-        @Schema(name = "ratingMpa", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") ratingMpa: String?,
-        @Schema(name = "minimalAge", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") minimalAge: Int?,
+        @Schema(name = "rating_mpa", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") ratingMpa: String?,
+        @Schema(name = "minimal_age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") minimalAge: Int?,
         type: AnimeType?,
         @Schema(name = "studio", required = false, nullable = true, description = "Anime studio made by") studio: String?,
         @RequestParam(name = "year", required = false)
