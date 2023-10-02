@@ -26,23 +26,23 @@ class UserService(
         return userAnimeInteractionsComponent.getRecentlyByUrl(token = token, url = url)
     }
 
-    override fun getRecentlyAnimeAll(token: String, pageNum: Int, pageSize: Int): List<AnimeRecently> {
-        return userAnimeInteractionsComponent.getRecentlyAnimeList(token = token, pageNum = pageNum, pageSize = pageSize)
+    override fun getRecentlyAnimeAll(token: String, page: Int, limit: Int): List<AnimeRecently> {
+        return userAnimeInteractionsComponent.getRecentlyAnimeList(token = token, page = page, limit = limit)
     }
 
     override fun updatePreferredGenres(token: String, genres: List<String>, response: HttpServletResponse) {
         return userAnimeInteractionsComponent.updatePreferredGenres(token = token, genres = genres, response = response)
     }
 
-    override fun getRecommendations(token: String, pageNum: Int, pageSize: Int): List<AnimeLight> {
-        return userAnimeInteractionsComponent.getRecommendations(token = token, pageNum = pageNum, pageSize = pageSize)
+    override fun getRecommendations(token: String, page: Int, limit: Int): List<AnimeLight> {
+        return userAnimeInteractionsComponent.getRecommendations(token = token, page = page, limit = limit)
     }
 
     override fun addToFavoritesAnime(token: String, url: String, status: StatusFavourite, episodeNumber: Int?, response: HttpServletResponse) {
         userAnimeInteractionsComponent.addToFavoritesAnime(token = token, url = url, status = status, episodeNumber = episodeNumber, response = response)
     }
 
-    override fun getFavoritesAnimeByStatus(token: String, status: StatusFavourite, pageNum: Int, pageSize: Int): List<AnimeLight> {
-        return userAnimeInteractionsComponent.getFavoritesByStatus(token = token, status = status, pageNum = pageNum, pageSize = pageSize)
+    override fun getFavoritesAnimeByStatus(token: String, status: StatusFavourite, page: Int, limit: Int): List<AnimeLight> {
+        return userAnimeInteractionsComponent.getFavoritesByStatus(token = token, status = status, page = page, limit = limit)
     }
 }

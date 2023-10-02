@@ -18,11 +18,11 @@ import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 interface AnimeRepository {
 
     fun getAnime(
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
         genres: List<String>?,
         status: AnimeStatus?,
-        order: AnimeSearchFilter?,
+        filter: AnimeSearchFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -45,5 +45,5 @@ interface AnimeRepository {
     fun getAnimeYears(): List<String>
     fun getAnimeStudios(): List<AnimeStudio>
     fun getAnimeGenres(): List<AnimeGenre>
-    fun getAnimeEpisodes(url: String, pageNum: Int, pageSize: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
+    fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
 }

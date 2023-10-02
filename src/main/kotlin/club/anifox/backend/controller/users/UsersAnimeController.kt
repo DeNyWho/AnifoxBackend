@@ -46,32 +46,32 @@ class UsersAnimeController(
     fun getFavoriteAnimeByStatus(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable status: StatusFavourite,
-        @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
+        @RequestParam(defaultValue = "0", name = "page") page:
             @Min(0)
             @Max(500)
             Int,
-        @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
+        @RequestParam(defaultValue = "48", name = "limit") limit:
             @Min(1)
             @Max(500)
             Int,
     ): List<AnimeLight> {
-        return userService.getFavoritesAnimeByStatus(token, status, pageNum, pageSize)
+        return userService.getFavoritesAnimeByStatus(token, status, page, limit)
     }
 
     @GetMapping("recommendations")
     @Operation(summary = "recommendation anime")
     fun getAnimeRecommendations(
         @RequestHeader(value = "Authorization") token: String,
-        @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
+        @RequestParam(defaultValue = "0", name = "page") page:
             @Min(0)
             @Max(500)
             Int,
-        @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
+        @RequestParam(defaultValue = "48", name = "limit") limit:
             @Min(1)
             @Max(500)
             Int,
     ): List<AnimeLight> {
-        return userService.getRecommendations(token, pageNum, pageSize)
+        return userService.getRecommendations(token, page, limit)
     }
 
     @PostMapping("{url}/recently")
@@ -95,18 +95,18 @@ class UsersAnimeController(
 
     @GetMapping("recently")
     fun getRecentlyAnime(
-        @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
+        @RequestParam(defaultValue = "0", name = "page") page:
             @Min(0)
             @Max(500)
             Int,
-        @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
+        @RequestParam(defaultValue = "48", name = "limit") limit:
             @Min(1)
             @Max(500)
             Int,
         @RequestHeader(value = "Authorization") token: String,
         response: HttpServletResponse,
     ): List<AnimeRecently> {
-        return userService.getRecentlyAnimeAll(token, pageNum, pageSize)
+        return userService.getRecentlyAnimeAll(token, page, limit)
     }
 
     @GetMapping("{url}/recently")

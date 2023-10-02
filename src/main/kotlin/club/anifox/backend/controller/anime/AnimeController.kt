@@ -41,13 +41,13 @@ class AnimeController {
     @GetMapping
     @Operation(summary = "get all anime")
     fun getAnime(
-        @Schema(defaultValue = "0", name = "pageNum")
-        pageNum:
+        @Schema(defaultValue = "0", name = "page")
+        page:
             @Min(0)
             @Max(500)
             Int,
-        @Schema(defaultValue = "48", name = "pageSize")
-        pageSize:
+        @Schema(defaultValue = "48", name = "limit")
+        limit:
             @Min(1)
             @Max(500)
             Int,
@@ -70,8 +70,8 @@ class AnimeController {
         translations: List<String>?,
     ): List<AnimeLight> {
         return animeService.getAnime(
-            pageNum = pageNum,
-            pageSize = pageSize,
+            page = page,
+            limit = limit,
             genres = genres,
             status = status,
             filter = filter,
@@ -130,17 +130,17 @@ class AnimeController {
     @Operation(summary = "anime episodes")
     fun getAnimeEpisodes(
         @PathVariable url: String,
-        @RequestParam(defaultValue = "0", name = "pageNum") pageNum:
+        @RequestParam(defaultValue = "0", name = "page") page:
             @Min(0)
             @Max(500)
             Int,
-        @RequestParam(defaultValue = "48", name = "pageSize") pageSize:
+        @RequestParam(defaultValue = "48", name = "limit") limit:
             @Min(1)
             @Max(500)
             Int,
         sort: AnimeEpisodeFilter?,
     ): List<AnimeEpisodeLight> {
-        return animeService.getAnimeEpisodes(url, pageNum, pageSize, sort)
+        return animeService.getAnimeEpisodes(url, page, limit, sort)
     }
 
     @GetMapping("years")

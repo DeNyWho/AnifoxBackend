@@ -188,7 +188,7 @@ class AnimeCommonComponent {
         return animeGenreRepository.findAll().map { it.toGenre() }
     }
 
-    fun getAnimeEpisodes(url: String, pageNum: Int, pageSize: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
+    fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -210,9 +210,9 @@ class AnimeCommonComponent {
 
         val query = entityManager.createQuery(criteriaQuery)
 
-        val firstResult = (pageNum - 1) * pageSize
+        val firstResult = (page - 1) * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
-        query.maxResults = pageSize
+        query.maxResults = limit
         val a = query.resultList
         return query.resultList.map { it.toAnimeEpisodeLight() }
     }

@@ -61,12 +61,14 @@ dependencies {
     testImplementation(libs.assertk)
 }
 
+tasks.getByPath("compileKotlin").dependsOn("ktlintFormat")
+
 ktlint {
     android = false
     ignoreFailures = false
+
     reporters {
         reporter(ReporterType.PLAIN)
-        reporter(ReporterType.JSON)
     }
 }
 

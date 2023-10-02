@@ -39,8 +39,8 @@ class AnimeSearchComponent {
     private lateinit var animeGenreRepository: AnimeGenreRepository
 
     fun getAnimeSearch(
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
         genres: List<String>?,
         status: AnimeStatus?,
         filter: AnimeSearchFilter?,
@@ -54,7 +54,7 @@ class AnimeSearchComponent {
         studio: String?,
     ): List<AnimeLight> {
         return findAnime(
-            pageable = PageRequest.of(pageNum, pageSize),
+            pageable = PageRequest.of(page, limit),
             status = status,
             searchQuery = searchQuery,
             ratingMpa = ratingMpa,

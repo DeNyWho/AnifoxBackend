@@ -106,11 +106,11 @@ class UserAnimeInteractionsComponent {
     fun getFavoritesByStatus(
         token: String,
         status: StatusFavourite,
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
     ): List<AnimeLight> {
         val user = userUtils.checkUser(token)
-        val favoriteAnime = userFavoriteAnimeRepository.findByUserAndStatus(user, status, PageRequest.of(pageNum, pageSize))
+        val favoriteAnime = userFavoriteAnimeRepository.findByUserAndStatus(user, status, PageRequest.of(page, limit))
 
         if (favoriteAnime.isNotEmpty()) {
             return favoriteAnime.map { it.anime.toAnimeLight() }
@@ -121,8 +121,8 @@ class UserAnimeInteractionsComponent {
 
     fun getRecommendations(
         token: String,
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
     ): List<AnimeLight> {
         val user = userUtils.checkUser(token)
 
@@ -145,7 +145,7 @@ class UserAnimeInteractionsComponent {
         val favorite = query.resultList
 
         if (favorite.isNotEmpty()) {
-            return recommendationProcess(favorite, PageRequest.of(pageNum, pageSize))
+            return recommendationProcess(favorite, PageRequest.of(page, limit))
         }
 
         throw NotFoundException("The user has not recommendations")
@@ -334,11 +334,11 @@ class UserAnimeInteractionsComponent {
 
     fun getRecentlyAnimeList(
         token: String,
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
     ): List<AnimeRecently> {
         val user = userUtils.checkUser(token)
-        val recently = userRecentlyRepository.findByUserTable(user, PageRequest.of(pageNum, pageSize))
+        val recently = userRecentlyRepository.findByUserTable(user, PageRequest.of(page, limit))
 
         if (recently.isNotEmpty()) {
             return recently.map { it.toRecently() }

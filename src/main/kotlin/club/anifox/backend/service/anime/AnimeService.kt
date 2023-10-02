@@ -38,8 +38,8 @@ class AnimeService : AnimeRepository {
     private lateinit var animeParseComponent: AnimeParseComponent
 
     override fun getAnime(
-        pageNum: Int,
-        pageSize: Int,
+        page: Int,
+        limit: Int,
         genres: List<String>?,
         status: AnimeStatus?,
         filter: AnimeSearchFilter?,
@@ -52,7 +52,7 @@ class AnimeService : AnimeRepository {
         translations: List<String>?,
         studio: String?,
     ): List<AnimeLight> {
-        return animeSearchComponent.getAnimeSearch(pageNum, pageSize, genres, status, filter, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
+        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, filter, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
     }
 
     override fun getAnimeDetails(url: String): AnimeDetail {
@@ -71,8 +71,8 @@ class AnimeService : AnimeRepository {
         return animeCommonComponent.getAnimeScreenshots(url)
     }
 
-    override fun getAnimeEpisodes(url: String, pageNum: Int, pageSize: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
-        return animeCommonComponent.getAnimeEpisodes(url, pageNum, pageSize, sort)
+    override fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
+        return animeCommonComponent.getAnimeEpisodes(url, page, limit, sort)
     }
 
     override fun getAnimeMedia(url: String): List<AnimeMedia> {
