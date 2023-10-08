@@ -112,7 +112,7 @@ logging:
             sql:
               BasicBinder: debug
       springframework:
-        security: info
-        web: info
+        security: DEBUG
+        web: DEBUG
         data:
-          jpa: info
+          jpa: DEBUG

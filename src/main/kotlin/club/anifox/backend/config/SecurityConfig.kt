@@ -1,5 +1,6 @@
 package club.anifox.backend.config
 
+import club.anifox.backend.util.UnauthorizedEntryPoint
 import org.keycloak.adapters.KeycloakConfigResolver
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver
 import org.keycloak.adapters.springsecurity.KeycloakConfiguration
@@ -20,10 +21,6 @@ import org.springframework.security.core.session.SessionRegistry
 import org.springframework.security.core.session.SessionRegistryImpl
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.oauth2.client.registration.ClientRegistration
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
-import org.springframework.security.oauth2.core.AuthorizationGrantType
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy
@@ -36,6 +33,7 @@ class SecurityConfig {
 
     @Autowired
     fun configureGlobal(auth: AuthenticationManagerBuilder) {
+        println("AC DC")
         val grantedAuthorityMapper = SimpleAuthorityMapper()
         grantedAuthorityMapper.setPrefix(AUTHORITY_MAPPER_PREFIX)
         grantedAuthorityMapper.setConvertToUpperCase(true)
@@ -49,36 +47,21 @@ class SecurityConfig {
 
     @Bean
     fun sessionRegistry(): SessionRegistry {
+        println("AC DC ASD SWER")
         return SessionRegistryImpl()
     }
 
     @Bean
     @ConditionalOnMissingBean(HttpSessionManager::class)
     fun httpSessionManager(): HttpSessionManager {
+        println("AC DC ASD")
         return HttpSessionManager()
     }
 
     @Bean
     fun sessionAuthenticationStrategy(): SessionAuthenticationStrategy {
+        println("AC DC ZZX")
         return NullAuthenticatedSessionStrategy()
-    }
-
-    @Bean
-    fun clientRegistrationRepository(): InMemoryClientRegistrationRepository {
-        val clientRegistration = ClientRegistration.withRegistrationId("shikimori")
-            .clientId("YOUR_CLIENT_ID")
-            .clientSecret("YOUR_CLIENT_SECRET")
-            .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-            .authorizationUri("https://shikimori.one/oauth/authorize")
-            .tokenUri("https://shikimori.one/oauth/token")
-            .userInfoUri("https://shikimori.one/api/users/whoami")
-            .userNameAttributeName("id")
-            .clientName("Shikimori")
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .build()
-
-        return InMemoryClientRegistrationRepository(clientRegistration)
     }
 
     @Bean
@@ -87,8 +70,15 @@ class SecurityConfig {
     }
 
     @Bean
+    fun unauthorizedEntryPoint() = UnauthorizedEntryPoint()
+
+    @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        println("AC DC ZZ XX")
         http
+            .exceptionHandling {
+                it.authenticationEntryPoint(unauthorizedEntryPoint())
+            }
             .requiresChannel { requiresChannel ->
                 requiresChannel
                     .anyRequest()
@@ -103,14 +93,12 @@ class SecurityConfig {
             .cors {
                 it.disable()
             }
-//            .oauth2Login {
-//                it.defaultSuccessUrl("/callback")
-//            }
             .securityMatchers {
                 // only apply security to those endpoints
                 it.requestMatchers(
                     "/api/users/**",
                     "/api/**/admin/**",
+                    "/api/account/**",
                 )
                 it.requestMatchers(EndpointRequest.toAnyEndpoint())
             }
@@ -133,7 +121,11 @@ class SecurityConfig {
                 ).permitAll()
                 auth.requestMatchers("/api/**/admin/**").hasAuthority(ADMIN)
                 auth.requestMatchers("/api/users/**").hasAnyAuthority(ADMIN, USER)
+                auth.requestMatchers("/api/account/**").hasAnyAuthority(ADMIN, USER)
                 auth.anyRequest().authenticated()
+            }
+            .exceptionHandling {
+                it.authenticationEntryPoint(unauthorizedEntryPoint())
             }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
