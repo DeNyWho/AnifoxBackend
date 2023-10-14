@@ -56,10 +56,10 @@ class AnimeController {
         genres: List<String>?,
         status: AnimeStatus?,
         filter: AnimeSearchFilter?,
-        @Schema(name = "search_query", required = false, nullable = true) searchQuery: String?,
+        @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
-        @Schema(name = "rating_mpa", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") ratingMpa: String?,
-        @Schema(name = "minimal_age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") minimalAge: Int?,
+        @Schema(name = "rating", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") rating: String?,
+        @Schema(name = "age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") age: Int?,
         type: AnimeType?,
         @Schema(name = "studio", required = false, nullable = true, description = "Anime studio made by") studio: String?,
         @RequestParam(name = "year", required = false)
@@ -69,16 +69,17 @@ class AnimeController {
         @Parameter(name = "translation", description = "Require translation IDS", required = false)
         translations: List<String>?,
     ): List<AnimeLight> {
+        println("ZXCASD = $page | limit = $limit | searchQuery = $search | genres = $genres | status = $status | filter = $filter | ratingMpa = $rating | minimalAge = $age | year = $year")
         return animeService.getAnime(
             page = page,
             limit = limit,
             genres = genres,
             status = status,
             filter = filter,
-            searchQuery = searchQuery,
+            searchQuery = search,
             season = season,
-            ratingMpa = ratingMpa,
-            minimalAge = minimalAge,
+            ratingMpa = rating,
+            minimalAge = age,
             type = type,
             year = year,
             translations = translations,

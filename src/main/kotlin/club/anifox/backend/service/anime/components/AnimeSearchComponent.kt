@@ -91,6 +91,7 @@ class AnimeSearchComponent {
         criteriaQuery.select(root)
 
         val predicates: MutableList<Predicate> = mutableListOf()
+
         if (status != null) {
             predicates.add(criteriaBuilder.equal(root.get<String>("status"), AnimeStatus.valueOf(status.name)))
         }
@@ -140,7 +141,7 @@ class AnimeSearchComponent {
 
             val exactMatchPredicate: Predicate = criteriaBuilder.equal(root.get<String>("title"), searchQuery)
 
-            val otherTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("otherTitles", JoinType.LEFT)
+            val otherTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleOther", JoinType.LEFT)
             val otherTitlesExpression = criteriaBuilder.like(
                 criteriaBuilder.lower(otherTitlesJoin),
                 "%" + searchQuery.lowercase(Locale.getDefault()) + "%",

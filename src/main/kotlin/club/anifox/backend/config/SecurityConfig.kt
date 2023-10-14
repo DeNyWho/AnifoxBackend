@@ -33,7 +33,6 @@ class SecurityConfig {
 
     @Autowired
     fun configureGlobal(auth: AuthenticationManagerBuilder) {
-        println("AC DC")
         val grantedAuthorityMapper = SimpleAuthorityMapper()
         grantedAuthorityMapper.setPrefix(AUTHORITY_MAPPER_PREFIX)
         grantedAuthorityMapper.setConvertToUpperCase(true)
@@ -47,20 +46,17 @@ class SecurityConfig {
 
     @Bean
     fun sessionRegistry(): SessionRegistry {
-        println("AC DC ASD SWER")
         return SessionRegistryImpl()
     }
 
     @Bean
     @ConditionalOnMissingBean(HttpSessionManager::class)
     fun httpSessionManager(): HttpSessionManager {
-        println("AC DC ASD")
         return HttpSessionManager()
     }
 
     @Bean
     fun sessionAuthenticationStrategy(): SessionAuthenticationStrategy {
-        println("AC DC ZZX")
         return NullAuthenticatedSessionStrategy()
     }
 
@@ -74,11 +70,7 @@ class SecurityConfig {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        println("AC DC ZZ XX")
         http
-            .exceptionHandling {
-                it.authenticationEntryPoint(unauthorizedEntryPoint())
-            }
             .requiresChannel { requiresChannel ->
                 requiresChannel
                     .anyRequest()
