@@ -35,8 +35,6 @@ keycloak:
   truststore-password: ${server.ssl.trust-store-password}
   credentials:
     provider: secret
-  config:
-    file: keycloak.json
 
 spring:
   datasource:
