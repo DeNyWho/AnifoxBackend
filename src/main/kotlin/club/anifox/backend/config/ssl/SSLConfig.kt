@@ -1,4 +1,4 @@
-package club.anifox.backend.config
+package club.anifox.backend.config.ssl
 
 import io.ktor.client.*
 import io.ktor.client.engine.java.*

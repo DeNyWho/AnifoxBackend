@@ -1,5 +1,6 @@
 package club.anifox.backend.config
 
+import club.anifox.backend.config.jwt.JwtAuthConverter
 import club.anifox.backend.util.UnauthorizedEntryPoint
 import org.keycloak.adapters.KeycloakConfigResolver
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver
@@ -30,6 +31,9 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 @KeycloakConfiguration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 class SecurityConfig {
+
+    @Autowired
+    private lateinit var jwtAuthConverter: JwtAuthConverter
 
     @Autowired
     fun configureGlobal(auth: AuthenticationManagerBuilder) {
@@ -85,6 +89,11 @@ class SecurityConfig {
             .cors {
                 it.disable()
             }
+            .oauth2ResourceServer {
+                it.jwt { jwt ->
+                    jwt.jwtAuthenticationConverter(jwtAuthConverter)
+                }
+            }
             .securityMatchers {
                 // only apply security to those endpoints
                 it.requestMatchers(
@@ -111,14 +120,14 @@ class SecurityConfig {
                     "/swagger-ui/**",
                     "/webjars/**",
                 ).permitAll()
-                auth.requestMatchers("/api/**/admin/**").hasAuthority(ADMIN)
-                auth.requestMatchers("/api/users/**").hasAnyAuthority(ADMIN, USER)
-                auth.requestMatchers("/api/account/**").hasAnyAuthority(ADMIN, USER)
+                auth.requestMatchers("/api/**/admin/**").hasAnyRole(ADMIN)
+                auth.requestMatchers("/api/users/**").hasAnyRole(ADMIN, USER)
+                auth.requestMatchers("/api/account/**").hasAnyRole(ADMIN, USER)
                 auth.anyRequest().authenticated()
             }
-            .exceptionHandling {
-                it.authenticationEntryPoint(unauthorizedEntryPoint())
-            }
+//            .exceptionHandling {
+//                it.authenticationEntryPoint(unauthorizedEntryPoint())
+//            }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
         return http.build()

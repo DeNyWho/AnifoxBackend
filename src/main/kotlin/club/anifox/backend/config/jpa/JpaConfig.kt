@@ -1,4 +1,4 @@
-package club.anifox.backend.config
+package club.anifox.backend.config.jpa
 
 import jakarta.persistence.EntityManagerFactory
 import jakarta.persistence.criteria.CriteriaBuilder

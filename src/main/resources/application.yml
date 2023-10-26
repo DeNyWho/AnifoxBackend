@@ -13,6 +13,11 @@ server:
     key-store-provider: SUN
     trust-store-type: PKCS12
     trust-store-provider: SUN
+    key-store: ${server.ssl.key-store}
+    key-store-password: ${server.ssl.key-store-password}
+    trust-store: ${server.ssl.trust-store}
+    trust-store-password: ${server.ssl.trust-store-password}
+
 
 springdoc:
   swagger-ui:
@@ -31,7 +36,7 @@ keycloak:
   credentials:
     provider: secret
   config:
-    file: keycloak
+    file: keycloak.json
 
 spring:
   datasource:
@@ -54,13 +59,11 @@ spring:
       prefix: /WEB-INF/jsp/
       suffix: .jsp
   security:
-    user:
-      password: admin
-      name: admin
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI}/protocol/openid-connect/certs
   mail:
     properties:
       mail:
@@ -101,18 +104,24 @@ spring:
             factory_class: org.hibernate.cache.ehcache.EhCacheRegionFactory
           ehcache:
             config: classpath:ehcache.xml
+jwt:
+  auth:
+    converter:
+      resource-id: ${keycloak.resource}
+      principal-attribute: preferred_username
 
 logging:
   level:
     org:
+      keycloak: trace
       hibernate:
-        sql: debug
+        sql: trace
         type:
           descriptor:
             sql:
-              BasicBinder: debug
+              BasicBinder: trace
       springframework:
-        security: DEBUG
-        web: DEBUG
+        security: trace
+        web: trace
         data:
-          jpa: DEBUG
+          jpa: trace

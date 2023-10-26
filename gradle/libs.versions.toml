@@ -9,7 +9,7 @@ ktlint = "11.5.1"
 jakarta-api = "6.0.0"
 jakarta-persistence = "3.1.0"
 swagger = "2.2.0"
-keycloak = "22.0.2"
+keycloak = "21.0.0"
 mapstruct = "1.5.5.Final"
 ktor = "2.3.4"
 amazon-s3 = "1.12.500"
@@ -52,6 +52,7 @@ spring-boot-starter-data-elasticsearch = { module = "org.springframework.boot:sp
 spring-boot-starter-tomcat = { module = "org.springframework.boot:spring-boot-starter-tomcat" }
 spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
 spring-boot-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
+spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
 
 #Tests
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }

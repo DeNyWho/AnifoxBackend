@@ -69,7 +69,6 @@ class AnimeController {
         @Parameter(name = "translation", description = "Require translation IDS", required = false)
         translations: List<String>?,
     ): List<AnimeLight> {
-        println("ZXCASD = $page | limit = $limit | searchQuery = $search | genres = $genres | status = $status | filter = $filter | ratingMpa = $rating | minimalAge = $age | year = $year")
         return animeService.getAnime(
             page = page,
             limit = limit,

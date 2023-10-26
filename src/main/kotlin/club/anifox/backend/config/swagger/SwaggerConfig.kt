@@ -1,4 +1,4 @@
-package club.anifox.backend.config
+package club.anifox.backend.config.swagger
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact

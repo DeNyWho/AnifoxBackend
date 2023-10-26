@@ -97,7 +97,6 @@ class AuthComponent(
     }
 
     fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
-        println("SDAF = $signUpRequest")
         if (userRepository.findByEmail(signUpRequest.email).isPresent) {
             throw BadCredentialsException("Email already exists")
         }
@@ -130,21 +129,14 @@ class AuthComponent(
             usersResource.create(user).use { res ->
                 userCreateResponseDto.statusCode = res.status
                 userCreateResponseDto.status = res.statusInfo.toString()
-                println(res.status)
-                println(res.cookies)
                 if (res.status == HttpStatus.CREATED.value()) {
                     val userId = CreatedResponseUtil.getCreatedId(res)
-                    println(userId)
+
                     userCreateResponseDto.userId = userId
                     val passwordCred = keycloakService.getCredentialRepresentation(signUpRequest.password)
-                    println("WTF = ${usersResource[userId]}")
-                    println("WTF = $passwordCred")
                     val userResource = usersResource[userId]
-                    println("WTF = ${userResource.credentials()}")
                     userResource.resetPassword(passwordCred)
-                    println("ZXC")
                     insertNewRole(role.name.name, realmResource, userResource)
-                    println("ZXCWER")
 
                     val userEntity = UserTable(
                         email = signUpRequest.email,
@@ -155,8 +147,6 @@ class AuthComponent(
                         nickName = signUpRequest.nickname,
                         typeUser = TypeUser.AniFox,
                     )
-
-                    println("HERE SAFED!@#")
 
                     userEntity.roles.add(role)
                     userRepository.save(userEntity)

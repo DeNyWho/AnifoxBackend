@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -25,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @CrossOrigin("*")
 @Tag(name = "UsersAnimeApi", description = "All about user anime")
-@PreAuthorize("hasRole('ROLE_USER')")
 @RequestMapping("/api/users/anime/")
 class UsersAnimeController(
     private val userService: UserService,
