@@ -174,7 +174,7 @@ class AnimeParseComponent {
                 try {
                     val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationID)
 
-                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
+                    val shikimori = shikimoriComponent.checkShikimori("${animeTemp.shikimoriId}")
 
                     var userRatesStats = 0
 
@@ -319,7 +319,7 @@ class AnimeParseComponent {
                                             host = Constants.KITSU
                                             encodedPath = "${Constants.KITSU_API}${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${animeIds.kitsu}"
                                         }
-                                        header("Accept", "application/vnd.api+json")
+                                        header("Accept", "*/*")
                                     }.body<KitsuResponseDto<KitsuAnimeDto>>()
                                 }.getOrElse {
                                     null
