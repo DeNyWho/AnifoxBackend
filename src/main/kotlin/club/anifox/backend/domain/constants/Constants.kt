@@ -1,7 +1,7 @@
 package club.anifox.backend.domain.constants
 
 object Constants {
-    const val SHIKIMORI = "shikimori.me"
+    const val SHIKIMORI = "shikimori.one"
     const val SHIKIMORI_API = "/api"
     const val SHIKIMORI_ANIMES = "/animes"
     const val SHIKIMORI_SIMILAR = "/similar"

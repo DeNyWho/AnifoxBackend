@@ -54,7 +54,7 @@ class SSLConfig(
         return HttpClient(Java) {
             engine {
                 config {
-                    sslContext(sslContext())
+//                    sslContext(sslContext())
                 }
             }
             defaultRequest {

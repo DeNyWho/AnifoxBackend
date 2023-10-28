@@ -48,7 +48,19 @@ class ImageService {
             s3.deleteObject(bucketNameS3, filePath)
         }
 
-        s3.putObject(bucketNameS3, filePath, inputStream, metadata)
+        var uploaded = false
+        var times = 3
+
+        while (!uploaded && times > 0) {
+            Thread.sleep(500)
+            uploaded = try {
+                s3.putObject(bucketNameS3, filePath, inputStream, metadata)
+                true
+            } catch (e: Exception) {
+                times -= 1
+                false
+            }
+        }
 
         return "$domainS3/$filePath"
     }

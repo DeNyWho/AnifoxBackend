@@ -154,7 +154,7 @@ class AnimeParseComponent {
                 parameter("types", "anime-serial, anime")
                 parameter("camrip", false)
                 parameter("with_episodes_data", true)
-                parameter("not_blocked_in", "ALL")
+                parameter("not_blocked_in", "RU,UA,ALL")
                 parameter("with_material_data", true)
                 parameter(
                     "anime_genres",
@@ -174,7 +174,7 @@ class AnimeParseComponent {
                 try {
                     val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationID)
 
-                    val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
+                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -189,7 +189,7 @@ class AnimeParseComponent {
                         !anime.materialData.animeStudios.contains("Haoliners Animation League")
                     ) {
                         println(anime.shikimoriId.toInt())
-                        val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())
+                        val tempingAnime = animeRepository.findByShikimoriId(animeTemp.shikimoriId.toInt())
 
                         if (!tempingAnime.isPresent) {
                             val genres = anime.materialData.genres
@@ -231,7 +231,7 @@ class AnimeParseComponent {
                             val titleRussianLic = shikimori.russianLic
                             val titleRussian = shikimori.russian
 
-                            var urlLinking = translit(if (titleRussianLic != null && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian)
+                            var urlLinking = translit(if (!titleRussianLic.isNullOrEmpty() && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian)
 
                             if (animeRepository.findByUrl(urlLinking).isPresent) {
                                 urlLinking = "${translit(if (titleRussianLic != null && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian)}-${if (shikimori.airedAt != null) LocalDate.parse(shikimori.airedAt).year else anime.materialData.year}"
@@ -585,8 +585,12 @@ class AnimeParseComponent {
                                     }
                                 }.body<List<ShikimoriScreenshotsDto>>().map { screenshot ->
                                     "https://${Constants.SHIKIMORI}${screenshot.original}"
+//                                    imageService.saveFileInSThird(
+//                                        "images/anime/screenshots/$urlLinking/${mdFive(screenshot.original)}.jpg",
+//                                        URL("https://${Constants.SHIKIMORI}${screenshot.original}").readBytes(),
+//                                        compress = false,
+//                                    )
                                 }
-
                                 emit(screenshots)
                             }.flowOn(Dispatchers.IO)
 
@@ -675,7 +679,7 @@ class AnimeParseComponent {
                                 }
 
                             val a = AnimeTable(
-                                title = if (titleRussianLic != null && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian,
+                                title = if (!titleRussianLic.isNullOrEmpty() && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian,
                                 url = urlLinking,
                                 ids = AnimeIdsTable(
                                     aniDb = animeIds.aniDb,
@@ -788,9 +792,13 @@ class AnimeParseComponent {
             jikanEpisodes.map { episode ->
                 val number = episode.id
                 val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
-                kitsuEpisodesMapped[number.toString()] = kitsuEpisode
-                translatedTitleMapped[number.toString()] = jikanEpisodes[number - 1].title
-                translatedDescriptionMapped[number.toString()] = kitsuEpisode?.attributes?.description ?: ""
+                if (kitsuEpisode != null) {
+                    if (kitsuEpisode.attributes?.number == number) {
+                        kitsuEpisodesMapped[number.toString()] = kitsuEpisode
+                        translatedTitleMapped[number.toString()] = jikanEpisodes[number - 1].title
+                        translatedDescriptionMapped[number.toString()] = kitsuEpisode.attributes.description ?: ""
+                    }
+                }
             }
         } else {
             kodikEpisodes.map { (episodeKey, episode) ->
