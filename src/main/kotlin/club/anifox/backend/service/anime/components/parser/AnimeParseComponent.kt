@@ -27,6 +27,7 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.anime.AnimeBufferedImages
 import club.anifox.backend.domain.model.anime.AnimeImagesTypes
+import club.anifox.backend.domain.model.translate.TranslatedText
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
@@ -174,7 +175,7 @@ class AnimeParseComponent {
                 try {
                     val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationID)
 
-                    val shikimori = shikimoriComponent.checkShikimori("${animeTemp.shikimoriId}")
+                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -785,8 +786,8 @@ class AnimeParseComponent {
         val kitsuEpisodesMapped = mutableMapOf<String, KitsuEpisodeDto?>()
         val translatedTitleMapped = mutableMapOf<String, String>()
         val translatedDescriptionMapped = mutableMapOf<String, String>()
-        val tempTranslatedTitle = mutableListOf<TranslateTextDto>()
-        val tempTranslatedDescription = mutableListOf<TranslateTextDto>()
+        val tempTranslatedTitle = mutableMapOf<String, TranslateTextDto>()
+        val tempTranslatedDescription = mutableMapOf<String, TranslateTextDto>()
 
         if (jikanEpisodes.size >= kodikEpisodes.size) {
             jikanEpisodes.map { episode ->
@@ -802,10 +803,13 @@ class AnimeParseComponent {
             }
         } else {
             kodikEpisodes.map { (episodeKey, episode) ->
-                if (episodeKey.toInt() <= kitsuEpisodes.size) {
-                    val kitsuEpisode = findEpisodeByNumber(episodeKey.toInt(), kitsuEpisodes)
-                    kitsuEpisodesMapped[episodeKey] = kitsuEpisode
-                    translatedDescriptionMapped[episodeKey] = kitsuEpisode?.attributes?.description ?: ""
+                val number = episodeKey.toInt()
+                val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
+                if (kitsuEpisode != null) {
+                    if (kitsuEpisode.attributes?.number == number) {
+                        kitsuEpisodesMapped[episodeKey] = kitsuEpisode
+                        translatedDescriptionMapped[episodeKey] = kitsuEpisode.attributes.description ?: ""
+                    }
                 }
                 if (episodeKey.toInt() <= jikanEpisodes.size) {
                     translatedTitleMapped[episodeKey] = when (episodeKey) {
@@ -828,53 +832,47 @@ class AnimeParseComponent {
         }
 
         translatedTitleMapped.map { (episodeKey, title) ->
-            tempTranslatedTitle.add(TranslateTextDto(title))
+            tempTranslatedTitle.put(episodeKey, TranslateTextDto(title))
         }
 
         translatedDescriptionMapped.map { (episodeKey, description) ->
-            tempTranslatedDescription.add(TranslateTextDto(description))
+            tempTranslatedDescription.put(episodeKey, TranslateTextDto(description))
         }
 
-        val a = if (tempTranslatedTitle.size < 61) {
-            translateText(tempTranslatedTitle)
+        val a = if (tempTranslatedTitle.size < 11) {
+            translateText(tempTranslatedTitle.values.toList())
         } else {
-            val tempList = mutableListOf<String>()
-            val temp = tempTranslatedTitle.chunked(60)
-            temp.forEach {
-                tempList.addAll(translateText(it))
+            val tempList = mutableListOf<TranslatedText>()
+
+            tempTranslatedTitle.values.chunked(10).forEach {
+                val test = translateText(it)
+                tempList.addAll(test)
             }
+
             tempList
         }
 
-        val b = if (tempTranslatedDescription.size < 61) {
-            translateText(tempTranslatedDescription)
+        val b = if (tempTranslatedDescription.size < 11) {
+            translateText(tempTranslatedDescription.values.toList())
         } else {
-            val tempList = mutableListOf<String>()
-            val temp = tempTranslatedDescription.chunked(60)
-            temp.forEach {
-                tempList.addAll(translateText(it))
+            val tempList = mutableListOf<TranslatedText>()
+
+            tempTranslatedDescription.values.chunked(10).forEach {
+                val test = translateText(it)
+                tempList.addAll(test)
             }
+
             tempList
         }
 
         translatedTitleMapped.map { (episodeKey, title) ->
-            val episodeKeyList = when (episodeKey) {
-                "0" -> {
-                    episodeKey.toInt()
-                }
-                "1" -> {
-                    if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
-                }
-                else -> {
-                    if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
-                }
-            }
-            translatedTitleMapped[episodeKey] = a[episodeKeyList]
+            val episodeKeyList = if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
+            translatedTitleMapped[episodeKey] = a[episodeKeyList].text.toString()
         }
 
         translatedDescriptionMapped.map { (episodeKey, title) ->
             val number = if (translatedDescriptionMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
-            translatedDescriptionMapped[episodeKey] = b[number]
+            translatedDescriptionMapped[episodeKey] = b[number].text.toString()
         }
 
         val jobs = kodikEpisodes.map { (episodeKey, episode) ->
@@ -1135,7 +1133,7 @@ class AnimeParseComponent {
         return "$formattedArtistName - $songTitle"
     }
 
-    private suspend fun translateText(text: List<TranslateTextDto>): List<String> {
+    private suspend fun translateText(text: List<TranslateTextDto>): MutableList<TranslatedText> {
         return if (text.isNotEmpty()) {
             val translatedText = try {
                 client.post {
@@ -1162,7 +1160,7 @@ class AnimeParseComponent {
                 }.body<List<TranslatedTextDto>>()
             } catch (e: Exception) {
                 try {
-                    delay(1000)
+                    delay(1500)
                     client.post {
                         bearerAuth(
                             client.get {
@@ -1186,19 +1184,19 @@ class AnimeParseComponent {
                         parameter("api-version", "3.0")
                     }.body<List<TranslatedTextDto>>()
                 } catch (e: Exception) {
-                    return listOf()
+                    return mutableListOf()
                 }
             }
-            val tempResult = mutableListOf<String>()
+            val tempResult = mutableListOf<TranslatedText>()
 
             translatedText.forEach {
                 it.translations.forEach { translatedMicrosoft ->
-                    tempResult.add(translatedMicrosoft.text ?: "")
+                    tempResult.add(TranslatedText(text = translatedMicrosoft.text))
                 }
             }
             return tempResult
         } else {
-            listOf()
+            mutableListOf()
         }
     }
 
