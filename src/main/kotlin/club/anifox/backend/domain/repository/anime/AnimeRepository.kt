@@ -46,4 +46,5 @@ interface AnimeRepository {
     fun getAnimeStudios(): List<AnimeStudio>
     fun getAnimeGenres(): List<AnimeGenre>
     fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
+    fun updateEpisodes()
 }

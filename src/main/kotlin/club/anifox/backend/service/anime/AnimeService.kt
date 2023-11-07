@@ -18,6 +18,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
 import club.anifox.backend.service.anime.components.AnimeCommonComponent
 import club.anifox.backend.service.anime.components.AnimeSearchComponent
 import club.anifox.backend.service.anime.components.AnimeTranslationsComponent
+import club.anifox.backend.service.anime.components.AnimeUpdateComponent
 import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -36,6 +37,9 @@ class AnimeService : AnimeRepository {
 
     @Autowired
     private lateinit var animeParseComponent: AnimeParseComponent
+
+    @Autowired
+    private lateinit var animeUpdateComponent: AnimeUpdateComponent
 
     override fun getAnime(
         page: Int,
@@ -105,5 +109,9 @@ class AnimeService : AnimeRepository {
 
     override fun parseAnime(translationsIDs: String) {
         animeParseComponent.addDataToDB(translationsIDs)
+    }
+
+    override fun updateEpisodes() {
+        animeUpdateComponent.update()
     }
 }
