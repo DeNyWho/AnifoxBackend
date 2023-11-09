@@ -1,12 +1,5 @@
 package club.anifox.backend.config.ssl
 
-import io.ktor.client.*
-import io.ktor.client.engine.java.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.ssl.SSLContexts
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl
@@ -20,6 +13,9 @@ import org.springframework.context.annotation.Configuration
 import java.io.FileInputStream
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
+import kotlin.collections.HashMap
+import kotlin.collections.MutableMap
+import kotlin.collections.set
 
 @Configuration
 class SSLConfig(
