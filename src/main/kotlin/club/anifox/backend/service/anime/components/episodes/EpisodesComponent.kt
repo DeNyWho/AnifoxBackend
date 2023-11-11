@@ -83,7 +83,7 @@ class EpisodesComponent {
         val kodikAnime = kodikComponent.checkKodikSingle(shikimoriId.toInt(), translations)
 
         when (type) {
-            AnimeType.Tv, AnimeType.Movie, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
+            AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
                 kodikAnime.seasons.forEach { kodikSeason ->
                     if (kodikSeason.key != "0") {
                         runBlocking {
@@ -125,11 +125,29 @@ class EpisodesComponent {
                                     jikanEpisodes,
                                     defaultImage,
                                     translations,
+                                    type,
                                 )
                             },
                         )
                     }
                 }
+            }
+
+            else -> {
+                episodesReady.addAll(
+                    runBlocking {
+                        processEpisodes(
+                            shikimoriId,
+                            urlLinking,
+                            mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
+                            kitsuEpisodes,
+                            jikanEpisodes,
+                            defaultImage,
+                            translations,
+                            type,
+                        )
+                    },
+                )
             }
         }
 
@@ -144,6 +162,7 @@ class EpisodesComponent {
         jikanEpisodes: List<JikanEpisodeDto>,
         imageDefault: String,
         translations: String,
+        type: AnimeType,
     ): List<AnimeEpisodeTable> {
         val episodeReady = mutableListOf<AnimeEpisodeTable>()
 
@@ -175,20 +194,24 @@ class EpisodesComponent {
                         translatedDescriptionMapped[episodeKey] = kitsuEpisode.attributes.description ?: ""
                     }
                 }
-                if (episodeKey.toInt() <= jikanEpisodes.size) {
-                    translatedTitleMapped[episodeKey] = when (episodeKey) {
-                        "0" -> {
-                            if (kodikEpisodes["0"] != null && jikanEpisodes[episodeKey.toInt()].id != 0) {
-                                episodeKey
-                            } else {
-                                jikanEpisodes[episodeKey.toInt()].title
+                if (jikanEpisodes.isNotEmpty()) {
+                    if (episodeKey.toInt() <= jikanEpisodes.size) {
+                        translatedTitleMapped[episodeKey] = when (episodeKey) {
+                            "0" -> {
+                                if (kodikEpisodes["0"] != null && jikanEpisodes[episodeKey.toInt()].id != 0) {
+                                    episodeKey
+                                } else {
+                                    jikanEpisodes[episodeKey.toInt()].title
+                                }
                             }
-                        }
-                        "1" -> {
-                            jikanEpisodes[episodeKey.toInt() - 1].title
-                        }
-                        else -> {
-                            jikanEpisodes[episodeKey.toInt() - 1].title
+
+                            "1" -> {
+                                jikanEpisodes[episodeKey.toInt() - 1].title
+                            }
+
+                            else -> {
+                                jikanEpisodes[episodeKey.toInt() - 1].title
+                            }
                         }
                     }
                 }
@@ -238,7 +261,7 @@ class EpisodesComponent {
         val processedEpisodes = jobs.awaitAll()
         val sortedEpisodes = processedEpisodes.sortedBy { it.number }
 
-        episodeReady.addAll(addEpisodeTranslations(sortedEpisodes, shikimoriId, "anime-serial", translations))
+        episodeReady.addAll(addEpisodeTranslations(sortedEpisodes, shikimoriId, type, translations))
 
         return episodeReady
     }
@@ -322,30 +345,51 @@ class EpisodesComponent {
         }
     }
 
-    private fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: String, type: String, translationsId: String): List<AnimeEpisodeTable> {
+    private fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: String, type: AnimeType, translationsId: String): List<AnimeEpisodeTable> {
         val animeVariations = kodikComponent.checkKodikVariety(shikimoriId.toInt(), translationsId)
 
         val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()
 
         animeVariations.forEach { anime ->
-            val episodeNumbers = anime.seasons.values
-                .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
+            when (type) {
+                AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
+                    val episodeNumbers = anime.seasons.values
+                        .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
 
-            val translationId = when (anime.translation.id) {
-                1002 -> 643
-                else -> anime.translation.id
-            }
-            val translation = animeTranslationRepository.findById(translationId).get()
+                    val translationId = when (anime.translation.id) {
+                        1002 -> 643
+                        else -> anime.translation.id
+                    }
+                    val translation = animeTranslationRepository.findById(translationId).get()
 
-            episodeNumbers.forEach { episodeNumber ->
-                val episode = episodes.find { it.number == episodeNumber }
-                episode?.let {
-                    val episodeTranslation = EpisodeTranslationTable(
-                        translation = translation,
-                        link = if (type == "anime-serial") "${anime.link}?episode=${episode.number}" else anime.link,
-                    )
-                    episode.addTranslation(episodeTranslation)
-                    episodeTranslationsToSave.add(episodeTranslation)
+                    episodeNumbers.forEach { episodeNumber ->
+                        val episode = episodes.find { it.number == episodeNumber }
+                        episode?.let {
+                            val episodeTranslation = EpisodeTranslationTable(
+                                translation = translation,
+                                link = "${anime.link}?episode=${episode.number}",
+                            )
+                            episode.addTranslation(episodeTranslation)
+                            episodeTranslationsToSave.add(episodeTranslation)
+                        }
+                    }
+                }
+                else -> {
+                    val translationId = when (anime.translation.id) {
+                        1002 -> 643
+                        else -> anime.translation.id
+                    }
+                    val translation = animeTranslationRepository.findById(translationId).get()
+
+                    val episode = episodes.first()
+                    episode.let {
+                        val episodeTranslation = EpisodeTranslationTable(
+                            translation = translation,
+                            link = anime.link,
+                        )
+                        episode.addTranslation(episodeTranslation)
+                        episodeTranslationsToSave.add(episodeTranslation)
+                    }
                 }
             }
         }

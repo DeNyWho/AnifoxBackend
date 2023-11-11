@@ -1,19 +1,9 @@
 package club.anifox.backend.service.anime.components.parser
 
 import club.anifox.backend.domain.constants.Constants
-import club.anifox.backend.domain.dto.anime.haglund.HaglundIdsDto
-import club.anifox.backend.domain.dto.anime.jikan.JikanDataDto
-import club.anifox.backend.domain.dto.anime.jikan.JikanResponseDto
-import club.anifox.backend.domain.dto.anime.jikan.JikanThemesDto
-import club.anifox.backend.domain.dto.anime.kitsu.KitsuAnimeDto
-import club.anifox.backend.domain.dto.anime.kitsu.KitsuResponseDto
-import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
-import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriRelationDto
-import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriScreenshotsDto
-import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriSimilarDto
 import club.anifox.backend.domain.enums.anime.AnimeMusicType
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
@@ -37,9 +27,11 @@ import club.anifox.backend.jpa.repository.anime.AnimeMusicRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
-import club.anifox.backend.jpa.repository.anime.AnimeTranslationCountRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
+import club.anifox.backend.service.anime.components.haglund.HaglundComponent
+import club.anifox.backend.service.anime.components.jikan.JikanComponent
+import club.anifox.backend.service.anime.components.kitsu.KitsuComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import club.anifox.backend.service.image.ImageService
@@ -51,13 +43,11 @@ import io.ktor.http.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.awt.image.BufferedImage
@@ -75,11 +65,17 @@ class AnimeParseComponent {
     @Autowired
     private lateinit var client: HttpClient
 
-    @Value("\${anime.ko.token}")
-    private lateinit var animeToken: String
-
     @Autowired
     private lateinit var kodikComponent: KodikComponent
+
+    @Autowired
+    private lateinit var jikanComponent: JikanComponent
+
+    @Autowired
+    private lateinit var kitsuComponent: KitsuComponent
+
+    @Autowired
+    private lateinit var haglundComponent: HaglundComponent
 
     @Autowired
     private lateinit var shikimoriComponent: AnimeShikimoriComponent
@@ -103,9 +99,6 @@ class AnimeParseComponent {
     private lateinit var animeTranslationRepository: AnimeTranslationRepository
 
     @Autowired
-    private lateinit var animeTranslationCountRepository: AnimeTranslationCountRepository
-
-    @Autowired
     private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
 
     @Autowired
@@ -123,35 +116,7 @@ class AnimeParseComponent {
         var nextPage: String? = "1"
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
-            client.get {
-                headers {
-                    contentType(ContentType.Application.Json)
-                }
-                url {
-                    protocol = URLProtocol.HTTPS
-                    host = Constants.KODIK
-                    encodedPath = Constants.KODIK_LIST
-                }
-                parameter("token", animeToken)
-                parameter("limit", 100)
-                parameter("sort", "shikimori_rating")
-                parameter("order", "desc")
-                parameter("types", "anime-serial, anime")
-                parameter("camrip", false)
-                parameter("with_episodes_data", true)
-                parameter("not_blocked_in", "RU,UA,ALL")
-                parameter("with_material_data", true)
-                parameter(
-                    "anime_genres",
-                    "безумие, боевые искусства, вампиры, военное, гарем, демоны," +
-                        "детектив, детское, дзёсей, драма, игры, исторический, комедия," +
-                        "космос, машины, меха, музыка, пародия, повседневность, полиция," +
-                        "приключения, психологическое, романтика, самураи, сверхъестественное," +
-                        "спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер," +
-                        "ужасы, фантастика, фэнтези, школа, экшен",
-                )
-                parameter("translation_id", translationsIds)
-            }.body<KodikResponseDto<KodikAnimeDto>>()
+            kodikComponent.checkKodikList(translationsIds)
         }
 
         while (nextPage != null) {
@@ -199,18 +164,7 @@ class AnimeParseComponent {
                                 }
 
                             val animeIds = runBlocking {
-                                client.get {
-                                    headers {
-                                        contentType(ContentType.Application.Json)
-                                    }
-                                    url {
-                                        protocol = URLProtocol.HTTPS
-                                        host = Constants.HAGLUND
-                                        encodedPath = "${Constants.HAGLUND_API}${Constants.HAGLUND_VERSION}${Constants.HAGLUND_IDS}"
-                                    }
-                                    parameter("source", "myanimelist")
-                                    parameter("id", anime.shikimoriId)
-                                }.body<HaglundIdsDto>()
+                                haglundComponent.fetchHaglundIds(anime.shikimoriId)
                             }
 
                             val titleRussianLic = shikimori.russianLic
@@ -224,13 +178,7 @@ class AnimeParseComponent {
 
                             val relationIdsDeferred = CoroutineScope(Dispatchers.Default).async {
                                 runCatching {
-                                    client.get {
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = Constants.SHIKIMORI
-                                            encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${anime.shikimoriId}${Constants.SHIKIMORI_RELATED}"
-                                        }
-                                    }.body<List<ShikimoriRelationDto>>()
+                                    shikimoriComponent.fetchShikimoriRelated(anime.shikimoriId)
                                 }.getOrElse {
                                     null
                                 }
@@ -261,20 +209,7 @@ class AnimeParseComponent {
                             ).toMutableList()
 
                             val similarIdsFlow = flow {
-                                val similarIds = client.get {
-                                    headers {
-                                        contentType(ContentType.Application.Json)
-                                    }
-                                    url {
-                                        protocol = URLProtocol.HTTPS
-                                        host = Constants.SHIKIMORI
-                                        encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${anime.shikimoriId}${Constants.SHIKIMORI_SIMILAR}"
-                                    }
-                                }.body<List<ShikimoriSimilarDto>>().flatMap { similar ->
-                                    listOfNotNull(similar.id)
-                                }.map { it }
-
-                                emit(similarIds.take(30))
+                                emit(shikimoriComponent.fetchShikimoriSimilar(anime.shikimoriId).take(30))
                             }.flowOn(Dispatchers.IO)
 
                             val media = shikimori.videos
@@ -296,14 +231,7 @@ class AnimeParseComponent {
 
                             val kitsuAnime = CoroutineScope(Dispatchers.Default).async {
                                 runCatching {
-                                    client.get {
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = Constants.KITSU
-                                            encodedPath = "${Constants.KITSU_API}${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${animeIds.kitsu}"
-                                        }
-                                        header("Accept", "*/*")
-                                    }.body<KitsuResponseDto<KitsuAnimeDto>>()
+                                    kitsuComponent.fetchKitsuAnime(animeIds.kitsu!!)
                                 }.getOrElse {
                                     null
                                 }
@@ -311,16 +239,7 @@ class AnimeParseComponent {
 
                             val jikanImage = CoroutineScope(Dispatchers.Default).async {
                                 runCatching {
-                                    client.get {
-                                        headers {
-                                            contentType(ContentType.Application.Json)
-                                        }
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = Constants.JIKAN
-                                            encodedPath = "${Constants.JIKAN_VERSION}${Constants.JIKAN_ANIME}/${anime.shikimoriId}"
-                                        }
-                                    }.body<JikanResponseDto<JikanDataDto>>()
+                                    jikanComponent.fetchJikanImages(anime.shikimoriId)
                                 }.getOrElse {
                                     null
                                 }
@@ -439,16 +358,7 @@ class AnimeParseComponent {
 
                             val jikanThemesDeferred = CoroutineScope(Dispatchers.Default).async {
                                 runCatching {
-                                    client.get {
-                                        headers {
-                                            contentType(ContentType.Application.Json)
-                                        }
-                                        url {
-                                            protocol = URLProtocol.HTTPS
-                                            host = Constants.JIKAN
-                                            encodedPath = "${Constants.JIKAN_VERSION}${Constants.JIKAN_ANIME}/${anime.shikimoriId}${Constants.JIKAN_THEMES}"
-                                        }
-                                    }.body<JikanResponseDto<JikanThemesDto>>()
+                                    jikanComponent.fetchJikanThemes(anime.shikimoriId)
                                 }.getOrElse {
                                     null
                                 }
@@ -496,25 +406,7 @@ class AnimeParseComponent {
                             }
 
                             val screenshotsFlow = flow {
-                                delay(1500)
-                                val screenshots = client.get {
-                                    headers {
-                                        contentType(ContentType.Application.Json)
-                                    }
-                                    url {
-                                        protocol = URLProtocol.HTTPS
-                                        host = Constants.SHIKIMORI
-                                        encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${anime.shikimoriId}${Constants.SHIKIMORI_SCREENSHOTS}"
-                                    }
-                                }.body<List<ShikimoriScreenshotsDto>>().map { screenshot ->
-                                    "https://${Constants.SHIKIMORI}${screenshot.original}"
-//                                    imageService.saveFileInSThird(
-//                                        "images/anime/screenshots/$urlLinking/${mdFive(screenshot.original)}.jpg",
-//                                        URL("https://${Constants.SHIKIMORI}${screenshot.original}").readBytes(),
-//                                        compress = false,
-//                                    )
-                                }
-                                emit(screenshots)
+                                emit(shikimoriComponent.fetchShikimoriScreenshots(anime.shikimoriId))
                             }.flowOn(Dispatchers.IO)
 
                             val screenShots = mutableListOf<String>()

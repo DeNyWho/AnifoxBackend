@@ -33,6 +33,38 @@ class KodikComponent {
         }
     }
 
+    suspend fun checkKodikList(translationsIds: String): KodikResponseDto<KodikAnimeDto> {
+        return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
+            url {
+                protocol = URLProtocol.HTTPS
+                host = Constants.KODIK
+                encodedPath = Constants.KODIK_LIST
+            }
+            parameter("token", animeToken)
+            parameter("limit", 100)
+            parameter("sort", "shikimori_rating")
+            parameter("order", "desc")
+            parameter("types", "anime-serial, anime")
+            parameter("camrip", false)
+            parameter("with_episodes_data", true)
+            parameter("not_blocked_in", "RU,UA,ALL")
+            parameter("with_material_data", true)
+            parameter(
+                "anime_genres",
+                "безумие, боевые искусства, вампиры, военное, гарем, демоны," +
+                    "детектив, детское, дзёсей, драма, игры, исторический, комедия," +
+                    "космос, машины, меха, музыка, пародия, повседневность, полиция," +
+                    "приключения, психологическое, романтика, самураи, сверхъестественное," +
+                    "спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер," +
+                    "ужасы, фантастика, фэнтези, школа, экшен",
+            )
+            parameter("translation_id", translationsIds)
+        }.body<KodikResponseDto<KodikAnimeDto>>()
+    }
+
     private suspend fun checkKodik(shikimoriId: Int, translationID: String): KodikResponseDto<KodikAnimeDto> {
         return client.get {
             headers {
