@@ -81,6 +81,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     var ids: AnimeIdsTable = AnimeIdsTable(),
     @ManyToMany(
         fetch = FetchType.LAZY,
@@ -116,6 +117,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     var images: AnimeImagesTable = AnimeImagesTable(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
@@ -132,6 +134,7 @@ data class AnimeTable(
         inverseJoinColumns = [JoinColumn(name = "genre_id", referencedColumnName = "id")],
         schema = "anime",
     )
+    @BatchSize(size = 10)
     var genres: MutableSet<AnimeGenreTable> = mutableSetOf(),
     @ManyToMany(
         fetch = FetchType.LAZY,
@@ -154,6 +157,7 @@ data class AnimeTable(
         inverseJoinColumns = [JoinColumn(name = "studio_id", referencedColumnName = "id")],
         schema = "anime",
     )
+    @BatchSize(size = 10)
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
     val shikimoriRating: Double = 0.0,
     val shikimoriVotes: Int = 0,

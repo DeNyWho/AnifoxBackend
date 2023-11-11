@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TranslateTextDto(
     @SerialName("Text")
-    val text: String = "",
+    val text: String = "null",
 )

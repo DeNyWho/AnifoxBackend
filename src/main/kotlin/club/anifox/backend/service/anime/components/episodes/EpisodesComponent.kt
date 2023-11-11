@@ -9,8 +9,10 @@ import club.anifox.backend.domain.dto.translate.edge.TranslateTextDto
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.translate.TranslatedText
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.EpisodeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeEpisodeTranslationRepository
+import club.anifox.backend.jpa.repository.anime.AnimeTranslationCountRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kitsu.KitsuComponent
@@ -18,15 +20,10 @@ import club.anifox.backend.service.anime.components.kodik.KodikComponent
 import club.anifox.backend.service.anime.translate.TranslateComponent
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.mdFive
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -58,6 +55,24 @@ class EpisodesComponent {
     @Autowired
     private lateinit var animeTranslationRepository: AnimeTranslationRepository
 
+    @Autowired
+    private lateinit var animeTranslationCountRepository: AnimeTranslationCountRepository
+
+    fun translationsCount(episodes: List<AnimeEpisodeTable>): List<AnimeEpisodeTranslationCountTable> {
+        val translationsAll = animeTranslationRepository.findAll()
+        val translationsCountMap = episodes
+            .flatMap { it.translations }
+            .groupBy { it.translation.id }
+            .map { (id, translations) ->
+                AnimeEpisodeTranslationCountTable(
+                    translation = translationsAll.find { it.id == id }!!,
+                    countEpisodes = translations.size,
+                )
+            }
+
+        return animeTranslationCountRepository.saveAll(translationsCountMap)
+    }
+
     fun fetchEpisodes(shikimoriId: String, kitsuId: String, type: AnimeType, urlLinking: String, defaultImage: String): List<AnimeEpisodeTable> {
         val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
@@ -68,7 +83,7 @@ class EpisodesComponent {
         val kodikAnime = kodikComponent.checkKodikSingle(shikimoriId.toInt(), translations)
 
         when (type) {
-            AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
+            AnimeType.Tv, AnimeType.Movie, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
                 kodikAnime.seasons.forEach { kodikSeason ->
                     if (kodikSeason.key != "0") {
                         runBlocking {
@@ -114,20 +129,6 @@ class EpisodesComponent {
                             },
                         )
                     }
-                }
-            }
-            else -> {
-                CoroutineScope(Dispatchers.Default).launch {
-                    val episode = processEpisode(
-                        shikimoriId,
-                        1,
-                        null,
-                        null,
-                        null,
-                        defaultImage,
-                        null,
-                    )
-                    episodesReady.addAll(addEpisodeTranslations(listOf(episode), shikimoriId, "anime", translations))
                 }
             }
         }
@@ -208,12 +209,12 @@ class EpisodesComponent {
 
         translatedTitleMapped.map { (episodeKey, title) ->
             val episodeKeyList = if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
-            translatedTitleMapped[episodeKey] = translateTitle[episodeKeyList].text.toString()
+            translatedTitleMapped[episodeKey] = if (translateTitle[episodeKeyList].text.toString() == "null") "" else translateTitle[episodeKeyList].text.toString()
         }
 
         translatedDescriptionMapped.map { (episodeKey, title) ->
             val number = if (translatedDescriptionMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
-            translatedDescriptionMapped[episodeKey] = translateDescription[number].text.toString()
+            translatedDescriptionMapped[episodeKey] = if (translateDescription[number].text.toString() == "null") "" else translateDescription[number].text.toString()
         }
 
         val jobs = kodikEpisodes.map { (episodeKey, episode) ->
@@ -343,7 +344,7 @@ class EpisodesComponent {
                         translation = translation,
                         link = if (type == "anime-serial") "${anime.link}?episode=${episode.number}" else anime.link,
                     )
-                    episode.translations.add(episodeTranslation)
+                    episode.addTranslation(episodeTranslation)
                     episodeTranslationsToSave.add(episodeTranslation)
                 }
             }

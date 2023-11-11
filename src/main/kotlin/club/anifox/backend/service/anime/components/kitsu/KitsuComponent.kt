@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.delay
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -18,7 +17,6 @@ class KitsuComponent {
     private lateinit var client: HttpClient
 
     suspend fun fetchKitsuEpisodes(url: String): KitsuDefaultResponseDto<KitsuEpisodeDto> {
-        delay(1000)
         return client.get {
             url {
                 protocol = URLProtocol.HTTPS

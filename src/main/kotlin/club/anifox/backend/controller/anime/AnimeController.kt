@@ -58,7 +58,8 @@ class AnimeController {
         filter: AnimeSearchFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
-        @Schema(name = "rating", required = false, nullable = true, description = "Must be one of: PG | PG-13 | R | R+ | G") rating: String?,
+        @Parameter(name = "rating_mpa", required = false, description = "Must be one of: PG | PG-13 | R | R+ | G")
+        rating_mpa: String?,
         @Schema(name = "age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") age: Int?,
         type: AnimeType?,
         @Schema(name = "studio", required = false, nullable = true, description = "Anime studio made by") studio: String?,
@@ -77,7 +78,7 @@ class AnimeController {
             filter = filter,
             searchQuery = search,
             season = season,
-            ratingMpa = rating,
+            ratingMpa = rating_mpa,
             minimalAge = age,
             type = type,
             year = year,

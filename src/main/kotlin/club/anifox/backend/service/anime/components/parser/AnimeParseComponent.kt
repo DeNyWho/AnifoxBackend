@@ -21,7 +21,6 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.anime.AnimeBufferedImages
 import club.anifox.backend.domain.model.anime.AnimeImagesTypes
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
@@ -120,8 +119,9 @@ class AnimeParseComponent {
 
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика")
 
-    fun addDataToDB(translationID: String) {
+    fun addDataToDB() {
         var nextPage: String? = "1"
+        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
             client.get {
                 headers {
@@ -150,14 +150,14 @@ class AnimeParseComponent {
                         "спорт, супер сила, сэйнэн, сёдзё, сёдзё-ай, сёнен, сёнен-ай, триллер," +
                         "ужасы, фантастика, фэнтези, школа, экшен",
                 )
-                parameter("translation_id", translationID)
+                parameter("translation_id", translationsIds)
             }.body<KodikResponseDto<KodikAnimeDto>>()
         }
 
         while (nextPage != null) {
             ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
                 try {
-                    val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationID)
+                    val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationsIds)
 
                     val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
 
@@ -223,7 +223,6 @@ class AnimeParseComponent {
                             }
 
                             val relationIdsDeferred = CoroutineScope(Dispatchers.Default).async {
-                                delay(1000)
                                 runCatching {
                                     client.get {
                                         url {
@@ -262,7 +261,6 @@ class AnimeParseComponent {
                             ).toMutableList()
 
                             val similarIdsFlow = flow {
-                                delay(1000)
                                 val similarIds = client.get {
                                     headers {
                                         contentType(ContentType.Application.Json)
@@ -312,7 +310,6 @@ class AnimeParseComponent {
                             }
 
                             val jikanImage = CoroutineScope(Dispatchers.Default).async {
-                                delay(1000)
                                 runCatching {
                                     client.get {
                                         headers {
@@ -441,7 +438,6 @@ class AnimeParseComponent {
                             episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = animeTemp.shikimoriId, kitsuId = animeIds.kitsu.toString(), type = type, urlLinking = urlLinking, defaultImage = animeImages?.medium ?: ""))
 
                             val jikanThemesDeferred = CoroutineScope(Dispatchers.Default).async {
-                                delay(1000)
                                 runCatching {
                                     client.get {
                                         headers {
@@ -540,19 +536,7 @@ class AnimeParseComponent {
 
                             otherTitles.add(if (titleRussianLic != null && checkEnglishLetter(titleRussian)) titleRussianLic else titleRussian)
 
-                            val translationsAll = animeTranslationRepository.findAll()
-
-                            val translationsCountMap = episodesReady
-                                .flatMap { it.translations }
-                                .groupBy { it.translation.id }
-                                .map { (id, translations) ->
-                                    AnimeEpisodeTranslationCountTable(
-                                        translation = translationsAll.find { it.id == id }!!,
-                                        countEpisodes = translations.size,
-                                    )
-                                }
-
-                            val translationsCountReady = animeTranslationCountRepository.saveAll(translationsCountMap)
+                            val translationsCountReady = episodesComponent.translationsCount(episodesReady)
 
                             val translations = translationsCountReady.map { it.translation }
 

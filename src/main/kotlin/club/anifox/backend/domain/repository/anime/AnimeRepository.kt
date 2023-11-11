@@ -34,7 +34,7 @@ interface AnimeRepository {
     ): List<AnimeLight>
 
     fun parseTranslations(translationsIDs: List<Int>)
-    fun parseAnime(translationsIDs: String)
+    fun parseAnime()
     fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount>
     fun getAnimeTranslations(): List<AnimeTranslationTable>
     fun getAnimeDetails(url: String): AnimeDetail

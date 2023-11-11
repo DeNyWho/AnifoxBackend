@@ -107,8 +107,8 @@ class AnimeService : AnimeRepository {
         animeTranslationsComponent.addTranslationsToDB(translationsIDs)
     }
 
-    override fun parseAnime(translationsIDs: String) {
-        animeParseComponent.addDataToDB(translationsIDs)
+    override fun parseAnime() {
+        animeParseComponent.addDataToDB()
     }
 
     override fun updateEpisodes() {

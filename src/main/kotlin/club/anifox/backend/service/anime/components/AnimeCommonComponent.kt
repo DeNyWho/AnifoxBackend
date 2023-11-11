@@ -214,6 +214,7 @@ class AnimeCommonComponent {
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
         val a = query.resultList
+        println("WAFLYA = ${a.size}")
         return query.resultList.map { it.toAnimeEpisodeLight() }
     }
 }
