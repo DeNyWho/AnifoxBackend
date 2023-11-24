@@ -7,6 +7,4 @@ import kotlinx.serialization.Serializable
 data class JikanResponseDefaultDto<T>(
     @SerialName("data")
     val data: List<T> = listOf(),
-    @SerialName("pagination")
-    val pagination: JikanPaginationDto,
 )

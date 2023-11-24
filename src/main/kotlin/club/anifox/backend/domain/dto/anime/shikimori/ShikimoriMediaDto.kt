@@ -16,7 +16,7 @@ data class ShikimoriMediaDto(
     val description: String = "",
     @Nullable
     @SerialName("english")
-    val english: List<String> = listOf(),
+    val english: List<String?> = listOf(),
     @Nullable
     @SerialName("synonyms")
     val synonyms: List<String> = listOf(),

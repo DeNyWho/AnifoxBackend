@@ -15,6 +15,7 @@ import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComp
 import io.ktor.client.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
+import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -48,20 +49,32 @@ class AnimeUpdateComponent {
 
     fun update() {
         val criteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
 
-        val root = criteriaQuery.from(AnimeTable::class.java)
-        root.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
-        root.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
-        root.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
-        root.fetch<AnimeTranslationTable, Any>("translations", JoinType.RIGHT)
-        criteriaQuery.select(root)
+        val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
+        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
+        val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
+        criteriaQueryShikimori
+            .select(shikimoriRoot.get("shikimoriId"))
+            .where(criteriaBuilder.equal(shikimoriRoot.get<Int>("year"), currentYear))
 
-        val query = entityManager.createQuery(criteriaQuery)
-        val animeList = query.resultList
+        val query = entityManager.createQuery(criteriaQueryShikimori)
+        val shikimoriIds = query.resultList
 
-        animeList.forEach Loop@{ anime ->
+        shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
+                val criteriaQueryAnime: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
+                val rootAnime = criteriaQueryAnime.from(AnimeTable::class.java)
+
+                rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
+                rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
+                rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
+                rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.RIGHT)
+
+                criteriaQueryAnime.select(rootAnime)
+                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))
+
+                val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
+
                 val shikimori = shikimoriComponent.checkShikimori("${anime.shikimoriId}")
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
@@ -80,7 +93,18 @@ class AnimeUpdateComponent {
                     } else {
                         null
                     }
+                    if (anime.description.isEmpty()) {
+                        anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
+                    }
+                    anime.episodesAired = if (shikimori.status == "released") {
+                        shikimori.episodes
+                    } else {
+                        episodesReady.size
+                    }
+                } else {
+                    anime.episodesAired = episodesReady.size
                 }
+
                 anime.addEpisodesAll(episodesReady)
                 anime.addTranslation(translations)
                 anime.addTranslationCount(translationsCountReady)
@@ -93,7 +117,7 @@ class AnimeUpdateComponent {
                     AnimeErrorParserTable(
                         message = e.message,
                         cause = "UPDATE",
-                        shikimoriId = anime.shikimoriId,
+                        shikimoriId = shikimoriId,
                     ),
                 )
                 return@Loop

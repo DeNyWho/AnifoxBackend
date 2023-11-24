@@ -111,7 +111,7 @@ data class AnimeTable(
     @Column(length = 20, nullable = false)
     var status: AnimeStatus = AnimeStatus.Ongoing,
     @Column(columnDefinition = "TEXT")
-    val description: String = "",
+    var description: String = "",
     @OneToOne(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.ALL],

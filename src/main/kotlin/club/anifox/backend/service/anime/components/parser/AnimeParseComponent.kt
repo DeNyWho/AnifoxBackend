@@ -124,7 +124,7 @@ class AnimeParseComponent {
                 try {
                     val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationsIds)
 
-                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
+                    val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -135,11 +135,11 @@ class AnimeParseComponent {
                     if (
                         !anime.materialData.title.contains("Атака Титанов") &&
                         !anime.materialData.title.contains("Атака титанов") &&
-                        !animeBlockedRepository.findById(animeTemp.shikimoriId.toInt()).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null &&
+                        !animeBlockedRepository.findById(anime.shikimoriId.toInt()).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null &&
                         !anime.materialData.animeStudios.contains("Haoliners Animation League")
                     ) {
                         println(anime.shikimoriId.toInt())
-                        val tempingAnime = animeRepository.findByShikimoriId(animeTemp.shikimoriId.toInt())
+                        val tempingAnime = animeRepository.findByShikimoriId(anime.shikimoriId.toInt())
 
                         if (!tempingAnime.isPresent) {
                             val genres = anime.materialData.genres
@@ -354,7 +354,7 @@ class AnimeParseComponent {
 
                             val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
-                            episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = animeTemp.shikimoriId, kitsuId = animeIds.kitsu.toString(), type = type, urlLinking = urlLinking, defaultImage = animeImages?.medium ?: ""))
+                            episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = animeIds.kitsu.toString(), type = type, urlLinking = urlLinking, defaultImage = animeImages?.medium ?: ""))
 
                             val jikanThemesDeferred = CoroutineScope(Dispatchers.Default).async {
                                 runCatching {
@@ -495,7 +495,7 @@ class AnimeParseComponent {
                                     medium = animeImages?.medium ?: "",
                                     cover = animeImages?.cover ?: "",
                                 ),
-                                titleEn = shikimori.english.toMutableList(),
+                                titleEn = shikimori.english.map { it.toString() }.toMutableList(),
                                 titleJapan = shikimori.japanese.toMutableList(),
                                 synonyms = shikimori.synonyms.toMutableList(),
                                 titleOther = otherTitles,
