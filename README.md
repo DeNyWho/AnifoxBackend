@@ -1,4 +1,4 @@
-**Anifox** is a anime suite where people can watch anime. **Open source project** made with ❤️.
+**Anifox** is a anime project where people can watch anime. **Open source project** made with ❤️.
 
 ## About
 The **AniFox** is a project that was created with passion. It all started when a young person wanted to create their own version of an anime application, as every app with anime viewing capabilities had a large amount of advertising. It ended up evolving into a [diploma](https://github.com/DeNyWho/Anifox_Backend/blob/main/diplom/%D0%92%D0%9A%D0%A0.docx) project. This repository contains the second, completely rewritten version of the backend part of the project. All the features of the backend part can be seen on the [website](https://anifox.club/anime). 
