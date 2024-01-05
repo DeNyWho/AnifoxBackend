@@ -25,10 +25,10 @@ class SSLConfig(
     @Value("\${keycloak.credentials.secret}") private val secret: String,
     @Value("\${keycloak-custom.admin-user}") private val adminUser: String,
     @Value("\${keycloak-custom.admin-password}") private val adminPass: String,
-    @Value("\${server.ssl.key-store}") private val keyStorePath: String,
-    @Value("\${server.ssl.key-store-password}") private val keyStorePassword: String,
-    @Value("\${server.ssl.trust-store}") private val trustStorePath: String,
-    @Value("\${server.ssl.trust-store-password}") private val trustStorePassword: String,
+    @Value("\${key-store}") private val keyStorePath: String,
+    @Value("\${key-store-password}") private val keyStorePassword: String,
+    @Value("\${trust-store}") private val trustStorePath: String,
+    @Value("\${trust-store-password}") private val trustStorePassword: String,
 ) {
 
     @Bean

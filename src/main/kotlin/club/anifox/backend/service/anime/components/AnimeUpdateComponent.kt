@@ -1,5 +1,6 @@
 package club.anifox.backend.service.anime.components
 
+import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
@@ -96,6 +97,12 @@ class AnimeUpdateComponent {
                     if (anime.description.isEmpty()) {
                         anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
                     }
+                    anime.status = when (shikimori.status) {
+                        "released" -> AnimeStatus.Released
+                        "ongoing" -> AnimeStatus.Ongoing
+                        else -> AnimeStatus.Ongoing
+                    }
+                    anime.episodesCount = shikimori.episodes
                     anime.episodesAired = if (shikimori.status == "released") {
                         shikimori.episodes
                     } else {

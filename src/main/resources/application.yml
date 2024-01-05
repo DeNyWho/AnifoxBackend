@@ -6,32 +6,26 @@ server:
     session:
       cookie:
         http-only: false
-  ssl:
-    protocol: TLS
-    key-store-type: PKCS12
-    key-store-provider: SUN
-    trust-store-type: PKCS12
-    trust-store-provider: SUN
-    key-store: ${server.ssl.key-store}
-    key-store-password: ${server.ssl.key-store-password}
-    trust-store: ${server.ssl.trust-store}
-    trust-store-password: ${server.ssl.trust-store-password}
-
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: /springdoc/v3/swagger-ui.html
     deep-linking: true
     enabled: true
+    disable-swagger-default-url: true
+    url: /springdoc/v3/api-docs
+    config-url: /springdoc/v3/api-docs/swagger-config
   default-flat-param-object: true
+
   api-docs:
     enabled: true
+    path: /springdoc/v3/api-docs
 
 keycloak:
   ssl-required: external
   bearer-only: true
-  truststore: ${server.ssl.trust-store}
-  truststore-password: ${server.ssl.trust-store-password}
+  truststore: ${trust-store}
+  truststore-password: ${trust-store-password}
   credentials:
     provider: secret
   config:

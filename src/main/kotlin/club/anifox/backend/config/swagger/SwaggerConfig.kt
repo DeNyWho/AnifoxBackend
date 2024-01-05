@@ -1,5 +1,7 @@
 package club.anifox.backend.config.swagger
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.servers.Server
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
@@ -8,6 +10,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@OpenAPIDefinition(servers = [Server(url = "/")])
 class SwaggerConfig {
 
     @Bean
@@ -27,10 +30,11 @@ class SwaggerConfig {
                     .contact(
                         Contact()
                             .email("denis.akhunov123@gmail.com")
-                            .name("Akhunov Denis"),
+                            .name("Akhunov Denis")
+                            .url("https://github.com/DeNyWho"),
                     )
                     .description("AniFox API")
-                    .version("v2.1.0"),
+                    .version("v3.0.1"),
             )
     }
 }

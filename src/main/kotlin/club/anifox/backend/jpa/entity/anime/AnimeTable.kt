@@ -96,7 +96,7 @@ data class AnimeTable(
     val music: MutableSet<AnimeMusicTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
-    val episodesCount: Int = 0,
+    var episodesCount: Int = 0,
     var episodesAired: Int = 0,
     val shikimoriId: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),

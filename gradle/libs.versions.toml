@@ -12,7 +12,6 @@ swagger = "2.2.0"
 keycloak = "21.0.0"
 mapstruct = "1.5.5.Final"
 ktor = "2.3.4"
-ktor-ratelimit = "master-SNAPSHOT"
 amazon-s3 = "1.12.500"
 thumbnailator = "0.4.20"
 
