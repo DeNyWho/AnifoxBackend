@@ -188,12 +188,12 @@ class AuthComponent(
     ) {
         val cookieAccess = Cookie("access_token", accessToken)
         cookieAccess.maxAge = accessExpires.toInt()
-        cookieAccess.domain = "anifox.club"
+        cookieAccess.domain = "\${domain}"
         cookieAccess.path = "/"
 
         val cookieRefresh = Cookie("refresh_token", refreshToken)
         cookieRefresh.maxAge = refreshExpires.toInt()
-        cookieRefresh.domain = "anifox.club"
+        cookieRefresh.domain = "\${domain}"
         cookieRefresh.path = "/"
 
         response.addCookie(cookieAccess)
