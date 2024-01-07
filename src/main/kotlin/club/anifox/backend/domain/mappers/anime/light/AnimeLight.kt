@@ -10,7 +10,7 @@ fun AnimeTable.toAnimeLight() = with(this) {
     AnimeLight(
         url = url,
         title = title,
-        image = AnimeImagesTypes(large = images.large, medium = images.medium),
+        image = AnimeImagesTypes(large = images.large, medium = images.medium, cover = images.cover),
         type = type,
         rating = totalRating,
         studio = studios.map { it.toStudio() },
@@ -23,5 +23,6 @@ fun AnimeTable.toAnimeLight() = with(this) {
         minimalAge = minimalAge,
         accentColor = accentColor,
         year = year,
+        description = description,
     )
 }

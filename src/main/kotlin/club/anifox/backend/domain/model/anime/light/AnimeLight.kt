@@ -20,6 +20,7 @@ data class AnimeLight(
     val ratingMpa: String = "",
     @SerialName("minimal_age")
     val minimalAge: Int = 0,
+    val description: String,
     val year: Int = 0,
     val status: AnimeStatus = AnimeStatus.Ongoing,
     val season: AnimeSeason = AnimeSeason.Summer,
