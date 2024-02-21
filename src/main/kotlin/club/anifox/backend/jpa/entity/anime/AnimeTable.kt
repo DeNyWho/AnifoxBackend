@@ -3,6 +3,9 @@ package club.anifox.backend.jpa.entity.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
 import jakarta.persistence.Cacheable
 import jakarta.persistence.CascadeType
@@ -159,8 +162,8 @@ data class AnimeTable(
     )
     @BatchSize(size = 10)
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
-    val shikimoriRating: Double = 0.0,
-    val shikimoriVotes: Int = 0,
+    var shikimoriRating: Double = 0.0,
+    var shikimoriVotes: Int = 0,
     val ratingMpa: String = "",
     val minimalAge: Int = 0,
     @Enumerated(EnumType.STRING)

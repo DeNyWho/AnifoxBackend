@@ -10,7 +10,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import jakarta.persistence.EntityManager
@@ -195,12 +195,6 @@ class AnimeSearchComponent {
         }
 
         val sort: List<Order> = when (filter) {
-//            AnimeSearchFilter.Popular -> {
-//                listOf(
-//                    criteriaBuilder.desc(root.get<AnimeTable>("views")),
-//                    criteriaBuilder.desc(root.get<AnimeTable>("countRate")),
-//                )
-//            }
             AnimeSearchFilter.DateASC -> {
                 listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
             }
@@ -208,11 +202,8 @@ class AnimeSearchComponent {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
             }
             AnimeSearchFilter.ShikimoriRating -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))
+                listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriVotes")), criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))
             }
-//            AnimeSearchFilter.Random -> {
-//                listOf(criteriaBuilder.desc(criteriaBuilder.function("random()", AnimeTable::class.java)))
-//            }
             else -> emptyList()
         }
 

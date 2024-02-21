@@ -1,8 +1,8 @@
 package club.anifox.backend.jpa.entity.user
 
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.EpisodeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id

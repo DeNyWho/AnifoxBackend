@@ -12,7 +12,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeRatingCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
 import club.anifox.backend.jpa.entity.user.UserRecentlyAnimeTable
 import club.anifox.backend.jpa.entity.user.UserTable

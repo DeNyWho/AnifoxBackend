@@ -5,8 +5,8 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto
 import club.anifox.backend.domain.dto.anime.kodik.KodikTranslationsDto
 import club.anifox.backend.domain.mappers.anime.toAnimeTranslation
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
-import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.util.AnimeUtils

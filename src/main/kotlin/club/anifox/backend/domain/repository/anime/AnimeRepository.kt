@@ -13,7 +13,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
-import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 
 interface AnimeRepository {
 

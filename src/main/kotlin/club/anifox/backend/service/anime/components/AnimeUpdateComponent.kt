@@ -1,19 +1,16 @@
 package club.anifox.backend.service.anime.components
 
 import club.anifox.backend.domain.enums.anime.AnimeStatus
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
-import club.anifox.backend.jpa.repository.anime.AnimeTranslationCountRepository
-import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
-import io.ktor.client.*
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaQuery
@@ -31,13 +28,7 @@ class AnimeUpdateComponent {
     private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
 
     @Autowired
-    private lateinit var animeTranslationRepository: AnimeTranslationRepository
-
-    @Autowired
     private lateinit var animeRepository: AnimeRepository
-
-    @Autowired
-    private lateinit var animeTranslationCountRepository: AnimeTranslationCountRepository
 
     @PersistenceContext
     private lateinit var entityManager: EntityManager
@@ -56,7 +47,7 @@ class AnimeUpdateComponent {
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
         criteriaQueryShikimori
             .select(shikimoriRoot.get("shikimoriId"))
-            .where(criteriaBuilder.equal(shikimoriRoot.get<Int>("year"), currentYear))
+            .where(criteriaBuilder.between(shikimoriRoot.get("year"), currentYear - 1, currentYear))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
         val shikimoriIds = query.resultList
@@ -69,10 +60,10 @@ class AnimeUpdateComponent {
                 rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
                 rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
                 rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
-                rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.RIGHT)
+                rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
 
                 criteriaQueryAnime.select(rootAnime)
-                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))
+                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), 46431))
 
                 val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
 
@@ -96,6 +87,16 @@ class AnimeUpdateComponent {
                     }
                     if (anime.description.isEmpty()) {
                         anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
+                    }
+                    var countVotes = 0
+                    shikimori.usersRatesStats.forEach {
+                        countVotes += it.value
+                    }
+                    anime.shikimoriVotes = countVotes
+                    anime.shikimoriRating = try {
+                        shikimori.score.toDouble()
+                    } catch (_: Exception) {
+                        0.0
                     }
                     anime.status = when (shikimori.status) {
                         "released" -> AnimeStatus.Released

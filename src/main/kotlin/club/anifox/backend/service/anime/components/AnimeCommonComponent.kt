@@ -17,9 +17,9 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.AnimeMediaTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
@@ -214,7 +214,6 @@ class AnimeCommonComponent {
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
         val a = query.resultList
-        println("WAFLYA = ${a.size}")
         return query.resultList.map { it.toAnimeEpisodeLight() }
     }
 }

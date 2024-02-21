@@ -14,6 +14,7 @@ mapstruct = "1.5.5.Final"
 ktor = "2.3.4"
 amazon-s3 = "1.12.500"
 thumbnailator = "0.4.20"
+postgresql = "42.7.1"
 
 [libraries]
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
@@ -41,7 +42,7 @@ ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
 
-postgresql = { module = "org.postgresql:postgresql"}
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql"}
 jandex = { module = "org.jboss:jandex", version.ref = "spring-boot"}
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }

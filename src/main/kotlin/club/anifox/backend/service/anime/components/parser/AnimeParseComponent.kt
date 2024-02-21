@@ -10,7 +10,6 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.anime.AnimeBufferedImages
 import club.anifox.backend.domain.model.anime.AnimeImagesTypes
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
@@ -20,6 +19,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeMusicTable
 import club.anifox.backend.jpa.entity.anime.AnimeRelatedTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
@@ -130,6 +130,12 @@ class AnimeParseComponent {
 
                     shikimori?.usersRatesStats?.forEach {
                         userRatesStats += it.value
+                    }
+
+                    val shikimoriRating = try {
+                        shikimori?.score?.toDouble()!!
+                    } catch (_: Exception) {
+                        0.0
                     }
 
                     if (
@@ -515,8 +521,8 @@ class AnimeParseComponent {
                                 screenshots = screenShots,
                                 ratingMpa = ratingMpa,
                                 shikimoriId = anime.shikimoriId.toInt(),
-                                shikimoriRating = anime.materialData.shikimoriRating,
-                                shikimoriVotes = anime.materialData.shikimoriVotes,
+                                shikimoriRating = shikimoriRating,
+                                shikimoriVotes = userRatesStats,
                                 season = season,
                                 accentColor = getMostCommonColor(image?.large!!),
                             )

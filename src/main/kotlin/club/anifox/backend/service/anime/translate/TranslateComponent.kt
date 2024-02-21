@@ -9,7 +9,6 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.delay
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -32,7 +31,6 @@ class TranslateComponent {
         return try {
             translateRequest(text)
         } catch (e: Exception) {
-            delay(1500)
             translateRequest(text)
         }
     }

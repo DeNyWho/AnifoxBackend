@@ -8,9 +8,9 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikEpisodeDto
 import club.anifox.backend.domain.dto.translate.edge.TranslateTextDto
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.translate.TranslatedText
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTranslationCountTable
-import club.anifox.backend.jpa.entity.anime.EpisodeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
+import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeEpisodeTranslationRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationCountRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
@@ -121,6 +121,24 @@ class EpisodesComponent {
                                     shikimoriId,
                                     urlLinking,
                                     kodikSeason.value.episodes,
+                                    kitsuEpisodes,
+                                    jikanEpisodes,
+                                    defaultImage,
+                                    translations,
+                                    type,
+                                )
+                            },
+                        )
+                    }
+                }
+                if (kodikAnime.seasons.isEmpty()) {
+                    if (kodikAnime.link.isNotEmpty()) {
+                        episodesReady.addAll(
+                            runBlocking {
+                                processEpisodes(
+                                    shikimoriId,
+                                    urlLinking,
+                                    mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
                                     kitsuEpisodes,
                                     jikanEpisodes,
                                     defaultImage,
@@ -351,36 +369,44 @@ class EpisodesComponent {
         val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()
 
         animeVariations.forEach { anime ->
+            val translationId = when (anime.translation.id) {
+                1002 -> 643
+                else -> anime.translation.id
+            }
+            val translation = animeTranslationRepository.findById(translationId).get()
+
             when (type) {
                 AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
-                    val episodeNumbers = anime.seasons.values
-                        .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
+                    if (anime.seasons.values.isEmpty()) {
+                        if (anime.link.isNotEmpty()) {
+                            val episode = episodes.first()
+                            episode.let {
+                                val episodeTranslation = EpisodeTranslationTable(
+                                    translation = translation,
+                                    link = anime.link,
+                                )
+                                episode.addTranslation(episodeTranslation)
+                                episodeTranslationsToSave.add(episodeTranslation)
+                            }
+                        }
+                    } else {
+                        val episodeNumbers = anime.seasons.values
+                            .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
 
-                    val translationId = when (anime.translation.id) {
-                        1002 -> 643
-                        else -> anime.translation.id
-                    }
-                    val translation = animeTranslationRepository.findById(translationId).get()
-
-                    episodeNumbers.forEach { episodeNumber ->
-                        val episode = episodes.find { it.number == episodeNumber }
-                        episode?.let {
-                            val episodeTranslation = EpisodeTranslationTable(
-                                translation = translation,
-                                link = "${anime.link}?episode=${episode.number}",
-                            )
-                            episode.addTranslation(episodeTranslation)
-                            episodeTranslationsToSave.add(episodeTranslation)
+                        episodeNumbers.forEach { episodeNumber ->
+                            val episode = episodes.find { it.number == episodeNumber }
+                            episode?.let {
+                                val episodeTranslation = EpisodeTranslationTable(
+                                    translation = translation,
+                                    link = "${anime.link}?episode=${episode.number}",
+                                )
+                                episode.addTranslation(episodeTranslation)
+                                episodeTranslationsToSave.add(episodeTranslation)
+                            }
                         }
                     }
                 }
                 else -> {
-                    val translationId = when (anime.translation.id) {
-                        1002 -> 643
-                        else -> anime.translation.id
-                    }
-                    val translation = animeTranslationRepository.findById(translationId).get()
-
                     val episode = episodes.first()
                     episode.let {
                         val episodeTranslation = EpisodeTranslationTable(

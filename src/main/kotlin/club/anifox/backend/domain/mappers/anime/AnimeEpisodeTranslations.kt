@@ -2,8 +2,8 @@ package club.anifox.backend.domain.mappers.anime
 
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.translation.AnimeEpisodeTranslations
-import club.anifox.backend.jpa.entity.anime.AnimeEpisodeTable
-import club.anifox.backend.jpa.entity.anime.EpisodeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
 
 fun AnimeEpisodeTable.toAnimeEpisodeLight(): AnimeEpisodeLight {
     return AnimeEpisodeLight(

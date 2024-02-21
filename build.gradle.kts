@@ -56,7 +56,7 @@ dependencies {
     implementation(libs.thumbnailator)
     implementation(libs.aws.java.sdk.s3)
 
-    runtimeOnly(libs.postgresql)
+    implementation(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.assertk)

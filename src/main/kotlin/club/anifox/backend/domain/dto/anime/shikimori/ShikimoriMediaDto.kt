@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Nullable
 data class ShikimoriMediaDto(
     @SerialName("status")
     val status: String = "",
+    @SerialName("score")
+    val score: String = "",
     @SerialName("russian")
     val russian: String = "",
     @SerialName("license_name_ru")
