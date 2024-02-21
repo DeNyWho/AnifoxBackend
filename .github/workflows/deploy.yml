@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
           token: ${{ secrets.SSH_TOKEN }}
@@ -27,7 +27,7 @@ jobs:
             export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
             git submodule update --init --recursive
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '17'
@@ -35,7 +35,7 @@ jobs:
         run: chmod +x gradlew
           
       - name: Set up Docker
-        uses: docker-practice/actions-setup-docker@master
+        uses: docker/setup-buildx-action@v3
 
       - name: Gradlew Build
         run: ./gradlew clean build -x test
