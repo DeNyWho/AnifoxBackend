@@ -63,6 +63,7 @@ dependencies {
 }
 
 tasks.getByPath("compileKotlin").dependsOn("ktlintFormat")
+tasks.getByPath("runKtlintCheckOverTestSourceSet").dependsOn("ktlintFormat")
 
 ktlint {
     android = false
