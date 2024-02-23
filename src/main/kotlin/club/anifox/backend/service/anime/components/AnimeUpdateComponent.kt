@@ -104,8 +104,9 @@ class AnimeUpdateComponent {
                         "ongoing" -> AnimeStatus.Ongoing
                         else -> AnimeStatus.Ongoing
                     }
-                    if(anime.episodesAired < episodesReady.size)
+                    if (anime.episodesAired < episodesReady.size) {
                         anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
+                    }
                     anime.episodesCount = shikimori.episodes
                     anime.episodesAired = episodesReady.size
                 } else {
