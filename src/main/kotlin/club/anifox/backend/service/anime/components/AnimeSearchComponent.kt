@@ -195,11 +195,23 @@ class AnimeSearchComponent {
         }
 
         val sort: List<Order> = when (filter) {
-            AnimeSearchFilter.DateASC -> {
+            AnimeSearchFilter.DateAiredASC -> {
                 listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
             }
-            AnimeSearchFilter.DateDESC -> {
+            AnimeSearchFilter.DateAiredDESC -> {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
+            }
+            AnimeSearchFilter.DateASCCreate -> {
+                listOf(criteriaBuilder.asc(root.get<AnimeTable>("createdAt")))
+            }
+            AnimeSearchFilter.DateDESCCreate -> {
+                listOf(criteriaBuilder.desc(root.get<AnimeTable>("createdAt")))
+            }
+            AnimeSearchFilter.DateASCUpdate -> {
+                listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
+            }
+            AnimeSearchFilter.DateDESCUpdate -> {
+                listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
             }
             AnimeSearchFilter.ShikimoriRating -> {
                 listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriVotes")), criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))

@@ -47,6 +47,7 @@ class AnimeUpdateComponent {
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
         criteriaQueryShikimori
             .select(shikimoriRoot.get("shikimoriId"))
+            .where(criteriaBuilder.equal(shikimoriRoot.get<String>("status"), AnimeStatus.Ongoing))
             .where(criteriaBuilder.between(shikimoriRoot.get("year"), currentYear - 1, currentYear))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
@@ -63,7 +64,7 @@ class AnimeUpdateComponent {
                 rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
 
                 criteriaQueryAnime.select(rootAnime)
-                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), 46431))
+                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))
 
                 val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
 
@@ -103,12 +104,10 @@ class AnimeUpdateComponent {
                         "ongoing" -> AnimeStatus.Ongoing
                         else -> AnimeStatus.Ongoing
                     }
+                    if(anime.episodesAired < episodesReady.size)
+                        anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
                     anime.episodesCount = shikimori.episodes
-                    anime.episodesAired = if (shikimori.status == "released") {
-                        shikimori.episodes
-                    } else {
-                        episodesReady.size
-                    }
+                    anime.episodesAired = episodesReady.size
                 } else {
                     anime.episodesAired = episodesReady.size
                 }

@@ -1,9 +1,11 @@
 package club.anifox.backend.domain.enums.anime.filter
 
 enum class AnimeSearchFilter {
-//    Popular,
-    DateASC,
-    DateDESC,
+    DateASCUpdate,
+    DateDESCUpdate,
+    DateAiredASC,
+    DateAiredDESC,
+    DateASCCreate,
+    DateDESCCreate,
     ShikimoriRating,
-//    Random,
 }

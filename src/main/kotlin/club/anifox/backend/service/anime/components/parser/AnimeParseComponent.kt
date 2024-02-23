@@ -509,7 +509,7 @@ class AnimeParseComponent {
                                 status = status,
                                 description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                 year = if (shikimori.airedAt != null) LocalDate.parse(shikimori.airedAt).year else anime.materialData.airedAt.year,
-                                createdAt = anime.createdAt,
+                                createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 playerLink = anime.link,
                                 airedOn = airedOn,
                                 releasedOn = if (shikimori.releasedAt != null) LocalDate.parse(shikimori.releasedAt) else anime.materialData.releasedAt,
