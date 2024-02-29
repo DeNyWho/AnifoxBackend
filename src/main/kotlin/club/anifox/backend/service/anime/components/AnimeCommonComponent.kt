@@ -17,12 +17,17 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
+import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.AnimeMediaTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.AnimeUtils
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
@@ -30,7 +35,9 @@ import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Root
+import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
@@ -43,6 +50,9 @@ class AnimeCommonComponent {
     private lateinit var animeStudiosRepository: AnimeStudiosRepository
 
     @Autowired
+    private lateinit var animeBlockedRepository: AnimeBlockedRepository
+
+    @Autowired
     private lateinit var animeGenreRepository: AnimeGenreRepository
 
     @PersistenceContext
@@ -50,6 +60,12 @@ class AnimeCommonComponent {
 
     @Autowired
     private lateinit var animeUtils: AnimeUtils
+
+    @Autowired
+    private lateinit var imageService: ImageService
+
+    @Value("\${domain_s3}")
+    lateinit var domainS3: String
 
     fun getAnimeByUrl(url: String): AnimeDetail {
         val anime = animeUtils.checkAnime(url)
@@ -215,5 +231,65 @@ class AnimeCommonComponent {
         query.maxResults = limit
         val a = query.resultList
         return query.resultList.map { it.toAnimeEpisodeLight() }
+    }
+
+    @Transactional
+    fun blockAnime(url: String?, shikimoriId: Int?) {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
+
+        val predicate = when {
+            url?.isNotEmpty() == true -> criteriaBuilder.equal(root.get<String>("url"), url)
+            shikimoriId != null -> criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId)
+            else -> return
+        }
+        criteriaQuery.where(predicate)
+
+        val query = entityManager.createQuery(criteriaQuery)
+        val anime = query.resultList
+
+        if (anime.isNotEmpty()) {
+            val animeEntity = anime[0]
+
+            animeEntity.apply {
+                related.clear()
+                episodes.clear()
+                translationsCountEpisodes.clear()
+                translations.clear()
+                favorites.clear()
+                rating.clear()
+                music.clear()
+                genres.clear()
+                media.clear()
+                studios.clear()
+                titleEn.clear()
+                titleJapan.clear()
+                synonyms.clear()
+                titleOther.clear()
+                episodes.clear()
+                similarAnime.clear()
+                screenshots.clear()
+                ids = AnimeIdsTable()
+                images = AnimeImagesTable()
+            }
+
+            entityManager.remove(animeEntity)
+
+            if (animeEntity.url.isNotEmpty()) {
+                imageService.deleteObjectsInFolder("images/anime/episodes/${animeEntity.url}/")
+                imageService.deleteObjectsInFolder("images/anime/medium/${animeEntity.url}/")
+                imageService.deleteObjectsInFolder("images/anime/large/${animeEntity.url}/")
+                imageService.deleteObjectsInFolder("images/anime/cover/${animeEntity.url}/")
+            }
+
+            val animeBlocked = AnimeBlockedTable(
+                shikimoriID = animeEntity.shikimoriId,
+            )
+
+            animeBlockedRepository.saveAndFlush(animeBlocked)
+        }
     }
 }

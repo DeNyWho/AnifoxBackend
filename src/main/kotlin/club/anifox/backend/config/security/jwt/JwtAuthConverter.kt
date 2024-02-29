@@ -1,5 +1,6 @@
-package club.anifox.backend.config.jwt
+package club.anifox.backend.config.security.jwt
 
+import club.anifox.backend.domain.exception.common.UnauthorizedException
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -12,15 +13,19 @@ import org.springframework.stereotype.Component
 @Component
 class JwtAuthConverter(private val properties: JwtAuthConverterProperties) : Converter<Jwt, AbstractAuthenticationToken> {
 
-    private val jwtGrantedAuthoritiesConverter = JwtGrantedAuthoritiesConverter()
-
     override fun convert(jwt: Jwt): AbstractAuthenticationToken? {
-        val authorities = (
-            jwtGrantedAuthoritiesConverter.convert(jwt)!!.asSequence() +
-                extractResourceRoles(jwt).asSequence()
-            ).toSet()
-            .map { SimpleGrantedAuthority("$it") }
-        return JwtAuthenticationToken(jwt, authorities.toList(), getPrincipalClaimName(jwt))
+        try {
+            val jwtGrantedAuthoritiesConverter = JwtGrantedAuthoritiesConverter()
+
+            val authorities = (
+                jwtGrantedAuthoritiesConverter.convert(jwt)!!.asSequence() +
+                    extractResourceRoles(jwt).asSequence()
+                ).toSet()
+                .map { SimpleGrantedAuthority("$it") }
+            return JwtAuthenticationToken(jwt, authorities.toList(), getPrincipalClaimName(jwt))
+        } catch (e: Exception) {
+            throw UnauthorizedException()
+        }
     }
 
     private fun getPrincipalClaimName(jwt: Jwt): String {

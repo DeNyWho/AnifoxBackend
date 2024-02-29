@@ -17,11 +17,11 @@ data class AnimeEpisodeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
-    @Column(nullable = true, columnDefinition = "TEXT")
-    var title: String? = "",
+    @Column(nullable = false, columnDefinition = "TEXT")
+    var title: String = "",
 
-    @Column(nullable = true, columnDefinition = "TEXT")
-    var titleEn: String? = "",
+    @Column(nullable = false, columnDefinition = "TEXT")
+    var titleEn: String = "",
 
     @Column(nullable = true, columnDefinition = "TEXT")
     var descriptionEn: String? = "",
@@ -32,8 +32,8 @@ data class AnimeEpisodeTable(
     @Column(nullable = false)
     val number: Int = 0,
 
-    @Column(nullable = true)
-    var image: String? = "",
+    @Column(nullable = false)
+    var image: String = "",
 
     @Column(nullable = true)
     var aired: LocalDate? = LocalDate.now(),

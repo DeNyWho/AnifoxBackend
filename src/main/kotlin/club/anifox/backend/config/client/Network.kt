@@ -1,7 +1,7 @@
 package club.anifox.backend.config.client
 
 import club.anifox.backend.domain.constants.Constants
-import io.ktor.client.HttpClient
+import io.ktor.client.*
 import io.ktor.client.engine.java.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*

@@ -1,4 +1,4 @@
-package club.anifox.backend.config.jwt
+package club.anifox.backend.config.security.jwt
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component

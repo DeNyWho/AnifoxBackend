@@ -47,4 +47,5 @@ interface AnimeRepository {
     fun getAnimeGenres(): List<AnimeGenre>
     fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
     fun updateEpisodes()
+    fun addBlocked(url: String?, shikimoriId: Int?)
 }

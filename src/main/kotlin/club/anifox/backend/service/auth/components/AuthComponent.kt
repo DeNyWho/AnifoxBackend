@@ -39,6 +39,7 @@ class AuthComponent(
     private val roleRepository: RoleRepository,
     private val keycloakService: KeycloakService,
     private val keycloak: Keycloak,
+    @Value("\${domain}") private val domain: String,
     @Value("\${keycloak.realm}") private val realm: String,
     @Value("\${keycloak.resource}") private val clientId: String,
     @Value("\${keycloak.credentials.secret}") private val secret: String,
@@ -188,12 +189,12 @@ class AuthComponent(
     ) {
         val cookieAccess = Cookie("access_token", accessToken)
         cookieAccess.maxAge = accessExpires.toInt()
-        cookieAccess.domain = "\${domain}"
+        cookieAccess.domain = domain
         cookieAccess.path = "/"
 
         val cookieRefresh = Cookie("refresh_token", refreshToken)
         cookieRefresh.maxAge = refreshExpires.toInt()
-        cookieRefresh.domain = "\${domain}"
+        cookieRefresh.domain = domain
         cookieRefresh.path = "/"
 
         response.addCookie(cookieAccess)

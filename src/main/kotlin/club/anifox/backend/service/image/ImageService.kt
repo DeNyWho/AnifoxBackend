@@ -1,12 +1,9 @@
 package club.anifox.backend.service.image
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.ObjectMetadata
 import net.coobird.thumbnailator.Thumbnails
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
@@ -16,27 +13,22 @@ import javax.imageio.ImageIO
 @Service
 class ImageService {
 
-    @Value("\${access_key_s3}")
-    lateinit var accessKeyS3: String
-
-    @Value("\${secret_key_s3}")
-    lateinit var secretKeyS3: String
-
     @Value("\${bucket_name_s3}")
     lateinit var bucketNameS3: String
 
     @Value("\${domain_s3}")
     lateinit var domainS3: String
 
-    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false): String {
-        val s3: AmazonS3 = AmazonS3ClientBuilder.standard()
-            .withEndpointConfiguration(
-                AwsClientBuilder.EndpointConfiguration("https://s3.timeweb.com", "ru-1"),
-            )
-            .withPathStyleAccessEnabled(true)
-            .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKeyS3, secretKeyS3)))
-            .build()
+    @Autowired
+    private lateinit var amazonS3: AmazonS3
 
+    fun deleteObjectsInFolder(folderPath: String) {
+        for (file in amazonS3.listObjects(bucketNameS3, folderPath).objectSummaries) {
+            amazonS3.deleteObject(bucketNameS3, file.key)
+        }
+    }
+
+    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false): String {
         val readyData = if (compress) compressImage(imageBytes = data, width, height) else data
 
         val inputStream = ByteArrayInputStream(readyData)
@@ -45,7 +37,7 @@ class ImageService {
         }
 
         if (newImage) {
-            s3.deleteObject(bucketNameS3, filePath)
+            amazonS3.deleteObject(bucketNameS3, filePath)
         }
 
         var uploaded = false
@@ -54,7 +46,7 @@ class ImageService {
         while (!uploaded && times > 0) {
             Thread.sleep(500)
             uploaded = try {
-                s3.putObject(bucketNameS3, filePath, inputStream, metadata)
+                amazonS3.putObject(bucketNameS3, filePath, inputStream, metadata)
                 true
             } catch (e: Exception) {
                 times -= 1

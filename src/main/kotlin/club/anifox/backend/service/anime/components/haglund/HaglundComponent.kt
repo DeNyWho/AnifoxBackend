@@ -5,7 +5,6 @@ import club.anifox.backend.domain.dto.anime.haglund.HaglundIdsDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.request.headers
 import io.ktor.http.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

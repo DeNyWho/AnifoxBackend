@@ -13,8 +13,6 @@ import org.springframework.context.annotation.Configuration
 import java.io.FileInputStream
 import java.security.KeyStore
 import javax.net.ssl.SSLContext
-import kotlin.collections.HashMap
-import kotlin.collections.MutableMap
 import kotlin.collections.set
 
 @Configuration
@@ -33,6 +31,8 @@ class SSLConfig(
 
     @Bean
     fun sslContext(): SSLContext {
+        System.setProperty("javax.net.ssl.trustStore", trustStorePath)
+        System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword)
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         keyStore.load(FileInputStream(keyStorePath), keyStorePassword.toCharArray())
         val trustStore = KeyStore.getInstance(KeyStore.getDefaultType())

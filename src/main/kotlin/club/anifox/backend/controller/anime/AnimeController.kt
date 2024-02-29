@@ -5,6 +5,7 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeMedia
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -22,9 +23,12 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -85,6 +89,20 @@ class AnimeController {
             translations = translations,
             studio = studio,
         )
+    }
+
+    @PostMapping("block")
+    @PreAuthorize("hasRole('ADMIN')")
+    fun addBlockedAnime(
+        @RequestHeader(value = "Authorization") token: String,
+        @RequestParam(required = false) url: String?,
+        @RequestParam(required = false) shikimoriId: Int?,
+    ) {
+        if (url == null && shikimoriId == null) {
+            throw BadRequestException("You must specify at least one of the required parameters")
+        }
+
+        animeService.addBlocked(url, shikimoriId)
     }
 
     @GetMapping("{url}")
