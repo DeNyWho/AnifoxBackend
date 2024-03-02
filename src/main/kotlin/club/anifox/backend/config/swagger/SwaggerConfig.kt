@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Contact
 import io.swagger.v3.oas.models.info.Info
 import io.swagger.v3.oas.models.info.License
+import io.swagger.v3.oas.models.security.SecurityRequirement
 import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,6 +26,9 @@ class SwaggerConfig {
     @Bean
     fun aniFoxOpenApi(): OpenAPI? {
         return OpenAPI()
+            .addSecurityItem(
+                SecurityRequirement(),
+            )
             .info(
                 Info()
                     .license(License().name("Apache 2.0 license").url("https://github.com/DeNyWho/Anifox_Backend/blob/main/LICENSE"))

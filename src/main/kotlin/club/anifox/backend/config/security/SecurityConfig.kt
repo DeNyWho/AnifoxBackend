@@ -65,6 +65,9 @@ class SecurityConfig @Autowired constructor(
             .sessionManagement {
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
+            .formLogin {
+                it.disable()
+            }
         return http.build()
     }
 

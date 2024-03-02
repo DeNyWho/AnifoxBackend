@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.components
+package club.anifox.backend.service.anime.components.episodes
 
 import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto

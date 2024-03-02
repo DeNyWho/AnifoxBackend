@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.components
+package club.anifox.backend.service.anime.components.parser
 
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable

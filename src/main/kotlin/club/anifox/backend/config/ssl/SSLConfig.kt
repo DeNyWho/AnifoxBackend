@@ -31,8 +31,6 @@ class SSLConfig(
 
     @Bean
     fun sslContext(): SSLContext {
-        System.setProperty("javax.net.ssl.trustStore", trustStorePath)
-        System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword)
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         keyStore.load(FileInputStream(keyStorePath), keyStorePassword.toCharArray())
         val trustStore = KeyStore.getInstance(KeyStore.getDefaultType())

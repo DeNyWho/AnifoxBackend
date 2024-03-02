@@ -52,6 +52,7 @@ class KodikComponent {
             parameter("with_episodes_data", true)
             parameter("not_blocked_in", "RU,UA,ALL")
             parameter("with_material_data", true)
+            parameter("lgbt", false)
             parameter(
                 "anime_genres",
                 "безумие, боевые искусства, вампиры, военное, гарем, демоны," +
@@ -85,6 +86,7 @@ class KodikComponent {
             parameter("with_episodes_data", true)
             parameter("not_blocked_in", "ALL")
             parameter("with_material_data", true)
+            parameter("lgbt", false)
             parameter(
                 "anime_genres",
                 "безумие, боевые искусства, вампиры, военное, гарем, демоны," +

@@ -17,9 +17,9 @@ import club.anifox.backend.domain.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.service.anime.components.AnimeCommonComponent
 import club.anifox.backend.service.anime.components.AnimeSearchComponent
-import club.anifox.backend.service.anime.components.AnimeTranslationsComponent
-import club.anifox.backend.service.anime.components.AnimeUpdateComponent
+import club.anifox.backend.service.anime.components.episodes.AnimeTranslationsComponent
 import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
+import club.anifox.backend.service.anime.components.parser.AnimeUpdateComponent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 

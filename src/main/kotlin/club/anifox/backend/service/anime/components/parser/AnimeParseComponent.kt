@@ -124,7 +124,7 @@ class AnimeParseComponent {
                 try {
                     val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationsIds)
 
-                    val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
+                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -139,9 +139,11 @@ class AnimeParseComponent {
                     }
 
                     if (
+                        shikimori != null &&
                         !anime.materialData.title.contains("Атака Титанов") &&
                         !anime.materialData.title.contains("Атака титанов") &&
-                        !animeBlockedRepository.findById(anime.shikimoriId.toInt()).isPresent && anime.materialData.shikimoriVotes > 90 && userRatesStats > 1000 && shikimori != null &&
+                        !animeBlockedRepository.findById(anime.shikimoriId.toInt()).isPresent &&
+                        (userRatesStats > 1000 || (userRatesStats > 500 && shikimori.status == "ongoing")) &&
                         !anime.materialData.animeStudios.contains("Haoliners Animation League")
                     ) {
                         println(anime.shikimoriId.toInt())
