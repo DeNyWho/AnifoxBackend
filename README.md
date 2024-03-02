@@ -8,7 +8,9 @@ The **AniFox** is a project that was created with passion. It all started when a
 - Default anime requests: anime main catalog request, details, etc✅
 - Oauth 2.0 authorization between Keycloak which installed on anifox server, and spring boot application ( works with cookie )✅
 - Default user requests: add rating to anime, add anime to favourite lists ( watching, watched, in plan, postponed )✅
-- Default admin requests for anime: add anime to blocked list (users don't see this anime). ❌
+- Default admin requests for anime: add anime to blocked list (users don't see this anime). ✅
+- Add an anime release schedule. ❌
+- Add notifications for anime series. ❌
 - Chat between users. ❌
 - The user's ability to add friends. ❌
 - The user's ability to watch anime with friends. ❌
@@ -21,7 +23,7 @@ The **AniFox** is a project that was created with passion. It all started when a
 - [Springdoc](https://springdoc.org/) - java library helps to automate the generation of API documentation using spring boot projects.
 - [Spring Data JPA](https://spring.io/projects/spring-data-jpa) - part of the larger Spring Data family, makes it easy to easily implement JPA-based (Java Persistence API) repositories.
 - [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/) - is a framework that provides seamless integration of OAuth 2.0 authentication and authorization mechanisms into Spring Boot applications, facilitating secure and standardized user authentication processes.
-- [PostgreSQL](https://www.postgresql.org/) - is a powerful, open source object-relational database system with over 35 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.
+- [PostgreSQL](https://www.postgresql.org/) - is a powerful, open source object-relational database system with over 10 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.
 - [Keycloak](https://www.keycloak.org/) - open source identity and access management.
 - [Amazon S3](https://docs.amazonaws.cn/en_us/AmazonS3/latest/userguide/Welcome.html) - is an object storage service that offers industry-leading scalability, data availability, security, and performance.
 - [Shikimori](https://shikimori.one/) - is an online platform dedicated to anime and manga enthusiasts, providing a community-driven database for information, reviews, and discussions about anime series and manga titles.
