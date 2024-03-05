@@ -28,6 +28,9 @@ class SecurityConfig @Autowired constructor(
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
+            .requiresChannel {
+                it.anyRequest().requiresSecure()
+            }
             .csrf {
                 it.disable()
             }
