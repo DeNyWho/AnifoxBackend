@@ -3,15 +3,17 @@
 ## About
 The **AniFox** is a project that was created with passion. It all started when a young person wanted to create their own version of an anime application, as every app with anime viewing capabilities had a large amount of advertising. It ended up evolving into a [diploma](https://github.com/DeNyWho/Anifox_Backend/blob/main/diplom/%D0%92%D0%9A%D0%A0.docx) project. This repository contains the second, completely rewritten version of the backend part of the project. All the features of the backend part can be seen on the [website](https://anifox.club/anime). 
 ## Features
-- **Parser** -   using scheduled tasks in Spring Boot, new anime data from shikimori, jikan, kitsu, haglund, kodik are added to the PostgreSQL database every 12 hours✅
-- **Update** - using scheduled tasks in Spring Boot, new anime episodes from kodik, and episodes info from kitsu and jikan are added to the PostgreSQL database every 1 hour✅
-- Default anime requests: anime main catalog request, details, etc✅
-- Oauth 2.0 authorization between Keycloak which installed on anifox server, and spring boot application ( works with cookie )✅
-- Default user requests: add rating to anime, add anime to favourite lists ( watching, watched, in plan, postponed )✅
-- Default admin requests for anime: add anime to blocked list (users don't see this anime). ❌
-- Chat between users. ❌
-- The user's ability to add friends. ❌
-- The user's ability to watch anime with friends. ❌
+- **Parser** - using scheduled tasks in Spring Boot, new anime data from Shikimori, Jikan, Kitsu, Haglund, Kodik are added to the PostgreSQL database every 12 hours✅
+- **Update** - using scheduled tasks in Spring Boot, new anime episodes from Kodik, and episode information from Kitsu and Jikan are added to the database every 1️⃣ hour✅
+- Default anime requests: main anime catalog request, details etc✅
+- Oauth 2.0 authorization between Keycloak, which is installed on the Anifox server, and the Spring Boot application (works with cookies)✅
+- Default user requests: adding a rating to an anime, adding an anime to favorite lists (watching, watched, on plan, postponed)✅
+- Default admin requests for animes: adding an anime to the blocked list (users won't see these anime) ✅
+- Add anime release schedules ❌
+- Add notifications for anime series ❌
+- Chat between users ❌
+- Users ability to add friends ❌
+- Users ability to watch animes with friends ❌
 ## Built With 🛠
 - [Kotlin](https://kotlinlang.org/) - is a modern but already mature programming language designed to make developers happier.
 - [Spring boot](https://spring.io/projects/spring-boot) - is a Java framework designed to simplify the configuration and deployment of applications, providing a streamlined development experience.
@@ -21,7 +23,7 @@ The **AniFox** is a project that was created with passion. It all started when a
 - [Springdoc](https://springdoc.org/) - java library helps to automate the generation of API documentation using spring boot projects.
 - [Spring Data JPA](https://spring.io/projects/spring-data-jpa) - part of the larger Spring Data family, makes it easy to easily implement JPA-based (Java Persistence API) repositories.
 - [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/) - is a framework that provides seamless integration of OAuth 2.0 authentication and authorization mechanisms into Spring Boot applications, facilitating secure and standardized user authentication processes.
-- [PostgreSQL](https://www.postgresql.org/) - is a powerful, open source object-relational database system with over 35 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.
+- [PostgreSQL](https://www.postgresql.org/) - is a powerful, open source object-relational database system with over 10 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.
 - [Keycloak](https://www.keycloak.org/) - open source identity and access management.
 - [Amazon S3](https://docs.amazonaws.cn/en_us/AmazonS3/latest/userguide/Welcome.html) - is an object storage service that offers industry-leading scalability, data availability, security, and performance.
 - [Shikimori](https://shikimori.one/) - is an online platform dedicated to anime and manga enthusiasts, providing a community-driven database for information, reviews, and discussions about anime series and manga titles.
