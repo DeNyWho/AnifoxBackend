@@ -83,6 +83,7 @@ class SecurityConfig @Autowired constructor(
                 it
                     .clientRegistrationRepository(clientRegistrationRepository())
                     .authorizedClientService(authorizedClientService())
+                    .loginPage("https://$domain/oauth2/authorization/$clientId")
                     .userInfoEndpoint { keycloakOidcUserService }
             }
             .csrf { it.disable() }
