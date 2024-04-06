@@ -23,7 +23,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -92,7 +91,6 @@ class AnimeController {
     }
 
     @PostMapping("block")
-    @PreAuthorize("hasRole('ADMIN')")
     fun addBlockedAnime(
         @RequestHeader(value = "Authorization") token: String,
         @RequestParam(required = false) url: String?,

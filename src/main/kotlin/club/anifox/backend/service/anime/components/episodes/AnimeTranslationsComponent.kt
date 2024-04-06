@@ -7,7 +7,6 @@ import club.anifox.backend.domain.mappers.anime.toAnimeTranslation
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
-import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.util.AnimeUtils
 import io.ktor.client.*
@@ -27,9 +26,6 @@ class AnimeTranslationsComponent {
 
     @Autowired
     private lateinit var animeTranslationRepository: AnimeTranslationRepository
-
-    @Autowired
-    private lateinit var animeRepository: AnimeRepository
 
     @Autowired
     private lateinit var animeUtils: AnimeUtils

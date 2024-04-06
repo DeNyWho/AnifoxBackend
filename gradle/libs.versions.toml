@@ -42,6 +42,8 @@ ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
 
+jackson = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql"}
 jandex = { module = "org.jboss:jandex", version.ref = "spring-boot"}
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }

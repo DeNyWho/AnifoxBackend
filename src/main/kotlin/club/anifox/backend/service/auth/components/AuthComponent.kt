@@ -2,13 +2,9 @@ package club.anifox.backend.service.auth.components
 
 import club.anifox.backend.domain.dto.auth.keycloak.KeycloakTokenRefreshDto
 import club.anifox.backend.domain.dto.users.registration.UserCreateResponseDto
-import club.anifox.backend.domain.enums.user.RoleName
-import club.anifox.backend.domain.enums.user.TypeUser
 import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.user.request.CreateUserRequest
-import club.anifox.backend.jpa.entity.user.RoleTable
 import club.anifox.backend.jpa.entity.user.UserTable
-import club.anifox.backend.jpa.repository.user.RoleRepository
 import club.anifox.backend.jpa.repository.user.UserRepository
 import club.anifox.backend.service.keycloak.KeycloakService
 import io.ktor.client.*
@@ -21,10 +17,7 @@ import jakarta.servlet.http.HttpServletResponse
 import kotlinx.coroutines.runBlocking
 import org.keycloak.admin.client.CreatedResponseUtil
 import org.keycloak.admin.client.Keycloak
-import org.keycloak.admin.client.resource.RealmResource
-import org.keycloak.admin.client.resource.UserResource
 import org.keycloak.authorization.client.AuthzClient
-import org.keycloak.representations.idm.RoleRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -36,7 +29,6 @@ import org.springframework.stereotype.Component
 class AuthComponent(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val roleRepository: RoleRepository,
     private val keycloakService: KeycloakService,
     private val keycloak: Keycloak,
     @Value("\${domain}") private val domain: String,
@@ -48,14 +40,14 @@ class AuthComponent(
     private val httpClient: HttpClient,
 ) {
     fun authenticate(userIdentifier: String, password: String, response: HttpServletResponse) {
-        val user = if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
+        if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
             userRepository.findByUsernameOrEmail(userIdentifier).get()
         } else {
             throw BadCredentialsException("User not found with user identifier: $userIdentifier")
         }
-        if (!passwordEncoder.matches(password, user.password)) {
-            throw BadCredentialsException("Invalid user identifier/password supplied")
-        }
+//        if (!passwordEncoder.matches(password, user.password)) {
+//            throw BadCredentialsException("Invalid user identifier/password supplied")
+//        }
         try {
             val auth = authzClient.obtainAccessToken(userIdentifier, password)
 
@@ -114,14 +106,6 @@ class AuthComponent(
             email = signUpRequest.email
         }
 
-        val role =
-            if (roleRepository.findByName(RoleName.ROLE_USER).isPresent) {
-                roleRepository.findByName(RoleName.ROLE_USER)
-                    .get()
-            } else {
-                roleRepository.save(RoleTable(name = RoleName.ROLE_USER))
-            }
-
         val realmResource = keycloak.realm(realm)
         val usersResource = realmResource.users()
         val userCreateResponseDto = UserCreateResponseDto()
@@ -137,19 +121,13 @@ class AuthComponent(
                     val passwordCred = keycloakService.getCredentialRepresentation(signUpRequest.password)
                     val userResource = usersResource[userId]
                     userResource.resetPassword(passwordCred)
-                    insertNewRole(role.name.name, realmResource, userResource)
 
                     val userEntity = UserTable(
                         email = signUpRequest.email,
-                        login = signUpRequest.login,
-                        password = passwordEncoder.encode(signUpRequest.password),
-                        roles = mutableSetOf(),
                         image = "",
                         nickName = signUpRequest.nickname,
-                        typeUser = TypeUser.AniFox,
                     )
 
-                    userEntity.roles.add(role)
                     userRepository.save(userEntity)
                 }
             }
@@ -169,15 +147,6 @@ class AuthComponent(
         )
 
         response.status = HttpStatus.CREATED.value()
-    }
-
-    private fun insertNewRole(
-        newRole: String,
-        realmResource: RealmResource,
-        userResource: UserResource,
-    ) {
-        val realmRoleUser: RoleRepresentation = realmResource.roles()[newRole].toRepresentation()
-        userResource.roles().realmLevel().add(listOf(realmRoleUser))
     }
 
     private fun makeCookieAniFox(

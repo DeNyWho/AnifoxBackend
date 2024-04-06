@@ -26,6 +26,8 @@ dependencies {
 
     implementation(libs.mapstruct)
 
+    implementation(libs.jackson)
+
     implementation(libs.jakarta.api)
     implementation(libs.jakarta.persistence)
 

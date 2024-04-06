@@ -8,6 +8,9 @@ server:
         http-only: false
 
 springdoc:
+  api-docs:
+    enabled: true
+    path: /springdoc/v3/api-docs
   swagger-ui:
     path: /springdoc/v3/swagger-ui.html
     deep-linking: true
@@ -17,19 +20,18 @@ springdoc:
     config-url: /springdoc/v3/api-docs/swagger-config
   default-flat-param-object: true
 
-  api-docs:
-    enabled: true
-    path: /springdoc/v3/api-docs
-
 keycloak:
   ssl-required: external
   bearer-only: true
   truststore: ${trust-store}
   truststore-password: ${trust-store-password}
-  credentials:
-    provider: secret
   config:
     file: keycloak.json
+  realm: ${keycloak.realm}
+  auth-server-url: ${keycloak.auth-server-url}
+  resource: ${keycloak.resource}
+  credentials:
+    secret: ${keycloak.credentials.secret}
 
 spring:
   datasource:
@@ -55,8 +57,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI}
-          jwk-set-uri: ${KEYCLOAK_ISSUER_URI}/protocol/openid-connect/certs
+          issuer-uri: ${keycloak.auth-server-url}realms/${keycloak.realm}
+          jwk-set-uri: ${keycloak.auth-server-url}realms/${keycloak.realm}/protocol/openid-connect/certs
   mail:
     properties:
       mail:

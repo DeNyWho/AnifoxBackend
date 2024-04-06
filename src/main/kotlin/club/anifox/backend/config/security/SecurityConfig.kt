@@ -1,23 +1,66 @@
 package club.anifox.backend.config.security
 
 import club.anifox.backend.config.security.jwt.JwtAuthConverter
+import club.anifox.backend.config.security.keycloak.KeycloakOidcUserService
+import club.anifox.backend.domain.enums.user.RoleName
 import club.anifox.backend.util.UnauthorizedEntryPoint
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.registration.ClientRegistration
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
+import org.springframework.security.oauth2.core.AuthorizationGrantType
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher
+import org.springframework.security.web.util.matcher.OrRequestMatcher
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig @Autowired constructor(
     private val jwtAuthConverter: JwtAuthConverter,
+    @Value("\${keycloak.auth-server-url}") private val authUrl: String,
+    @Value("\${keycloak.realm}") private val realm: String,
+    @Value("\${keycloak.resource}") private val clientId: String,
+    @Value("\${keycloak.credentials.secret}") private val secret: String,
+    @Value("\${domain}") private val domain: String,
+    private val keycloakOidcUserService: KeycloakOidcUserService,
 ) {
+    private fun keycloakClientRegistration(): ClientRegistration {
+        return ClientRegistration.withRegistrationId(clientId)
+            .clientId(clientId)
+            .clientSecret(secret)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .authorizationUri("${authUrl}realms/$realm/protocol/openid-connect/auth")
+            .tokenUri("${authUrl}realms/$realm/protocol/openid-connect/token")
+            .userInfoUri("${authUrl}realms/$realm/protocol/openid-connect/userinfo")
+            .jwkSetUri("${authUrl}realms/$realm/protocol/openid-connect/certs")
+            .issuerUri("${authUrl}realms/$realm")
+            .redirectUri("https://$domain/login/oauth2/code/$clientId")
+            .userNameAttributeName("preferred_username")
+            .scope("openid")
+            .build()
+    }
+
+    @Bean
+    fun clientRegistrationRepository() = InMemoryClientRegistrationRepository(
+        keycloakClientRegistration(),
+    )
+
+    @Bean
+    fun authorizedClientService() = InMemoryOAuth2AuthorizedClientService(
+        clientRegistrationRepository(),
+    )
+
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
@@ -25,37 +68,45 @@ class SecurityConfig @Autowired constructor(
     fun unauthorizedEntryPoint() = UnauthorizedEntryPoint()
 
     @Bean
+    @Order(1)
+    fun swaggerFilterChain(http: HttpSecurity): SecurityFilterChain =
+        http
+            .securityMatcher(
+                OrRequestMatcher(
+                    AntPathRequestMatcher("/springdoc/**"),
+                    AntPathRequestMatcher("/oauth2/**"),
+                    AntPathRequestMatcher("/login/**"),
+                ),
+            )
+            .authorizeHttpRequests { it.anyRequest().hasRole(RoleName.DEV.name) }
+            .oauth2Login {
+                it
+                    .clientRegistrationRepository(clientRegistrationRepository())
+                    .authorizedClientService(authorizedClientService())
+                    .userInfoEndpoint { keycloakOidcUserService }
+            }
+            .csrf { it.disable() }
+            .build()
+
+    @Bean
+    @Order(2)
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .requiresChannel {
-                it.anyRequest().requiresSecure()
-            }
-            .csrf {
-                it.disable()
-            }
-            .cors {
-                it.disable()
-            }
+            .securityMatchers { it.requestMatchers("/api/**", "/images/**") }
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers(
-                    "/api/anime/**",
-                    "/api/test/**",
-                    "/api/shikimori/**",
-                    "/images/**",
-                    "/api/auth/**",
-                    "/api/auth/oauth2/code/**",
-                    "/api/auth/shikimori/**",
-                    "/swagger-ui/**",
-                    "/v3/**",
-                    "/swagger-resources",
-                    "/swagger-resources/**",
-                    "/configuration/**",
-                    "/swagger-ui/**",
-                    "/webjars/**",
+                    AntPathRequestMatcher("/api/anime/block"), // Явное указание путей
+                ).hasRole(RoleName.ADMIN.name)
+                auth.requestMatchers(
+                    AntPathRequestMatcher("/api/anime/**"),
+                    AntPathRequestMatcher("/api/test/**"),
+                    AntPathRequestMatcher("/api/shikimori/**"),
+                    AntPathRequestMatcher("/images/**"),
+                    AntPathRequestMatcher("/oauth2/**"),
+                    AntPathRequestMatcher("/api/auth/**"),
+                    AntPathRequestMatcher("/api/auth/oauth2/code/**"),
                 ).permitAll()
-                auth.requestMatchers(HttpMethod.GET, "/admin").hasRole(ADMIN)
-                auth.requestMatchers(HttpMethod.GET, "/user").hasAnyRole(ADMIN, USER)
             }
             .exceptionHandling {
                 it.authenticationEntryPoint(unauthorizedEntryPoint())
@@ -66,16 +117,13 @@ class SecurityConfig @Autowired constructor(
                 }
             }
             .sessionManagement {
-                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                it.sessionCreationPolicy(SessionCreationPolicy.NEVER)
             }
             .formLogin {
                 it.disable()
             }
+            .csrf { it.disable() }
+            .cors { it.disable() }
         return http.build()
-    }
-
-    companion object {
-        private const val ADMIN = "ADMIN"
-        private const val USER = "USER"
     }
 }
