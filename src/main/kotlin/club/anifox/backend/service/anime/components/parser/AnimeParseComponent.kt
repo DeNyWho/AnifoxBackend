@@ -10,7 +10,6 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.model.anime.AnimeBufferedImages
 import club.anifox.backend.domain.model.anime.AnimeImagesTypes
-import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
@@ -122,9 +121,9 @@ class AnimeParseComponent {
         while (nextPage != null) {
             ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
                 try {
-                    val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId.toInt(), translationsIds)
+                    val anime = kodikComponent.checkKodikSingle(50955, translationsIds)
 
-                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
+                    val shikimori = shikimoriComponent.checkShikimori("50955")
 
                     var userRatesStats = 0
 
@@ -549,14 +548,14 @@ class AnimeParseComponent {
                     e.stackTrace.forEach {
                         println(it)
                     }
-                    animeErrorParserRepository.save(
-                        AnimeErrorParserTable(
-                            message = e.message,
-                            cause = "ANIME PARSE",
-                            shikimoriId = animeTemp.shikimoriId.toInt(),
-                        ),
-                    )
-                    return@Loop
+//                    animeErrorParserRepository.save(
+//                        AnimeErrorParserTable(
+//                            message = e.message,
+//                            cause = "ANIME PARSE",
+//                            shikimoriId = animeTemp.shikimoriId.toInt(),
+//                        ),
+//                    )
+//                    return@Loop
                 }
             }
             if (ar.nextPage != null) {

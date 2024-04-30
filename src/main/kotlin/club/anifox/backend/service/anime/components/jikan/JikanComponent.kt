@@ -19,6 +19,19 @@ class JikanComponent {
     @Autowired
     private lateinit var client: HttpClient
 
+    suspend fun fetchJikanById(shikimoriId: String): JikanResponseDto<JikanDataDto> {
+        return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
+            url {
+                protocol = URLProtocol.HTTPS
+                host = Constants.JIKAN
+                encodedPath = "${Constants.JIKAN_VERSION}${Constants.JIKAN_ANIME}/$shikimoriId"
+            }
+        }.body<JikanResponseDto<JikanDataDto>>()
+    }
+
     suspend fun fetchJikanEpisodes(page: Int, shikimoriId: String): JikanResponseDefaultDto<JikanEpisodeDto> {
         return client.get {
             url {
