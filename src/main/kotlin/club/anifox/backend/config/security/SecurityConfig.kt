@@ -2,6 +2,7 @@ package club.anifox.backend.config.security
 
 import club.anifox.backend.config.security.jwt.JwtAuthConverter
 import club.anifox.backend.config.security.keycloak.KeycloakOidcUserService
+import club.anifox.backend.config.security.oauth2.CustomAuthenticationSuccessHandler
 import club.anifox.backend.domain.enums.user.RoleName
 import club.anifox.backend.util.UnauthorizedEntryPoint
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,6 +34,7 @@ class SecurityConfig @Autowired constructor(
     @Value("\${keycloak.credentials.secret}") private val secret: String,
     @Value("\${domain}") private val domain: String,
     private val keycloakOidcUserService: KeycloakOidcUserService,
+    private val customAuthenticationSuccessHandler: CustomAuthenticationSuccessHandler,
 ) {
     private fun keycloakClientRegistration(): ClientRegistration {
         return ClientRegistration.withRegistrationId(clientId)
@@ -85,6 +87,7 @@ class SecurityConfig @Autowired constructor(
                     .authorizedClientService(authorizedClientService())
                     .loginPage("https://$domain/oauth2/authorization/$clientId")
                     .userInfoEndpoint { keycloakOidcUserService }
+                    .successHandler(customAuthenticationSuccessHandler)
             }
             .csrf { it.disable() }
             .build()
