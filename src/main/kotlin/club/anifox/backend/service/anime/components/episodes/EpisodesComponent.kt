@@ -73,14 +73,14 @@ class EpisodesComponent {
         return animeTranslationCountRepository.saveAll(translationsCountMap)
     }
 
-    fun fetchEpisodes(shikimoriId: String, kitsuId: String, type: AnimeType, urlLinking: String, defaultImage: String): List<AnimeEpisodeTable> {
+    fun fetchEpisodes(shikimoriId: Int, kitsuId: String, type: AnimeType, urlLinking: String, defaultImage: String): List<AnimeEpisodeTable> {
         val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
         val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
         val translations = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
 
-        val kodikAnime = kodikComponent.checkKodikSingle(shikimoriId.toInt(), translations)
+        val kodikAnime = kodikComponent.checkKodikSingle(shikimoriId, translations)
 
         when (type) {
             AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
@@ -173,7 +173,7 @@ class EpisodesComponent {
     }
 
     private suspend fun processEpisodes(
-        shikimoriId: String,
+        shikimoriId: Int,
         urlLinking: String,
         kodikEpisodes: Map<String, KodikEpisodeDto>,
         kitsuEpisodes: List<KitsuEpisodeDto>,
@@ -363,7 +363,7 @@ class EpisodesComponent {
         }
     }
 
-    private fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: String, type: AnimeType, translationsId: String): List<AnimeEpisodeTable> {
+    private fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: Int, type: AnimeType, translationsId: String): List<AnimeEpisodeTable> {
         val animeVariations = kodikComponent.checkKodikVariety(shikimoriId.toInt(), translationsId)
 
         val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()

@@ -40,11 +40,11 @@ class AuthComponent(
     private val httpClient: HttpClient,
 ) {
     fun authenticate(userIdentifier: String, password: String, response: HttpServletResponse) {
-        if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
-            userRepository.findByUsernameOrEmail(userIdentifier).get()
-        } else {
-            throw BadCredentialsException("User not found with user identifier: $userIdentifier")
-        }
+//        if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
+//            userRepository.findByUsernameOrEmail(userIdentifier).get()
+//        } else {
+//            throw BadCredentialsException("User not found with user identifier: $userIdentifier")
+//        }
 //        if (!passwordEncoder.matches(password, user.password)) {
 //            throw BadCredentialsException("Invalid user identifier/password supplied")
 //        }

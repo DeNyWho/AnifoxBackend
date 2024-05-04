@@ -68,10 +68,10 @@ class AnimeUpdateComponent {
 
                 val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
 
-                val shikimori = shikimoriComponent.checkShikimori("${anime.shikimoriId}")
+                val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
-                episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId.toString(), kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinking = anime.url, defaultImage = anime.images.medium))
+                episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinking = anime.url, defaultImage = anime.images.medium))
 
                 val translationsCountReady = episodesComponent.translationsCount(episodesReady)
 

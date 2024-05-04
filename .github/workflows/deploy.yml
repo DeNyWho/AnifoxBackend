@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - main
-      
+
 env:
   GITHUB_USERNAME: ${{ secrets.USERNAME }}
   GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,7 +33,7 @@ jobs:
           java-version: '17'
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-          
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 

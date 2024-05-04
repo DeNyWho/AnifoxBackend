@@ -15,7 +15,7 @@ class HaglundComponent {
     @Autowired
     private lateinit var client: HttpClient
 
-    suspend fun fetchHaglundIds(shikimoriId: String): HaglundIdsDto {
+    suspend fun fetchHaglundIds(shikimoriId: Int): HaglundIdsDto {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

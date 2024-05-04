@@ -115,15 +115,15 @@ class AnimeParseComponent {
         var nextPage: String? = "1"
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
-            kodikComponent.checkKodikList(translationsIds)
+            listOf(kodikComponent.checkKodikSingle(48418, translationsIds))
         }
 
         while (nextPage != null) {
-            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
+            ar.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
                 try {
-                    val anime = kodikComponent.checkKodikSingle(50955, translationsIds)
+                    val anime = kodikComponent.checkKodikSingle(animeTemp.shikimoriId, translationsIds)
 
-                    val shikimori = shikimoriComponent.checkShikimori("50955")
+                    val shikimori = shikimoriComponent.checkShikimori(animeTemp.shikimoriId)
 
                     var userRatesStats = 0
 
@@ -521,7 +521,7 @@ class AnimeParseComponent {
                                 minimalAge = minimalAge,
                                 screenshots = screenShots,
                                 ratingMpa = ratingMpa,
-                                shikimoriId = anime.shikimoriId.toInt(),
+                                shikimoriId = anime.shikimoriId,
                                 shikimoriRating = shikimoriRating,
                                 shikimoriVotes = userRatesStats,
                                 season = season,
@@ -558,16 +558,16 @@ class AnimeParseComponent {
 //                    return@Loop
                 }
             }
-            if (ar.nextPage != null) {
-                ar = runBlocking {
-                    client.get(ar.nextPage!!) {
-                        headers {
-                            contentType(ContentType.Application.Json)
-                        }
-                    }.body()
-                }
-            }
-            nextPage = ar.nextPage
+//            if (ar.nextPage != null) {
+//                ar = runBlocking {
+//                    client.get(ar.nextPage!!) {
+//                        headers {
+//                            contentType(ContentType.Application.Json)
+//                        }
+//                    }.body()
+//                }
+//            }
+//            nextPage = ar.nextPage
         }
     }
 

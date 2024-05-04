@@ -25,7 +25,7 @@ data class KodikAnimeDto(
     @SerialName("episodes_count")
     val episodesCount: Int = 0,
     @SerialName("shikimori_id")
-    val shikimoriId: String = "",
+    val shikimoriId: Int = 0,
     @SerialName("created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @SerialName("updated_at")

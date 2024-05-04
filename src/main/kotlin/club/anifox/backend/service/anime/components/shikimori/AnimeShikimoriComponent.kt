@@ -19,7 +19,7 @@ class AnimeShikimoriComponent {
     @Autowired
     private lateinit var client: HttpClient
 
-    fun checkShikimori(shikimoriId: String): ShikimoriMediaDto? {
+    fun checkShikimori(shikimoriId: Int): ShikimoriMediaDto? {
         return try {
             runBlocking {
                 client.get {
@@ -34,7 +34,7 @@ class AnimeShikimoriComponent {
         }
     }
 
-    suspend fun fetchShikimoriScreenshots(shikimoriId: String): List<String> {
+    suspend fun fetchShikimoriScreenshots(shikimoriId: Int): List<String> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
@@ -49,7 +49,7 @@ class AnimeShikimoriComponent {
         }
     }
 
-    suspend fun fetchShikimoriRelated(shikimoriId: String): List<ShikimoriRelationDto> {
+    suspend fun fetchShikimoriRelated(shikimoriId: Int): List<ShikimoriRelationDto> {
         return client.get {
             url {
                 protocol = URLProtocol.HTTPS
@@ -59,7 +59,7 @@ class AnimeShikimoriComponent {
         }.body<List<ShikimoriRelationDto>>()
     }
 
-    suspend fun fetchShikimoriSimilar(shikimoriId: String): List<Int> {
+    suspend fun fetchShikimoriSimilar(shikimoriId: Int): List<Int> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

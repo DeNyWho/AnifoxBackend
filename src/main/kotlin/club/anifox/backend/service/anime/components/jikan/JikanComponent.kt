@@ -32,7 +32,7 @@ class JikanComponent {
         }.body<JikanResponseDto<JikanDataDto>>()
     }
 
-    suspend fun fetchJikanEpisodes(page: Int, shikimoriId: String): JikanResponseDefaultDto<JikanEpisodeDto> {
+    suspend fun fetchJikanEpisodes(page: Int, shikimoriId: Int): JikanResponseDefaultDto<JikanEpisodeDto> {
         return client.get {
             url {
                 protocol = URLProtocol.HTTPS
@@ -43,7 +43,7 @@ class JikanComponent {
         }.body<JikanResponseDefaultDto<JikanEpisodeDto>>()
     }
 
-    suspend fun fetchJikanImages(shikimoriId: String): JikanResponseDto<JikanDataDto> {
+    suspend fun fetchJikanImages(shikimoriId: Int): JikanResponseDto<JikanDataDto> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
@@ -56,7 +56,7 @@ class JikanComponent {
         }.body<JikanResponseDto<JikanDataDto>>()
     }
 
-    suspend fun fetchJikanThemes(shikimoriId: String): JikanResponseDto<JikanThemesDto> {
+    suspend fun fetchJikanThemes(shikimoriId: Int): JikanResponseDto<JikanThemesDto> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

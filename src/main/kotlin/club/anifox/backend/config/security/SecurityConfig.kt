@@ -87,7 +87,6 @@ class SecurityConfig @Autowired constructor(
                     .authorizedClientService(authorizedClientService())
                     .loginPage("https://$domain/oauth2/authorization/$clientId")
                     .userInfoEndpoint { keycloakOidcUserService }
-                    .successHandler(customAuthenticationSuccessHandler)
             }
             .csrf { it.disable() }
             .build()
