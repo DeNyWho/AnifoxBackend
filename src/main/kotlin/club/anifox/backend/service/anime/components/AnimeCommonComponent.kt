@@ -37,7 +37,6 @@ import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Root
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
@@ -63,9 +62,6 @@ class AnimeCommonComponent {
 
     @Autowired
     private lateinit var imageService: ImageService
-
-    @Value("\${domain_s3}")
-    lateinit var domainS3: String
 
     fun getAnimeByUrl(url: String): AnimeDetail {
         val anime = animeUtils.checkAnime(url)
@@ -229,7 +225,6 @@ class AnimeCommonComponent {
         val firstResult = (page - 1) * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
-        val a = query.resultList
         return query.resultList.map { it.toAnimeEpisodeLight() }
     }
 
@@ -290,6 +285,14 @@ class AnimeCommonComponent {
             )
 
             animeBlockedRepository.saveAndFlush(animeBlocked)
+        } else {
+            if (shikimoriId != null) {
+                val animeBlocked = AnimeBlockedTable(
+                    shikimoriID = shikimoriId,
+                )
+
+                animeBlockedRepository.saveAndFlush(animeBlocked)
+            }
         }
     }
 }

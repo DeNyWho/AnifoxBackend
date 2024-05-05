@@ -25,8 +25,12 @@ class FetchImageComponent {
     @Autowired
     private lateinit var imageService: ImageService
 
-    suspend fun fetchAndSaveAnimeImages(shikimoriId: Int, urlLinking: String): Pair<AnimeImages, BufferedImage>? {
-        val kitsuImages = fetchKitsuImages(shikimoriId)
+    suspend fun fetchAndSaveAnimeImages(shikimoriId: Int, kitsuId: Int?, urlLinking: String): Pair<AnimeImages, BufferedImage>? {
+        val kitsuImages = if (kitsuId != null) {
+            fetchKitsuImages(kitsuId)
+        } else {
+            null
+        }
         val jikanImages = fetchJikanImages(shikimoriId)
 
         return runCatching {
@@ -38,8 +42,8 @@ class FetchImageComponent {
         }.getOrNull()
     }
 
-    private suspend fun fetchKitsuImages(shikimoriId: Int): AnimeImages? {
-        val kitsuData = kitsuComponent.fetchKitsuAnime(shikimoriId).data
+    private suspend fun fetchKitsuImages(kitsuId: Int): AnimeImages? {
+        val kitsuData = kitsuComponent.fetchKitsuAnime(kitsuId).data
         return kitsuData?.let {
             AnimeImages(
                 large = it.attributesKitsu.posterImage.large ?: "",

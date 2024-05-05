@@ -97,7 +97,7 @@ class AnimeParseComponent(
 
                 runBlocking {
                     if (!animeBlockedRepository.findById(shikimori.id).isPresent &&
-                        (userRatesStats > 1000 || (userRatesStats > 500 && shikimori.status == "ongoing")) &&
+                        (userRatesStats > 1500 || (userRatesStats > 500 && shikimori.status == "ongoing")) &&
                         shikimori.studios.none { studio ->
                             animeBlockedByStudioRepository.findById(studio.id).isPresent
                         } &&
@@ -163,10 +163,6 @@ class AnimeParseComponent(
                             }
 
                         val jikanThemesDeferred = async { jikanComponent.fetchJikanThemes(shikimori.id) }
-
-                        val imagesDeferred = async {
-                            fetchImageComponent.fetchAndSaveAnimeImages(shikimori.id, urlLinkPath)
-                        }
 
                         val type = when (shikimori.kind) {
                             "movie" -> AnimeType.Movie
@@ -260,6 +256,10 @@ class AnimeParseComponent(
 
                         val animeIds = animeIdsDeferred.await()
 
+                        val imagesDeferred = async {
+                            fetchImageComponent.fetchAndSaveAnimeImages(shikimori.id, animeIds.kitsu, urlLinkPath)
+                        }
+
                         val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
 
                         val episodesReady = episodesComponent.fetchEpisodes(
@@ -299,7 +299,7 @@ class AnimeParseComponent(
                             ),
                             year = airedOn.year,
                             nextEpisode = nextEpisode,
-                            episodesCount = shikimori.episodes,
+                            episodesCount = if (shikimori.episodes < episodesReady.size) episodesReady.size else shikimori.episodes,
                             episodesAired = episodesReady.size,
                             shikimoriId = shikimori.id,
                             createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),

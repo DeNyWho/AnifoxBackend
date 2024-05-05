@@ -5,7 +5,6 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeMedia
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -96,10 +95,6 @@ class AnimeController {
         @RequestParam(required = false) url: String?,
         @RequestParam(required = false) shikimoriId: Int?,
     ) {
-        if (url == null && shikimoriId == null) {
-            throw BadRequestException("You must specify at least one of the required parameters")
-        }
-
         animeService.addBlocked(url, shikimoriId)
     }
 
