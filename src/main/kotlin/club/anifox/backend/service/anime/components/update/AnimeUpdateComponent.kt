@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.components.parser
+package club.anifox.backend.service.anime.components.update
 
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
@@ -71,7 +71,7 @@ class AnimeUpdateComponent {
                 val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
-                episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinking = anime.url, defaultImage = anime.images.medium))
+                episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinkPath = anime.url, defaultImage = anime.images.medium))
 
                 val translationsCountReady = episodesComponent.translationsCount(episodesReady)
 

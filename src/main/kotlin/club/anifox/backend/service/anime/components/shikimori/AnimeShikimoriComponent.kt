@@ -1,7 +1,7 @@
 package club.anifox.backend.service.anime.components.shikimori
 
 import club.anifox.backend.domain.constants.Constants
-import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMediaDto
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriRelationDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriScreenshotsDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriSimilarDto
@@ -19,7 +19,7 @@ class AnimeShikimoriComponent {
     @Autowired
     private lateinit var client: HttpClient
 
-    fun checkShikimori(shikimoriId: Int): ShikimoriMediaDto? {
+    fun checkShikimori(shikimoriId: Int): ShikimoriDto? {
         return try {
             runBlocking {
                 client.get {
@@ -27,7 +27,7 @@ class AnimeShikimoriComponent {
                         protocol = URLProtocol.HTTPS
                         host = "shikimori.one/api/animes/$shikimoriId"
                     }
-                }.body<ShikimoriMediaDto>()
+                }.body<ShikimoriDto>()
             }
         } catch (e: Exception) {
             null

@@ -5,7 +5,11 @@ import kotlinx.serialization.Serializable
 import org.jetbrains.annotations.Nullable
 
 @Serializable
-data class ShikimoriMediaDto(
+data class ShikimoriDto(
+    @SerialName("id")
+    val id: Int,
+    @SerialName("kind")
+    val kind: String,
     @SerialName("status")
     val status: String = "",
     @SerialName("score")
@@ -28,8 +32,12 @@ data class ShikimoriMediaDto(
     @Nullable
     @SerialName("japanese")
     val japanese: List<String> = listOf(),
+    @SerialName("genres")
+    val genres: List<ShikimoriGenresDto> = listOf(),
+    @SerialName("studios")
+    val studios: List<ShikimoriStudiosDto> = listOf(),
     @SerialName("videos")
-    val videos: List<ShikimoriVideoParse> = listOf(),
+    val videos: List<ShikimoriVideoDto> = listOf(),
     @SerialName("fandubbers")
     val fandubbers: List<String> = listOf(),
     @SerialName("episodes")
@@ -37,9 +45,9 @@ data class ShikimoriMediaDto(
     @SerialName("episodes_aired")
     val episodesAired: Int = 0,
     @SerialName("aired_on")
-    val airedAt: String? = null,
+    val airedOn: String = "",
     @SerialName("released_on")
-    val releasedAt: String? = null,
+    val releasedOn: String? = null,
     @SerialName("next_episode_at")
     val nextEpisodeAt: String? = null,
     @SerialName("rates_statuses_stats")

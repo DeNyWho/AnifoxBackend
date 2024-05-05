@@ -73,7 +73,7 @@ class EpisodesComponent {
         return animeTranslationCountRepository.saveAll(translationsCountMap)
     }
 
-    fun fetchEpisodes(shikimoriId: Int, kitsuId: String, type: AnimeType, urlLinking: String, defaultImage: String): List<AnimeEpisodeTable> {
+    fun fetchEpisodes(shikimoriId: Int, kitsuId: String, type: AnimeType, urlLinkPath: String, defaultImage: String): List<AnimeEpisodeTable> {
         val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
         val episodesReady = mutableListOf<AnimeEpisodeTable>()
@@ -119,7 +119,7 @@ class EpisodesComponent {
                             runBlocking {
                                 processEpisodes(
                                     shikimoriId,
-                                    urlLinking,
+                                    urlLinkPath,
                                     kodikSeason.value.episodes,
                                     kitsuEpisodes,
                                     jikanEpisodes,
@@ -137,7 +137,7 @@ class EpisodesComponent {
                             runBlocking {
                                 processEpisodes(
                                     shikimoriId,
-                                    urlLinking,
+                                    urlLinkPath,
                                     mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
                                     kitsuEpisodes,
                                     jikanEpisodes,
@@ -156,7 +156,7 @@ class EpisodesComponent {
                     runBlocking {
                         processEpisodes(
                             shikimoriId,
-                            urlLinking,
+                            urlLinkPath,
                             mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
                             kitsuEpisodes,
                             jikanEpisodes,

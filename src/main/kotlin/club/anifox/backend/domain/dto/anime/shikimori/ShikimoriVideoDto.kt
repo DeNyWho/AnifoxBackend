@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShikimoriVideoParse(
+data class ShikimoriVideoDto(
     @SerialName("url")
     val url: String = "",
     @SerialName("image_url")

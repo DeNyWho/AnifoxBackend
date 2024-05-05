@@ -99,12 +99,12 @@ data class AnimeTable(
     val music: MutableSet<AnimeMusicTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
-    var episodesCount: Int = 0,
+    var episodesCount: Int? = null,
     var episodesAired: Int = 0,
     val shikimoriId: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val airedOn: LocalDate = LocalDate.now(),
-    val releasedOn: LocalDate = LocalDate.now(),
+    val releasedOn: LocalDate? = null,
     var updatedAt: LocalDateTime = LocalDateTime.now(),
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")

@@ -1,0 +1,111 @@
+package club.anifox.backend.service.anime.components.parser
+
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
+import club.anifox.backend.domain.model.anime.AnimeImages
+import club.anifox.backend.service.anime.components.jikan.JikanComponent
+import club.anifox.backend.service.anime.components.kitsu.KitsuComponent
+import club.anifox.backend.service.image.ImageService
+import club.anifox.backend.util.mdFive
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
+import java.awt.image.BufferedImage
+import java.net.URL
+import java.util.*
+import javax.imageio.ImageIO
+
+@Component
+class FetchImageComponent {
+
+    @Autowired
+    private lateinit var jikanComponent: JikanComponent
+
+    @Autowired
+    private lateinit var kitsuComponent: KitsuComponent
+
+    @Autowired
+    private lateinit var imageService: ImageService
+
+    suspend fun fetchAndSaveAnimeImages(shikimoriId: Int, urlLinking: String): Pair<AnimeImages, BufferedImage>? {
+        val kitsuImages = fetchKitsuImages(shikimoriId)
+        val jikanImages = fetchJikanImages(shikimoriId)
+
+        return runCatching {
+            when {
+                kitsuImages != null -> saveKitsuImages(kitsuImages, urlLinking)
+                jikanImages != null -> saveJikanImages(jikanImages, urlLinking)
+                else -> null
+            }
+        }.getOrNull()
+    }
+
+    private suspend fun fetchKitsuImages(shikimoriId: Int): AnimeImages? {
+        val kitsuData = kitsuComponent.fetchKitsuAnime(shikimoriId).data
+        return kitsuData?.let {
+            AnimeImages(
+                large = it.attributesKitsu.posterImage.large ?: "",
+                medium = it.attributesKitsu.posterImage.original ?: "",
+                cover = it.attributesKitsu.coverImage.coverLarge,
+            )
+        }
+    }
+
+    private suspend fun fetchJikanImages(shikimoriId: Int): AnimeImages? {
+        val jikanData = jikanComponent.fetchJikanImages(shikimoriId).data
+        return jikanData?.images?.jikanJpg?.let {
+            AnimeImages(
+                large = it.largeImageUrl,
+                medium = it.mediumImageUrl,
+                cover = null,
+            )
+        }
+    }
+
+    private fun saveKitsuImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+        val (large, medium, cover) = images.extractUrlsWithCover()
+
+        val finalImages = AnimeImages(
+            large = saveImage(large, CompressAnimeImageType.Large, urlLinking) ?: "",
+            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking) ?: "",
+            cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking),
+        )
+
+        return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
+    }
+
+    private fun saveJikanImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+        val (large, medium) = images.extractUrls()
+
+        val finalImages = AnimeImages(
+            large = saveImage(large, CompressAnimeImageType.Large, urlLinking) ?: "",
+            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking) ?: "",
+        )
+
+        return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
+    }
+
+    private fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String): String? {
+        return runCatching {
+            val bytes = URL(url).readBytes()
+            val fileName = "${mdFive(UUID.randomUUID().toString())}.png"
+            val path = "images/anime/$type/$urlLinking/$fileName"
+
+            val extractedWidthAndHeight = type.extractWidthAndHeight()
+
+            imageService.saveFileInSThird(
+                filePath = path,
+                data = bytes,
+                compress = true,
+                width = extractedWidthAndHeight.first,
+                height = extractedWidthAndHeight.second,
+            )
+        }.getOrNull()
+    }
+
+    private fun AnimeImages.extractUrlsWithCover(): Triple<String, String, String?> {
+        return Triple(large, medium, cover)
+    }
+
+    private fun AnimeImages.extractUrls(): Pair<String, String> {
+        return Pair(large, medium)
+    }
+}

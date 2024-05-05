@@ -19,7 +19,7 @@ import club.anifox.backend.service.anime.components.AnimeCommonComponent
 import club.anifox.backend.service.anime.components.AnimeSearchComponent
 import club.anifox.backend.service.anime.components.episodes.AnimeTranslationsComponent
 import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
-import club.anifox.backend.service.anime.components.parser.AnimeUpdateComponent
+import club.anifox.backend.service.anime.components.update.AnimeUpdateComponent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
