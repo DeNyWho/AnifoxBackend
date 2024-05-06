@@ -299,7 +299,11 @@ class AnimeParseComponent(
                             ),
                             year = airedOn.year,
                             nextEpisode = nextEpisode,
-                            episodesCount = if (shikimori.episodes < episodesReady.size) episodesReady.size else shikimori.episodes,
+                            episodesCount = when {
+                                shikimori.episodes == 0 -> null
+                                shikimori.episodes < episodesReady.size -> episodesReady.size
+                                else -> shikimori.episodes
+                            },
                             episodesAired = episodesReady.size,
                             shikimoriId = shikimori.id,
                             createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),

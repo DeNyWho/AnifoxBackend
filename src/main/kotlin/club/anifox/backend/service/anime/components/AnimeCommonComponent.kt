@@ -65,6 +65,7 @@ class AnimeCommonComponent {
 
     fun getAnimeByUrl(url: String): AnimeDetail {
         val anime = animeUtils.checkAnime(url)
+        println("FSDFSDF = ${anime.type}")
         return anime.toAnimeDetail()
     }
 

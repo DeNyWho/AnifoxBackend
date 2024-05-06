@@ -8,6 +8,7 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 
 fun AnimeTable.toAnimeDetail(): AnimeDetail {
+    println("TYPE = $type")
     return AnimeDetail(
         url = url,
         title = title,

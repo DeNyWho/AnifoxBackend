@@ -24,7 +24,7 @@ data class AnimeDetail(
     @SerialName("player_link")
     val playerLink: String = "",
     val url: String = "",
-    val type: AnimeType = AnimeType.Tv,
+    val type: AnimeType? = null,
     @SerialName("rating_mpa")
     val ratingMpa: String = "",
     @SerialName("minimal_age")
