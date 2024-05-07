@@ -2,11 +2,13 @@ package club.anifox.backend.service.auth.components
 
 import club.anifox.backend.domain.dto.auth.keycloak.KeycloakTokenRefreshDto
 import club.anifox.backend.domain.dto.users.registration.UserCreateResponseDto
+import club.anifox.backend.domain.enums.user.UserIdentifierType
 import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.user.request.CreateUserRequest
 import club.anifox.backend.jpa.entity.user.UserTable
 import club.anifox.backend.jpa.repository.user.UserRepository
 import club.anifox.backend.service.keycloak.KeycloakService
+import club.anifox.backend.util.user.UserUtils
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -22,15 +24,14 @@ import org.keycloak.representations.idm.UserRepresentation
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.BadCredentialsException
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 
 @Component
 class AuthComponent(
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder,
     private val keycloakService: KeycloakService,
     private val keycloak: Keycloak,
+    private val userUtils: UserUtils,
     @Value("\${domain}") private val domain: String,
     @Value("\${keycloak.realm}") private val realm: String,
     @Value("\${keycloak.resource}") private val clientId: String,
@@ -40,14 +41,19 @@ class AuthComponent(
     private val httpClient: HttpClient,
 ) {
     fun authenticate(userIdentifier: String, password: String, response: HttpServletResponse) {
-//        if (userRepository.findByUsernameOrEmail(userIdentifier).isPresent) {
-//            userRepository.findByUsernameOrEmail(userIdentifier).get()
-//        } else {
-//            throw BadCredentialsException("User not found with user identifier: $userIdentifier")
-//        }
-//        if (!passwordEncoder.matches(password, user.password)) {
-//            throw BadCredentialsException("Invalid user identifier/password supplied")
-//        }
+        when (userUtils.checkUserIdentifier(userIdentifier)) {
+            UserIdentifierType.EMAIL -> {
+                if (keycloakService.findByEmail(userIdentifier) == null) {
+                    throw BadCredentialsException("User with email $userIdentifier not exist")
+                }
+            }
+            UserIdentifierType.LOGIN -> {
+                if (keycloakService.findByUsername(userIdentifier) == null) {
+                    throw BadCredentialsException("User with username $userIdentifier not exist")
+                }
+            }
+        }
+
         try {
             val auth = authzClient.obtainAccessToken(userIdentifier, password)
 
@@ -59,7 +65,7 @@ class AuthComponent(
                 refreshExpires = auth.refreshExpiresIn,
             )
         } catch (e: Exception) {
-            throw BadRequestException("${e.message}}")
+            throw BadCredentialsException("Wrong user identifier or password")
         }
     }
 
@@ -90,12 +96,11 @@ class AuthComponent(
     }
 
     fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
-        if (userRepository.findByEmail(signUpRequest.email).isPresent) {
-            throw BadCredentialsException("Email already exists")
+        if (keycloakService.findByEmail(signUpRequest.email) != null) {
+            throw BadCredentialsException("User with email ${signUpRequest.email} exist")
         }
-
-        if (userRepository.findByLogin(signUpRequest.login).isPresent) {
-            throw BadCredentialsException("Username already exists")
+        if (keycloakService.findByUsername(signUpRequest.login) != null) {
+            throw BadCredentialsException("User with username ${signUpRequest.login} exist")
         }
 
         val user = UserRepresentation()
@@ -123,6 +128,8 @@ class AuthComponent(
                     userResource.resetPassword(passwordCred)
 
                     val userEntity = UserTable(
+                        id = userId,
+                        login = signUpRequest.login,
                         email = signUpRequest.email,
                         image = "",
                         nickName = signUpRequest.nickname,

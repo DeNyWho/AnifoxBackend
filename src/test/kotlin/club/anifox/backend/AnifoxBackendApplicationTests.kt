@@ -2,6 +2,7 @@ package club.anifox.backend
 
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
+import club.anifox.backend.service.keycloak.KeycloakService
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -22,6 +23,9 @@ class AnifoxBackendApplicationTests {
     private lateinit var kodikComponent: KodikComponent
 
     @Autowired
+    private lateinit var keycloakService: KeycloakService
+
+    @Autowired
     private lateinit var animeTranslationRepository: AnimeTranslationRepository
 
     @Test
@@ -40,5 +44,11 @@ class AnifoxBackendApplicationTests {
                 }.body()
             }
         }
+    }
+
+    @Test
+    fun testKeycloak() {
+        val b = keycloakService.findByEmail("example.example@gmail.com")
+        println("B = $b")
     }
 }

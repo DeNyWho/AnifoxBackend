@@ -2,8 +2,8 @@ package club.anifox.backend.service.account.component
 
 import club.anifox.backend.jpa.repository.user.UserRepository
 import club.anifox.backend.service.image.ImageService
-import club.anifox.backend.util.UserUtils
 import club.anifox.backend.util.mdFive
+import club.anifox.backend.util.user.UserUtils
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

@@ -22,7 +22,7 @@ import club.anifox.backend.jpa.repository.user.anime.UserRatingCountRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRatingRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRecentlyRepository
 import club.anifox.backend.util.AnimeUtils
-import club.anifox.backend.util.UserUtils
+import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.Predicate

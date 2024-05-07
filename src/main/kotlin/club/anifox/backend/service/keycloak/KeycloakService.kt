@@ -1,29 +1,30 @@
 package club.anifox.backend.service.keycloak
 
-import org.keycloak.KeycloakPrincipal
-import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken
+import org.keycloak.admin.client.Keycloak
 import org.keycloak.representations.idm.CredentialRepresentation
-import org.springframework.security.authentication.AnonymousAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
+import org.keycloak.representations.idm.UserRepresentation
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.security.Principal
 
 @Service
-class KeycloakService {
-    fun getKeycloakClaims(): Map<String, Any>? {
-        if (SecurityContextHolder.getContext().authentication is AnonymousAuthenticationToken) {
-            return null
-        }
-
-        val authentication = SecurityContextHolder.getContext().authentication as KeycloakAuthenticationToken
-        val principal = authentication.principal as Principal
-        val keycloakPrincipal = principal as KeycloakPrincipal<*>
-        val token = keycloakPrincipal.keycloakSecurityContext.token
-        return token.otherClaims
-    }
-
+class KeycloakService(
+    private val keycloak: Keycloak,
+    @Value("\${keycloak.realm}") private val realm: String,
+) {
     fun getCredentialRepresentation(password: String?): CredentialRepresentation {
         val passwordCred = CredentialRepresentation()
         return passwordCred.apply { isTemporary = false; type = CredentialRepresentation.PASSWORD; value = password }
     }
+
+    fun findByEmail(email: String): UserRepresentation? =
+        keycloak
+            .realm(realm)
+            .users()
+            .searchByEmail(email, true).firstOrNull()
+
+    fun findByUsername(username: String): UserRepresentation? =
+        keycloak
+            .realm(realm)
+            .users()
+            .searchByUsername(username, true).firstOrNull()
 }
