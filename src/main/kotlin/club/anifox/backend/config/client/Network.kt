@@ -32,7 +32,7 @@ class Network {
                     val originalHost = context.url.host
                     if (allowedHosts.contains(originalHost)) {
                         domainMutex.lock()
-                        delay(1500)
+                        delay(2000)
                         try {
                             this.proceed()
                         } finally {
