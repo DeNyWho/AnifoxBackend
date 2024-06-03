@@ -40,16 +40,13 @@ jobs:
       - name: Gradlew Build
         run: ./gradlew clean build -x test
 
-      - name: Build Docker backend image
+      - name: Build Docker image
         run: docker build --build-arg JAR_FILE=build/libs/*.jar -t app .
 
-      - name: Save Docker backend image as tar
+      - name: Save Docker image as tar
         run:  docker save -o app.tar app
 
-      - name: Save Docker parser image as tar
-        run:  docker save -o parser.tar app
-
-      - name: Transfer files to remote server
+      - name: Transfer backend files to remote server
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -74,6 +71,4 @@ jobs:
             cd /home/project/parser
             docker container stop parser
             docker container rm parser
-            docker rmi parser
-            docker load -i parser.tar
-            docker run -d -p 12900:12900 --env-file env.txt --log-opt max-size=50m --name parser parser
+            docker run -d -p 12900:12900 --env-file env.txt --log-opt max-size=50m --name parser app
