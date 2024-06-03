@@ -120,8 +120,26 @@ class AnimeParseComponent(
                                     }
                             }
 
+                        val type = when (shikimori.kind) {
+                            "movie" -> AnimeType.Movie
+                            "tv" -> AnimeType.Tv
+                            "ova" -> AnimeType.Ova
+                            "ona" -> AnimeType.Ona
+                            "special" -> AnimeType.Special
+                            "music" -> AnimeType.Music
+                            else -> AnimeType.Tv
+                        }
+
                         val airedOn = LocalDate.parse(shikimori.airedOn)
-                        val releasedOn = if (shikimori.releasedOn != null) LocalDate.parse(shikimori.releasedOn) else null
+                        val releasedOn = when {
+                            shikimori.releasedOn != null -> {
+                                LocalDate.parse(shikimori.releasedOn)
+                            }
+                            type == AnimeType.Movie -> {
+                                LocalDate.parse(shikimori.airedOn)
+                            }
+                            else -> null
+                        }
 
                         val animeIdsDeferred = async {
                             haglundComponent.fetchHaglundIds(shikimori.id)
@@ -147,16 +165,6 @@ class AnimeParseComponent(
 
                         val shikimoriScreenshotsDeferred = async {
                             shikimoriComponent.fetchScreenshots(shikimori.id)
-                        }
-
-                        val type = when (shikimori.kind) {
-                            "movie" -> AnimeType.Movie
-                            "tv" -> AnimeType.Tv
-                            "ova" -> AnimeType.Ova
-                            "ona" -> AnimeType.Ona
-                            "special" -> AnimeType.Special
-                            "music" -> AnimeType.Music
-                            else -> AnimeType.Tv
                         }
 
                         val status = when (shikimori.status) {

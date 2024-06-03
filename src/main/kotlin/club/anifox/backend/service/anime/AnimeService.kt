@@ -6,6 +6,7 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -47,7 +48,8 @@ class AnimeService : AnimeRepository {
         limit: Int,
         genres: List<String>?,
         status: AnimeStatus?,
-        filter: AnimeSearchFilter?,
+        orderBy: AnimeSearchFilter?,
+        sort: AnimeSortFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -57,7 +59,7 @@ class AnimeService : AnimeRepository {
         translations: List<String>?,
         studio: String?,
     ): List<AnimeLight> {
-        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, filter, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
+        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, orderBy, sort, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
     }
 
     override fun getAnimeDetails(url: String): AnimeDetail {

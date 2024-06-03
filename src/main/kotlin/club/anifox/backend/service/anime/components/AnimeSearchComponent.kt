@@ -4,6 +4,7 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -43,7 +44,8 @@ class AnimeSearchComponent {
         limit: Int,
         genres: List<String>?,
         status: AnimeStatus?,
-        filter: AnimeSearchFilter?,
+        orderBy: AnimeSearchFilter?,
+        sort: AnimeSortFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -65,7 +67,8 @@ class AnimeSearchComponent {
             genres = genres,
             translationIds = translations,
             studio = studio,
-            filter = filter,
+            orderBy = orderBy,
+            sort = sort,
         ).map {
             it.toAnimeLight()
         }
@@ -83,7 +86,8 @@ class AnimeSearchComponent {
         genres: List<String>?,
         studio: String?,
         translationIds: List<String>?,
-        filter: AnimeSearchFilter?,
+        orderBy: AnimeSearchFilter?,
+        sort: AnimeSortFilter?,
     ): List<AnimeTable> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
@@ -186,6 +190,38 @@ class AnimeSearchComponent {
 
             predicates.add(translationIdsPredicate)
         }
+
+        val sortOrder: List<Order> = when (orderBy) {
+            AnimeSearchFilter.Update -> {
+                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("updatedAt")))
+                if (sort == AnimeSortFilter.Asc) {
+                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
+                } else {
+                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
+                }
+            }
+            AnimeSearchFilter.Aired -> {
+                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("airedOn")))
+                if (sort == AnimeSortFilter.Asc) {
+                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
+                } else {
+                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
+                }
+            }
+            AnimeSearchFilter.Released -> {
+                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("releasedOn")))
+                if (sort == AnimeSortFilter.Asc) {
+                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("releasedOn")))
+                } else {
+                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("releasedOn")))
+                }
+            }
+            AnimeSearchFilter.Random -> {
+                listOf(criteriaBuilder.asc(criteriaBuilder.function("RANDOM", Double::class.java)))
+            }
+            else -> emptyList()
+        }
+
         if (predicates.isNotEmpty()) {
             if (searchQuery == null) {
                 criteriaQuery.distinct(true).where(criteriaBuilder.and(*predicates.toTypedArray()))
@@ -194,32 +230,7 @@ class AnimeSearchComponent {
             }
         }
 
-        val sort: List<Order> = when (filter) {
-            AnimeSearchFilter.DateAiredASC -> {
-                listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
-            }
-            AnimeSearchFilter.DateAiredDESC -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
-            }
-            AnimeSearchFilter.DateASCCreate -> {
-                listOf(criteriaBuilder.asc(root.get<AnimeTable>("createdAt")))
-            }
-            AnimeSearchFilter.DateDESCCreate -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("createdAt")))
-            }
-            AnimeSearchFilter.DateASCUpdate -> {
-                listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
-            }
-            AnimeSearchFilter.DateDESCUpdate -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
-            }
-            AnimeSearchFilter.ShikimoriRating -> {
-                listOf(criteriaBuilder.desc(root.get<AnimeTable>("shikimoriVotes")), criteriaBuilder.desc(root.get<AnimeTable>("shikimoriRating")))
-            }
-            else -> emptyList()
-        }
-
-        criteriaQuery.orderBy(sort)
+        criteriaQuery.orderBy(sortOrder)
 
         val query = entityManager.createQuery(criteriaQuery)
         query.firstResult = pageable.pageNumber * pageable.pageSize

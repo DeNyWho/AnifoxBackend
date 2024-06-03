@@ -6,6 +6,7 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -17,23 +18,6 @@ import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 
 interface AnimeRepository {
-
-    fun getAnime(
-        page: Int,
-        limit: Int,
-        genres: List<String>?,
-        status: AnimeStatus?,
-        filter: AnimeSearchFilter?,
-        searchQuery: String?,
-        season: AnimeSeason?,
-        ratingMpa: String?,
-        minimalAge: Int?,
-        type: AnimeType?,
-        year: List<Int>?,
-        translations: List<String>?,
-        studio: String?,
-    ): List<AnimeLight>
-
     fun parseTranslations(translationsIDs: List<Int>)
     fun parseAnime()
     fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount>
@@ -49,4 +33,20 @@ interface AnimeRepository {
     fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
     fun updateEpisodes()
     fun addBlocked(url: String?, shikimoriId: Int?)
+    fun getAnime(
+        page: Int,
+        limit: Int,
+        genres: List<String>?,
+        status: AnimeStatus?,
+        orderBy: AnimeSearchFilter?,
+        sort: AnimeSortFilter?,
+        searchQuery: String?,
+        season: AnimeSeason?,
+        ratingMpa: String?,
+        minimalAge: Int?,
+        type: AnimeType?,
+        year: List<Int>?,
+        translations: List<String>?,
+        studio: String?,
+    ): List<AnimeLight>
 }

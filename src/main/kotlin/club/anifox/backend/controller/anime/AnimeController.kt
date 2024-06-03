@@ -6,6 +6,7 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -58,7 +59,11 @@ class AnimeController {
         @Parameter(name = "genres", description = "Require genres IDS", required = false)
         genres: List<String>?,
         status: AnimeStatus?,
-        filter: AnimeSearchFilter?,
+        @RequestParam(name = "order", required = false)
+        @Parameter(name = "order", required = false, description = "Must be one of: Update | Aired | Released | Random")
+        orderBy: AnimeSearchFilter?,
+        @Parameter(name = "sort", required = false, description = "Enum: \"desc\" \"asc\" Search query sort direction")
+        sort: AnimeSortFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
         @Parameter(name = "rating_mpa", required = false, description = "Must be one of: PG | PG-13 | R | R+ | G")
@@ -73,12 +78,14 @@ class AnimeController {
         @Parameter(name = "translation", description = "Require translation IDS", required = false)
         translations: List<String>?,
     ): List<AnimeLight> {
+        println("FFS = $orderBy")
         return animeService.getAnime(
             page = page,
             limit = limit,
             genres = genres,
             status = status,
-            filter = filter,
+            orderBy = orderBy,
+            sort = sort,
             searchQuery = search,
             season = season,
             ratingMpa = rating_mpa,
