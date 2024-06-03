@@ -243,7 +243,7 @@ class AnimeParseComponent(
                                         imageUrl = video.imageUrl,
                                         playerUrl = video.playerUrl,
                                         name = video.name,
-                                        kind = when (video.kind) {
+                                        type = when (video.kind) {
                                             "ed" -> AnimeVideoType.Ending
                                             "op" -> AnimeVideoType.Opening
                                             "pv" -> AnimeVideoType.Trailer

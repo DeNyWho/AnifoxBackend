@@ -1,5 +1,6 @@
 package club.anifox.backend.service.anime.components
 
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
@@ -100,7 +101,7 @@ class AnimeCommonComponent {
                 return similarAnimeList.map { it.toAnimeLight() }
             }
 
-            throw NoContentException("Anime has no similar anime")
+            throw NoContentException("There are no similar anime")
         }
     }
 
@@ -140,7 +141,7 @@ class AnimeCommonComponent {
                 return relatedAnimeList
             }
 
-            throw NoContentException("Anime has no related anime")
+            throw NoContentException("There are no related anime")
         }
     }
 
@@ -163,29 +164,37 @@ class AnimeCommonComponent {
             return anime.screenshots
         }
 
-        throw NoContentException("Anime has no screenshots")
+        throw NoContentException("There are no screenshots")
     }
 
-    fun getAnimeMedia(url: String): List<AnimeVideo> {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root = criteriaQuery.from(AnimeTable::class.java)
+    fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo> {
+        val anime: AnimeTable = animeUtils.checkAnime(url)
 
-        root.fetch<AnimeTable, AnimeVideoTable>("media", JoinType.LEFT)
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeVideoTable> = criteriaBuilder.createQuery(AnimeVideoTable::class.java)
 
-        criteriaQuery.select(root)
-            .where(criteriaBuilder.equal(root.get<String>("url"), url))
+        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
 
-        val anime = entityManager
-            .createQuery(criteriaQuery)
-            .resultList
-            .firstOrNull() ?: throw NotFoundException("Anime with url = $url not found")
+        val videosJoin = animeRoot.join<AnimeTable, AnimeVideoTable>("videos", JoinType.LEFT)
 
-        if (anime.videos.isNotEmpty()) {
-            return anime.videos.map { it.toAnimeVideo() }
+        val predicates = mutableListOf(
+            criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
+        )
+
+        if (type != null) {
+            predicates.add(criteriaBuilder.equal(videosJoin.get<AnimeVideoType>("type"), type))
         }
 
-        throw NoContentException("Anime has no media")
+        criteriaQuery.select(videosJoin)
+        criteriaQuery.where(*predicates.toTypedArray())
+
+        val videos = entityManager.createQuery(criteriaQuery).resultList
+
+        if (videos.isNotEmpty()) {
+            return videos.map { it.toAnimeVideo() }
+        }
+
+        throw NoContentException("There are no videos")
     }
 
     fun getAnimeYears(): List<String> {

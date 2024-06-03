@@ -3,6 +3,7 @@ package club.anifox.backend.controller.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
@@ -130,12 +131,14 @@ class AnimeController {
         return animeService.getAnimeScreenshots(url)
     }
 
-    @GetMapping("{url}/media")
+    @GetMapping("{url}/videos")
     @Operation(summary = "anime media")
-    fun getAnimeMedia(
+    fun getAnimeVideos(
         @PathVariable url: String,
+        @Parameter(name = "type", required = false, description = "Must be one of: Trailer | Opening | Ending | Other")
+        type: AnimeVideoType?,
     ): List<AnimeVideo> {
-        return animeService.getAnimeMedia(url)
+        return animeService.getAnimeVideos(url, type)
     }
 
     @GetMapping("{url}/episodes")

@@ -3,6 +3,7 @@ package club.anifox.backend.domain.repository.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
@@ -41,7 +42,7 @@ interface AnimeRepository {
     fun getAnimeSimilar(url: String): List<AnimeLight>
     fun getAnimeRelated(url: String): List<AnimeRelationLight>
     fun getAnimeScreenshots(url: String): List<String>
-    fun getAnimeMedia(url: String): List<AnimeVideo>
+    fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo>
     fun getAnimeYears(): List<String>
     fun getAnimeStudios(): List<AnimeStudio>
     fun getAnimeGenres(): List<AnimeGenre>

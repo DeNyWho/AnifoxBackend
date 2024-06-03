@@ -20,5 +20,5 @@ data class AnimeVideoTable(
     val name: String = "",
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    val kind: AnimeVideoType = AnimeVideoType.Trailer,
+    val type: AnimeVideoType,
 )

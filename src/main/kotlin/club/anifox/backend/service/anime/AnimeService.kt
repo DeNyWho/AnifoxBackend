@@ -3,6 +3,7 @@ package club.anifox.backend.service.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
@@ -79,8 +80,8 @@ class AnimeService : AnimeRepository {
         return animeCommonComponent.getAnimeEpisodes(url, page, limit, sort)
     }
 
-    override fun getAnimeMedia(url: String): List<AnimeVideo> {
-        return animeCommonComponent.getAnimeMedia(url)
+    override fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo> {
+        return animeCommonComponent.getAnimeVideos(url, type)
     }
 
     override fun getAnimeYears(): List<String> {

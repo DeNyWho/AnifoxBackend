@@ -30,6 +30,9 @@ dependencies {
 
     implementation(libs.jakarta.api)
     implementation(libs.jakarta.persistence)
+    implementation(libs.jakarta.xml.bind.api)
+
+    implementation(libs.javax.xml.bind.api)
 
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
 

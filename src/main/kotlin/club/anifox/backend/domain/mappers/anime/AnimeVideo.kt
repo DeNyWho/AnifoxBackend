@@ -9,6 +9,6 @@ fun AnimeVideoTable.toAnimeVideo() = with(this) {
         imageUrl = imageUrl,
         playerUrl = playerUrl,
         name = name,
-        kind = kind,
+        type = type,
     )
 }
