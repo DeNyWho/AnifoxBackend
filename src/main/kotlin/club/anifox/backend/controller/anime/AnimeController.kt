@@ -59,10 +59,7 @@ class AnimeController {
         @Parameter(name = "genres", description = "Require genres IDS", required = false)
         genres: List<String>?,
         status: AnimeStatus?,
-        @RequestParam(name = "order", required = false)
-        @Parameter(name = "order", required = false, description = "Must be one of: Update | Aired | Released | Random")
-        orderBy: AnimeSearchFilter?,
-        @Parameter(name = "sort", required = false, description = "Enum: \"desc\" \"asc\" Search query sort direction")
+        order: AnimeSearchFilter?,
         sort: AnimeSortFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
@@ -78,13 +75,12 @@ class AnimeController {
         @Parameter(name = "translation", description = "Require translation IDS", required = false)
         translations: List<String>?,
     ): List<AnimeLight> {
-        println("FFS = $orderBy")
         return animeService.getAnime(
             page = page,
             limit = limit,
             genres = genres,
             status = status,
-            orderBy = orderBy,
+            orderBy = order,
             sort = sort,
             searchQuery = search,
             season = season,
@@ -139,10 +135,9 @@ class AnimeController {
     }
 
     @GetMapping("{url}/videos")
-    @Operation(summary = "anime media")
+    @Operation(summary = "anime videos")
     fun getAnimeVideos(
         @PathVariable url: String,
-        @Parameter(name = "type", required = false, description = "Must be one of: Trailer | Opening | Ending | Other")
         type: AnimeVideoType?,
     ): List<AnimeVideo> {
         return animeService.getAnimeVideos(url, type)
