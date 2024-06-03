@@ -1,8 +1,8 @@
 package club.anifox.backend.jpa.repository.anime
 
-import club.anifox.backend.jpa.entity.anime.AnimeMediaTable
+import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface AnimeMediaRepository : JpaRepository<AnimeMediaTable, String>
+interface AnimeVideoRepository : JpaRepository<AnimeVideoTable, String>

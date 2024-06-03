@@ -36,8 +36,7 @@ class FetchImageComponent {
         return runCatching {
             when {
                 kitsuImages != null -> saveKitsuImages(kitsuImages, urlLinking)
-                jikanImages != null -> saveJikanImages(jikanImages, urlLinking)
-                else -> null
+                else -> saveJikanImages(jikanImages, urlLinking)
             }
         }.getOrNull()
     }
@@ -53,9 +52,9 @@ class FetchImageComponent {
         }
     }
 
-    private suspend fun fetchJikanImages(shikimoriId: Int): AnimeImages? {
-        val jikanData = jikanComponent.fetchJikanImages(shikimoriId).data
-        return jikanData?.images?.jikanJpg?.let {
+    private suspend fun fetchJikanImages(shikimoriId: Int): AnimeImages {
+        val jikanData = jikanComponent.fetchJikan(shikimoriId).data
+        return jikanData.images.jikanJpg.let {
             AnimeImages(
                 large = it.largeImageUrl,
                 medium = it.mediumImageUrl,

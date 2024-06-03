@@ -50,7 +50,7 @@ class KodikComponent {
             parameter("types", "anime-serial, anime")
             parameter("camrip", false)
             parameter("with_episodes_data", true)
-            parameter("not_blocked_in", "RU,UA,ALL")
+            parameter("not_blocked_in", "RU,UA")
             parameter("with_material_data", true)
             parameter("lgbt", false)
             parameter(
@@ -84,7 +84,7 @@ class KodikComponent {
             parameter("camrip", false)
             parameter("shikimori_id", shikimoriId)
             parameter("with_episodes_data", true)
-            parameter("not_blocked_in", "ALL")
+            parameter("not_blocked_in", "RU,UA")
             parameter("with_material_data", true)
             parameter("lgbt", false)
             parameter(

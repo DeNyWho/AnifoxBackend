@@ -7,6 +7,7 @@ object Constants {
     const val SHIKIMORI_SIMILAR = "/similar"
     const val SHIKIMORI_RELATED = "/related"
     const val SHIKIMORI_SCREENSHOTS = "/screenshots"
+    const val SHIKIMORI_VIDEOS = "/videos"
 
     const val KODIK = "kodikapi.com"
     const val KODIK_LIST = "/list"
@@ -23,16 +24,12 @@ object Constants {
     const val JIKAN = "api.jikan.moe"
     const val JIKAN_VERSION = "/v4"
     const val JIKAN_ANIME = "/anime"
-    const val JIKAN_THEMES = "/themes"
     const val JIKAN_EPISODES = "/episodes"
 
     const val HAGLUND = "arm.haglund.dev"
     const val HAGLUND_API = "/api"
     const val HAGLUND_VERSION = "/v2"
     const val HAGLUND_IDS = "/ids"
-
-    const val YOUTUBE_MUSIC = "music.youtube.com"
-    const val YOUTUBE_SEARCH = "/search?q="
 
     const val EDGE = "edge.microsoft.com"
     const val EDGE_TRANSLATE = "/translate"

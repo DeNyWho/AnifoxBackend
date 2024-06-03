@@ -15,6 +15,7 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -68,7 +69,9 @@ class AnimeUpdateComponent {
 
                 val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
 
-                val shikimori = shikimoriComponent.checkShikimori(anime.shikimoriId)
+                val shikimori = runBlocking {
+                    shikimoriComponent.fetchAnime(anime.shikimoriId)
+                }
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
                 episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinkPath = anime.url, defaultImage = anime.images.medium))

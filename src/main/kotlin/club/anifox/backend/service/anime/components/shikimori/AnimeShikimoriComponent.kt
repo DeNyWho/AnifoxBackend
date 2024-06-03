@@ -5,11 +5,11 @@ import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriRelationDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriScreenshotsDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriSimilarDto
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriVideoDto
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -19,22 +19,32 @@ class AnimeShikimoriComponent {
     @Autowired
     private lateinit var client: HttpClient
 
-    fun checkShikimori(shikimoriId: Int): ShikimoriDto? {
-        return try {
-            runBlocking {
-                client.get {
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        host = "shikimori.one/api/animes/$shikimoriId"
-                    }
-                }.body<ShikimoriDto>()
-            }
-        } catch (e: Exception) {
-            null
-        }
+    suspend fun fetchAnime(shikimoriId: Int): ShikimoriDto? {
+        return runCatching {
+            client.get {
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = Constants.SHIKIMORI
+                    encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/$shikimoriId"
+                }
+            }.body<ShikimoriDto>()
+        }.getOrNull()
     }
 
-    suspend fun fetchShikimoriScreenshots(shikimoriId: Int): List<String> {
+    suspend fun fetchVideos(shikimoriId: Int): List<ShikimoriVideoDto> {
+        return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
+            url {
+                protocol = URLProtocol.HTTPS
+                host = Constants.SHIKIMORI
+                encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_VIDEOS}"
+            }
+        }.body<List<ShikimoriVideoDto>>()
+    }
+
+    suspend fun fetchScreenshots(shikimoriId: Int): List<String> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
@@ -49,7 +59,7 @@ class AnimeShikimoriComponent {
         }
     }
 
-    suspend fun fetchShikimoriRelated(shikimoriId: Int): List<ShikimoriRelationDto> {
+    suspend fun fetchRelated(shikimoriId: Int): List<ShikimoriRelationDto> {
         return client.get {
             url {
                 protocol = URLProtocol.HTTPS
@@ -59,7 +69,7 @@ class AnimeShikimoriComponent {
         }.body<List<ShikimoriRelationDto>>()
     }
 
-    suspend fun fetchShikimoriSimilar(shikimoriId: Int): List<Int> {
+    suspend fun fetchSimilar(shikimoriId: Int): List<Int> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

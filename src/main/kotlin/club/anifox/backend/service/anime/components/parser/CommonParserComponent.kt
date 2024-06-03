@@ -39,69 +39,6 @@ class CommonParserComponent {
             .dropLastWhile { it == '-' }
     }
 
-    fun mergeThemeEpisodes(input: String): String {
-        try {
-            val numbersRegex = Regex("(\\d+)-(\\d+)")
-            val rangeMatches = numbersRegex.findAll(input)
-
-            val extractedRanges = mutableListOf<String>()
-            for (match in rangeMatches) {
-                val start = match.groupValues[1]
-                val end = match.groupValues[2]
-                extractedRanges.add("$start-$end")
-            }
-
-            val distinctNumbers = extractedRanges.flatMap { range ->
-                val (start, end) = range.split("-").map { it.toInt() }
-                (start..end).toList()
-            }.distinct()
-
-            val numbersOnlyRegex = Regex("\\b\\d+\\b")
-            val numberMatches = numbersOnlyRegex.findAll(input)
-
-            val extractedNumbers = mutableListOf<String>()
-            for (match in numberMatches) {
-                val number = match.value
-                extractedNumbers.add(number)
-            }
-
-            if (input.startsWith(extractedNumbers.first())) {
-                extractedNumbers.removeAt(0)
-            }
-
-            val distinctSingleNumbers = extractedNumbers
-                .distinct()
-                .mapNotNull { it.toIntOrNull() }
-                .filter { it !in distinctNumbers }
-
-            return mergeNumbers(distinctNumbers + distinctSingleNumbers)
-        } catch (e: Exception) {
-            return ""
-        }
-    }
-
-    private fun mergeNumbers(numbers: List<Int>): String {
-        if (numbers.isEmpty()) return ""
-
-        val ranges = mutableListOf<Pair<Int, Int>>()
-        var currentStart = numbers.first()
-
-        for (number in numbers) {
-            currentStart = if (number == currentStart || number == currentStart + 1) {
-                number
-            } else {
-                ranges.add(currentStart to number - 1)
-                number
-            }
-        }
-
-        ranges.add(currentStart to numbers.last())
-
-        return ranges.joinToString(", ") { (start, end) ->
-            if (start == end) start.toString() else "$start-$end"
-        }
-    }
-
     fun getMostCommonColor(image: BufferedImage): String {
         val brightestColors = getBrightestColors(image)
         val numColors = brightestColors.size

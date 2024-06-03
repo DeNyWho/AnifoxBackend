@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.entity.anime
 
-import club.anifox.backend.domain.enums.anime.AnimeMusicType
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -10,15 +10,15 @@ import jakarta.persistence.Table
 import java.util.*
 
 @Entity
-@Table(name = "music", schema = "anime")
-data class AnimeMusicTable(
+@Table(name = "video", schema = "anime")
+data class AnimeVideoTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
     val url: String = "",
+    val imageUrl: String = "",
+    val playerUrl: String = "",
     val name: String = "",
-    val episodes: String = "",
     @Enumerated(EnumType.STRING)
-    @Column(length = 20, nullable = true)
-    var type: AnimeMusicType = AnimeMusicType.Opening,
-    val hosting: String = "",
+    @Column(length = 20, nullable = false)
+    val kind: AnimeVideoType = AnimeVideoType.Trailer,
 )

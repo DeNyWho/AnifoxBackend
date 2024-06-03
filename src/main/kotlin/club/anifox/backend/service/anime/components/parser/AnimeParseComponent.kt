@@ -1,34 +1,31 @@
 package club.anifox.backend.service.anime.components.parser
 
-import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
-import club.anifox.backend.domain.enums.anime.AnimeMusicType
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
-import club.anifox.backend.jpa.entity.anime.AnimeMediaTable
-import club.anifox.backend.jpa.entity.anime.AnimeMusicTable
 import club.anifox.backend.jpa.entity.anime.AnimeRelatedTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedByStudioRepository
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
-import club.anifox.backend.jpa.repository.anime.AnimeMusicRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
+import club.anifox.backend.jpa.repository.anime.AnimeVideoRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.haglund.HaglundComponent
-import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import io.ktor.client.*
@@ -47,7 +44,6 @@ import java.time.format.DateTimeFormatter
 class AnimeParseComponent(
     private val client: HttpClient,
     private val kodikComponent: KodikComponent,
-    private val jikanComponent: JikanComponent,
     private val fetchImageComponent: FetchImageComponent,
     private val commonParserComponent: CommonParserComponent,
     private val haglundComponent: HaglundComponent,
@@ -60,10 +56,10 @@ class AnimeParseComponent(
     private val animeStudiosRepository: AnimeStudiosRepository,
     private val animeTranslationRepository: AnimeTranslationRepository,
     private val animeErrorParserRepository: AnimeErrorParserRepository,
-    private val animeMusicRepository: AnimeMusicRepository,
     private val animeRepository: AnimeRepository,
+    private val animeVideoRepository: AnimeVideoRepository,
 ) {
-    private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика")
+    private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
 
     fun addDataToDB() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
@@ -89,7 +85,7 @@ class AnimeParseComponent(
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
         try {
-            val shikimori = shikimoriComponent.checkShikimori(animeKodik.shikimoriId)
+            val shikimori = shikimoriComponent.fetchAnime(animeKodik.shikimoriId)
 
             if (shikimori != null) {
                 val shikimoriRating = shikimori.score.toDoubleOrNull() ?: 0.0
@@ -138,31 +134,20 @@ class AnimeParseComponent(
                         }
 
                         val relationShikimoriIdsDeferred = async {
-                            shikimoriComponent.fetchShikimoriRelated(shikimori.id).take(30)
+                            shikimoriComponent.fetchRelated(shikimori.id).take(30)
                         }
 
                         val similarShikimoriIdsDeferred = async {
-                            shikimoriComponent.fetchShikimoriSimilar(shikimori.id).take(30)
+                            shikimoriComponent.fetchSimilar(shikimori.id).take(30)
+                        }
+
+                        val videosShikimoriDeferred = async {
+                            shikimoriComponent.fetchVideos(shikimori.id)
                         }
 
                         val shikimoriScreenshotsDeferred = async {
-                            shikimoriComponent.fetchShikimoriScreenshots(shikimori.id)
+                            shikimoriComponent.fetchScreenshots(shikimori.id)
                         }
-
-                        val shikimoriVideos = shikimori.videos
-                            .filter { it.hosting != "vk" }
-                            .map { video ->
-                                AnimeMediaTable(
-                                    url = video.url,
-                                    imageUrl = video.imageUrl,
-                                    playerUrl = video.playerUrl,
-                                    name = video.name,
-                                    kind = video.kind,
-                                    hosting = video.hosting,
-                                )
-                            }
-
-                        val jikanThemesDeferred = async { jikanComponent.fetchJikanThemes(shikimori.id) }
 
                         val type = when (shikimori.kind) {
                             "movie" -> AnimeType.Movie
@@ -230,30 +215,6 @@ class AnimeParseComponent(
                             },
                         )
 
-                        val jikanThemes = jikanThemesDeferred.await().data
-                        val jikanEndings = jikanThemes?.endings?.filterNotNull()?.map { ending ->
-                            val endingNormalize = jikanComponent.themesNormalize(ending)
-                            AnimeMusicTable(
-                                url = "https://${Constants.YOUTUBE_MUSIC}${Constants.YOUTUBE_SEARCH}$endingNormalize",
-                                name = endingNormalize,
-                                episodes = commonParserComponent.mergeThemeEpisodes(ending),
-                                type = AnimeMusicType.Ending,
-                                hosting = "YoutubeMusic",
-                            )
-                        } ?: emptyList()
-                        val jikanOpenings = jikanThemes?.endings?.filterNotNull()?.map { opening ->
-                            val openingNormalize = jikanComponent.themesNormalize(opening)
-                            AnimeMusicTable(
-                                url = "https://${Constants.YOUTUBE_MUSIC}${Constants.YOUTUBE_SEARCH}$openingNormalize",
-                                name = openingNormalize,
-                                episodes = commonParserComponent.mergeThemeEpisodes(opening),
-                                type = AnimeMusicType.Opening,
-                                hosting = "YoutubeMusic",
-                            )
-                        } ?: emptyList()
-
-                        val music = animeMusicRepository.saveAll(jikanEndings + jikanOpenings)
-
                         val animeIds = animeIdsDeferred.await()
 
                         val imagesDeferred = async {
@@ -272,6 +233,25 @@ class AnimeParseComponent(
 
                         val translationsCountReady = episodesComponent.translationsCount(episodesReady)
                         val translations = translationsCountReady.map { it.translation }
+
+                        val videos = animeVideoRepository.saveAll(
+                            videosShikimoriDeferred.await()
+                                .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
+                                .map { video ->
+                                    AnimeVideoTable(
+                                        url = video.url,
+                                        imageUrl = video.imageUrl,
+                                        playerUrl = video.playerUrl,
+                                        name = video.name,
+                                        kind = when (video.kind) {
+                                            "ed" -> AnimeVideoType.Ending
+                                            "op" -> AnimeVideoType.Opening
+                                            "pv" -> AnimeVideoType.Trailer
+                                            else -> AnimeVideoType.Other
+                                        },
+                                    )
+                                },
+                        )
 
                         val screenshots = shikimoriScreenshotsDeferred.await().toMutableList()
 
@@ -312,6 +292,7 @@ class AnimeParseComponent(
                             updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                             status = status,
                             description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
+                            franchise = shikimori.franchise,
                             images = AnimeImagesTable(
                                 large = images.large,
                                 medium = images.medium,
@@ -330,10 +311,9 @@ class AnimeParseComponent(
                         animeToSave.addRelated(relations)
                         animeToSave.addTranslation(translations)
                         animeToSave.addEpisodesAll(episodesReady)
-                        animeToSave.addAllMusic(music)
                         animeToSave.addAllAnimeGenre(genres)
                         animeToSave.addAllAnimeStudios(studios)
-                        animeToSave.addMediaAll(shikimoriVideos)
+                        animeToSave.addVideos(videos)
 
                         val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
                         if (preparationToSaveAnime.isPresent) {

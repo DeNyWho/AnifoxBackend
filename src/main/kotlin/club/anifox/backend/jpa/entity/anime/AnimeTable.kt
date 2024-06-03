@@ -86,17 +86,6 @@ data class AnimeTable(
     )
     @BatchSize(size = 10)
     var ids: AnimeIdsTable = AnimeIdsTable(),
-    @ManyToMany(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-    )
-    @JoinTable(
-        name = "anime_music",
-        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
-        inverseJoinColumns = [JoinColumn(name = "music_id", referencedColumnName = "id")],
-        schema = "anime",
-    )
-    val music: MutableSet<AnimeMusicTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
     var episodesCount: Int? = null,
@@ -115,6 +104,8 @@ data class AnimeTable(
     var status: AnimeStatus = AnimeStatus.Ongoing,
     @Column(columnDefinition = "TEXT")
     var description: String = "",
+    @Column(columnDefinition = "TEXT", nullable = true)
+    var franchise: String? = null,
     @OneToOne(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.ALL],
@@ -144,12 +135,12 @@ data class AnimeTable(
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
     @JoinTable(
-        name = "anime_media",
+        name = "anime_video",
         joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
-        inverseJoinColumns = [JoinColumn(name = "media_id", referencedColumnName = "id")],
+        inverseJoinColumns = [JoinColumn(name = "video_id", referencedColumnName = "id")],
         schema = "anime",
     )
-    var media: MutableSet<AnimeMediaTable> = mutableSetOf(),
+    var videos: MutableSet<AnimeVideoTable> = mutableSetOf(),
     @ManyToMany(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
@@ -215,8 +206,8 @@ data class AnimeTable(
         return this
     }
 
-    fun addMediaAll(mediaAll: List<AnimeMediaTable>): AnimeTable {
-        media.addAll(mediaAll)
+    fun addVideos(videos: List<AnimeVideoTable>): AnimeTable {
+        this.videos.addAll(videos)
         return this
     }
 
@@ -242,11 +233,6 @@ data class AnimeTable(
 
     fun addAllAnimeGenre(genre: List<AnimeGenreTable>): AnimeTable {
         genres.addAll(genre)
-        return this
-    }
-
-    fun addAllMusic(musicT: List<AnimeMusicTable>): AnimeTable {
-        music.addAll(musicT)
         return this
     }
 

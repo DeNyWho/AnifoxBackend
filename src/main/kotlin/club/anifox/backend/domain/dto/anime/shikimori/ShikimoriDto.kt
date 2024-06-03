@@ -20,6 +20,8 @@ data class ShikimoriDto(
     val russianLic: String? = null,
     @SerialName("description")
     val description: String = "",
+    @SerialName("franchise")
+    val franchise: String? = null,
     @Nullable
     @SerialName("english")
     val english: List<String?> = listOf(),
@@ -36,8 +38,6 @@ data class ShikimoriDto(
     val genres: List<ShikimoriGenresDto> = listOf(),
     @SerialName("studios")
     val studios: List<ShikimoriStudiosDto> = listOf(),
-    @SerialName("videos")
-    val videos: List<ShikimoriVideoDto> = listOf(),
     @SerialName("fandubbers")
     val fandubbers: List<String> = listOf(),
     @SerialName("episodes")

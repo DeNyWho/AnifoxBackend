@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class JikanResponseDto<T>(
-    @SerialName("data")
-    val data: T,
+data class JikanTrailerImagesDto(
+    @SerialName("large_image_url")
+    val largeImageUrl: String? = null,
 )

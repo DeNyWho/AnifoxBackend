@@ -6,13 +6,13 @@ import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
-import club.anifox.backend.domain.mappers.anime.toAnimeMedia
+import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
 import club.anifox.backend.domain.model.anime.AnimeGenre
-import club.anifox.backend.domain.model.anime.AnimeMedia
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
+import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -20,8 +20,8 @@ import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
-import club.anifox.backend.jpa.entity.anime.AnimeMediaTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
@@ -65,7 +65,6 @@ class AnimeCommonComponent {
 
     fun getAnimeByUrl(url: String): AnimeDetail {
         val anime = animeUtils.checkAnime(url)
-        println("FSDFSDF = ${anime.type}")
         return anime.toAnimeDetail()
     }
 
@@ -167,12 +166,12 @@ class AnimeCommonComponent {
         throw NoContentException("Anime has no screenshots")
     }
 
-    fun getAnimeMedia(url: String): List<AnimeMedia> {
+    fun getAnimeMedia(url: String): List<AnimeVideo> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
 
-        root.fetch<AnimeTable, AnimeMediaTable>("media", JoinType.LEFT)
+        root.fetch<AnimeTable, AnimeVideoTable>("media", JoinType.LEFT)
 
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
@@ -182,8 +181,8 @@ class AnimeCommonComponent {
             .resultList
             .firstOrNull() ?: throw NotFoundException("Anime with url = $url not found")
 
-        if (anime.media.isNotEmpty()) {
-            return anime.media.map { it.toAnimeMedia() }
+        if (anime.videos.isNotEmpty()) {
+            return anime.videos.map { it.toAnimeVideo() }
         }
 
         throw NoContentException("Anime has no media")
@@ -257,9 +256,8 @@ class AnimeCommonComponent {
                 translations.clear()
                 favorites.clear()
                 rating.clear()
-                music.clear()
+                videos.clear()
                 genres.clear()
-                media.clear()
                 studios.clear()
                 titleEn.clear()
                 titleJapan.clear()

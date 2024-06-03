@@ -6,8 +6,8 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.model.anime.AnimeGenre
-import club.anifox.backend.domain.model.anime.AnimeMedia
 import club.anifox.backend.domain.model.anime.AnimeStudio
+import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -134,7 +134,7 @@ class AnimeController {
     @Operation(summary = "anime media")
     fun getAnimeMedia(
         @PathVariable url: String,
-    ): List<AnimeMedia> {
+    ): List<AnimeVideo> {
         return animeService.getAnimeMedia(url)
     }
 
