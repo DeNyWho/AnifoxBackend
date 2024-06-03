@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "club.anifox"
-version = "0.0.2-ALPHA"
+version = "0.1.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
