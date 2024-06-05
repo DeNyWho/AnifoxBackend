@@ -66,25 +66,22 @@ class AnimeParseComponent(
     fun addDataToDB() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
-            kodikComponent.checkKodikSingle(32935, translationsIds)
+            kodikComponent.checkKodikList(translationsIds)
         }
-        runBlocking {
-            processData(ar)
+        while (ar.nextPage != null) {
+            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
+                runBlocking {
+                    processData(animeTemp)
+                }
+            }
+            ar = runBlocking {
+                client.get(ar.nextPage!!) {
+                    headers {
+                        contentType(ContentType.Application.Json)
+                    }
+                }.body()
+            }
         }
-//        while (ar.nextPage != null) {
-//            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
-//                runBlocking {
-//                    processData(animeTemp)
-//                }
-//            }
-//            ar = runBlocking {
-//                client.get(ar.nextPage!!) {
-//                    headers {
-//                        contentType(ContentType.Application.Json)
-//                    }
-//                }.body()
-//            }
-//        }
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
