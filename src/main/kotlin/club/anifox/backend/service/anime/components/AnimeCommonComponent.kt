@@ -2,6 +2,7 @@ package club.anifox.backend.service.anime.components
 
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
@@ -282,10 +283,9 @@ class AnimeCommonComponent {
             entityManager.remove(animeEntity)
 
             if (animeEntity.url.isNotEmpty()) {
-                imageService.deleteObjectsInFolder("images/anime/episodes/${animeEntity.url}/")
-                imageService.deleteObjectsInFolder("images/anime/medium/${animeEntity.url}/")
-                imageService.deleteObjectsInFolder("images/anime/large/${animeEntity.url}/")
-                imageService.deleteObjectsInFolder("images/anime/cover/${animeEntity.url}/")
+                CompressAnimeImageType.entries.forEach { imageType ->
+                    imageService.deleteObjectsInFolder("images/anime/${imageType.path}/${animeEntity.url}/")
+                }
             }
 
             val animeBlocked = AnimeBlockedTable(

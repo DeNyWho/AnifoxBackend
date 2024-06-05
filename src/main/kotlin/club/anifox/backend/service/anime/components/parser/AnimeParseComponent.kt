@@ -7,6 +7,7 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
@@ -39,6 +40,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Component
 class AnimeParseComponent(
@@ -64,23 +66,25 @@ class AnimeParseComponent(
     fun addDataToDB() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
-            kodikComponent.checkKodikList(translationsIds)
+            kodikComponent.checkKodikSingle(32935, translationsIds)
         }
-
-        while (ar.nextPage != null) {
-            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
-                runBlocking {
-                    processData(animeTemp)
-                }
-            }
-            ar = runBlocking {
-                client.get(ar.nextPage!!) {
-                    headers {
-                        contentType(ContentType.Application.Json)
-                    }
-                }.body()
-            }
+        runBlocking {
+            processData(ar)
         }
+//        while (ar.nextPage != null) {
+//            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
+//                runBlocking {
+//                    processData(animeTemp)
+//                }
+//            }
+//            ar = runBlocking {
+//                client.get(ar.nextPage!!) {
+//                    headers {
+//                        contentType(ContentType.Application.Json)
+//                    }
+//                }.body()
+//            }
+//        }
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
@@ -242,26 +246,31 @@ class AnimeParseComponent(
                         val translationsCountReady = episodesComponent.translationsCount(episodesReady)
                         val translations = translationsCountReady.map { it.translation }
 
-                        val videos = animeVideoRepository.saveAll(
-                            videosShikimoriDeferred.await()
-                                .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
-                                .map { video ->
-                                    AnimeVideoTable(
-                                        url = video.url,
-                                        imageUrl = video.imageUrl,
-                                        playerUrl = video.playerUrl,
-                                        name = video.name,
-                                        type = when (video.kind) {
-                                            "ed" -> AnimeVideoType.Ending
-                                            "op" -> AnimeVideoType.Opening
-                                            "pv" -> AnimeVideoType.Trailer
-                                            else -> AnimeVideoType.Other
-                                        },
-                                    )
-                                },
-                        )
+                        val videos = videosShikimoriDeferred.await()?.let { videosList ->
+                            animeVideoRepository.saveAll(
+                                videosList
+                                    .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
+                                    .map { video ->
+                                        AnimeVideoTable(
+                                            url = video.url,
+                                            imageUrl = video.imageUrl,
+                                            playerUrl = video.playerUrl,
+                                            name = video.name,
+                                            type = when (video.kind) {
+                                                "ed" -> AnimeVideoType.Ending
+                                                "op" -> AnimeVideoType.Opening
+                                                "pv" -> AnimeVideoType.Trailer
+                                                else -> AnimeVideoType.Other
+                                            },
+                                        )
+                                    },
+                            )
+                        } ?: emptyList()
 
                         val screenshots = shikimoriScreenshotsDeferred.await().toMutableList()
+                        screenshots.map { screenshot ->
+                            fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)
+                        }
 
                         val animeToSave = AnimeTable(
                             type = type,

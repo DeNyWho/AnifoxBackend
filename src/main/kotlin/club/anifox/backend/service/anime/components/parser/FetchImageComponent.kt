@@ -86,18 +86,19 @@ class FetchImageComponent {
         return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
     }
 
-    private fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String): String? {
+    fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String? {
         return runCatching {
             val bytes = URL(url).readBytes()
-            val fileName = "${mdFive(UUID.randomUUID().toString())}.png"
-            val path = "images/anime/$type/$urlLinking/$fileName"
+            val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
+            val path = "images/anime/${type.path}/$urlLinking/$fileName"
 
             val extractedWidthAndHeight = type.extractWidthAndHeight()
 
             imageService.saveFileInSThird(
                 filePath = path,
                 data = bytes,
-                compress = true,
+                type = type,
+                compress = compress,
                 width = extractedWidthAndHeight.first,
                 height = extractedWidthAndHeight.second,
             )

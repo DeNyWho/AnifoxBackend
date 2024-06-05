@@ -7,6 +7,7 @@ import club.anifox.backend.domain.dto.anime.kitsu.episode.KitsuEpisodeDto
 import club.anifox.backend.domain.dto.anime.kodik.KodikEpisodeDto
 import club.anifox.backend.domain.dto.translate.edge.TranslateTextDto
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.model.translate.TranslatedText
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
@@ -298,18 +299,21 @@ class EpisodesComponent {
                 when {
                     kitsuEpisode.attributes?.thumbnail?.large != null -> {
                         imageService.saveFileInSThird(
-                            "images/anime/episodes/$url/${mdFive(episode.toString())}.png",
+                            "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(kitsuEpisode.attributes.thumbnail.large).readBytes(),
                             compress = false,
+                            type = CompressAnimeImageType.Episodes,
                         )
                     }
                     kitsuEpisode.attributes?.thumbnail?.original != null -> {
+                        val extractedWidthAndHeight = CompressAnimeImageType.Episodes.extractWidthAndHeight()
                         imageService.saveFileInSThird(
-                            "images/anime/episodes/$url/${mdFive(episode.toString())}.png",
+                            "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
                             compress = true,
-                            width = 400,
-                            height = 225,
+                            width = extractedWidthAndHeight.first,
+                            height = extractedWidthAndHeight.second,
+                            type = CompressAnimeImageType.Episodes,
                         )
                     }
                     else -> imageDefault

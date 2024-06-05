@@ -1,5 +1,6 @@
 package club.anifox.backend.service.image
 
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.ObjectMetadata
 import net.coobird.thumbnailator.Thumbnails
@@ -28,8 +29,8 @@ class ImageService {
         }
     }
 
-    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false): String {
-        val readyData = if (compress) compressImage(imageBytes = data, width, height) else data
+    fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false, type: CompressAnimeImageType): String {
+        val readyData = if (compress) compressImage(data, type, width, height) else data
 
         val inputStream = ByteArrayInputStream(readyData)
         val metadata = ObjectMetadata().apply {
@@ -57,13 +58,13 @@ class ImageService {
         return "$domainS3/$filePath"
     }
 
-    private fun compressImage(imageBytes: ByteArray, width: Int, height: Int): ByteArray {
+    private fun compressImage(imageBytes: ByteArray, type: CompressAnimeImageType, width: Int, height: Int): ByteArray {
         val image = ImageIO.read(ByteArrayInputStream(imageBytes))
         val outputStream = ByteArrayOutputStream()
         Thumbnails.of(image)
-            .outputFormat("png")
+            .outputFormat(type.imageType.textFormat())
             .size(width, height)
-            .outputQuality(1.0)
+            .outputQuality(type.compressQuality)
             .toOutputStream(outputStream)
         return outputStream.toByteArray()
     }

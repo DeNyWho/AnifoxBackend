@@ -1,5 +1,6 @@
 package club.anifox.backend.service.account.component
 
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.repository.user.UserRepository
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.mdFive
@@ -25,12 +26,13 @@ class AccountInteractionComponent {
         val user = userUtils.checkUser(token)
 
         user.image = imageService.saveFileInSThird(
-            filePath = "images/user/${mdFive(user.login)}/avatar/${mdFive(user.id)}.png",
+            filePath = "images/user/${mdFive(user.login)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.id)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
             data = image.bytes,
             compress = true,
             width = 400,
             height = 400,
             newImage = true,
+            type = CompressAnimeImageType.Avatar,
         )
 
         userRepository.save(user)

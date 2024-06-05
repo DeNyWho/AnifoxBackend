@@ -31,17 +31,19 @@ class AnimeShikimoriComponent {
         }.getOrNull()
     }
 
-    suspend fun fetchVideos(shikimoriId: Int): List<ShikimoriVideoDto> {
-        return client.get {
-            headers {
-                contentType(ContentType.Application.Json)
-            }
-            url {
-                protocol = URLProtocol.HTTPS
-                host = Constants.SHIKIMORI
-                encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_VIDEOS}"
-            }
-        }.body<List<ShikimoriVideoDto>>()
+    suspend fun fetchVideos(shikimoriId: Int): List<ShikimoriVideoDto>? {
+        return runCatching {
+            client.get {
+                headers {
+                    contentType(ContentType.Application.Json)
+                }
+                url {
+                    protocol = URLProtocol.HTTPS
+                    host = Constants.SHIKIMORI
+                    encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_VIDEOS}"
+                }
+            }.body<List<ShikimoriVideoDto>>()
+        }.getOrNull()
     }
 
     suspend fun fetchScreenshots(shikimoriId: Int): List<String> {

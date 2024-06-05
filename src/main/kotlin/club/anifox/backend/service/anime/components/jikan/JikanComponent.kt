@@ -20,6 +20,9 @@ class JikanComponent {
 
     suspend fun fetchJikanEpisodes(page: Int, shikimoriId: Int): JikanResponseDefaultDto<JikanEpisodeDto> {
         return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
             url {
                 protocol = URLProtocol.HTTPS
                 host = Constants.JIKAN
