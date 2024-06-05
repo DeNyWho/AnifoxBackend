@@ -264,10 +264,9 @@ class AnimeParseComponent(
                             )
                         } ?: emptyList()
 
-                        val screenshots = shikimoriScreenshotsDeferred.await().toMutableList()
-                        screenshots.map { screenshot ->
+                        val screenshots = shikimoriScreenshotsDeferred.await().map { screenshot ->
                             fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)
-                        }
+                        }.toMutableList()
 
                         val animeToSave = AnimeTable(
                             type = type,

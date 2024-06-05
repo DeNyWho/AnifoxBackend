@@ -67,8 +67,8 @@ class FetchImageComponent {
         val (large, medium, cover) = images.extractUrlsWithCover()
 
         val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.Large, urlLinking) ?: "",
-            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking) ?: "",
+            large = saveImage(large, CompressAnimeImageType.Large, urlLinking),
+            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
             cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking),
         )
 
@@ -79,15 +79,15 @@ class FetchImageComponent {
         val (large, medium) = images.extractUrls()
 
         val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.Large, urlLinking) ?: "",
-            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking) ?: "",
+            large = saveImage(large, CompressAnimeImageType.Large, urlLinking),
+            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
         )
 
         return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
     }
 
-    fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String? {
-        return runCatching {
+    fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String {
+        return run {
             val bytes = URL(url).readBytes()
             val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
             val path = "images/anime/${type.path}/$urlLinking/$fileName"
@@ -102,7 +102,7 @@ class FetchImageComponent {
                 width = extractedWidthAndHeight.first,
                 height = extractedWidthAndHeight.second,
             )
-        }.getOrNull()
+        }
     }
 
     private fun AnimeImages.extractUrlsWithCover(): Triple<String, String, String?> {
