@@ -82,7 +82,7 @@ class AnimeShikimoriComponent {
     suspend fun fetchSimilar(shikimoriId: Int): List<Int> {
         return client.get {
             headers {
-                contentType(ContentType.Text.Plain)
+                contentType(ContentType.Application.Json)
                 userAgent("AniFox")
             }
             url {
