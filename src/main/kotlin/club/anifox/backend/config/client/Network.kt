@@ -51,7 +51,7 @@ class Network {
             }
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.NONE
+                level = LogLevel.ALL
             }
         }
     }
