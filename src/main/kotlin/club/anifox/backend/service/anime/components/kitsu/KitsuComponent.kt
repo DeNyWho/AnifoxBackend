@@ -20,6 +20,9 @@ class KitsuComponent {
 
     suspend fun fetchKitsuEpisodes(url: String): KitsuDefaultResponseDto<KitsuEpisodeDto> {
         return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
             url {
                 protocol = URLProtocol.HTTPS
                 host = Constants.KITSU
@@ -31,6 +34,9 @@ class KitsuComponent {
 
     suspend fun fetchKitsuAnime(kitsuId: Int): KitsuResponseDto<KitsuAnimeDto> {
         return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
             url {
                 protocol = URLProtocol.HTTPS
                 host = Constants.KITSU

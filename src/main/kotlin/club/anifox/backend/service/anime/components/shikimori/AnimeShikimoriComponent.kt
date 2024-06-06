@@ -22,6 +22,9 @@ class AnimeShikimoriComponent {
     suspend fun fetchAnime(shikimoriId: Int): ShikimoriDto? {
         return runCatching {
             client.get {
+                headers {
+                    contentType(ContentType.Application.Json)
+                }
                 url {
                     protocol = URLProtocol.HTTPS
                     host = Constants.SHIKIMORI
@@ -63,6 +66,9 @@ class AnimeShikimoriComponent {
 
     suspend fun fetchRelated(shikimoriId: Int): List<ShikimoriRelationDto> {
         return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+            }
             url {
                 protocol = URLProtocol.HTTPS
                 host = Constants.SHIKIMORI
