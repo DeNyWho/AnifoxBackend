@@ -24,6 +24,7 @@ class AnimeShikimoriComponent {
             client.get {
                 headers {
                     contentType(ContentType.Application.Json)
+                    userAgent("AniFox")
                 }
                 url {
                     protocol = URLProtocol.HTTPS
@@ -34,25 +35,25 @@ class AnimeShikimoriComponent {
         }.getOrNull()
     }
 
-    suspend fun fetchVideos(shikimoriId: Int): List<ShikimoriVideoDto>? {
-        return runCatching {
-            client.get {
-                headers {
-                    contentType(ContentType.Application.Json)
-                }
-                url {
-                    protocol = URLProtocol.HTTPS
-                    host = Constants.SHIKIMORI
-                    encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_VIDEOS}"
-                }
-            }.body<List<ShikimoriVideoDto>>()
-        }.getOrNull()
+    suspend fun fetchVideos(shikimoriId: Int): List<ShikimoriVideoDto> {
+        return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+                userAgent("AniFox")
+            }
+            url {
+                protocol = URLProtocol.HTTPS
+                host = Constants.SHIKIMORI
+                encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_VIDEOS}"
+            }
+        }.body<List<ShikimoriVideoDto>>()
     }
 
     suspend fun fetchScreenshots(shikimoriId: Int): List<String> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                userAgent("AniFox")
             }
             url {
                 protocol = URLProtocol.HTTPS
@@ -68,6 +69,7 @@ class AnimeShikimoriComponent {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                userAgent("AniFox")
             }
             url {
                 protocol = URLProtocol.HTTPS
@@ -80,7 +82,8 @@ class AnimeShikimoriComponent {
     suspend fun fetchSimilar(shikimoriId: Int): List<Int> {
         return client.get {
             headers {
-                contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
+                userAgent("AniFox")
             }
             url {
                 protocol = URLProtocol.HTTPS

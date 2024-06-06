@@ -66,22 +66,25 @@ class AnimeParseComponent(
     fun addDataToDB() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         var ar = runBlocking {
-            kodikComponent.checkKodikList(translationsIds)
+            kodikComponent.checkKodikSingle(28977, translationsIds)
         }
-        while (ar.nextPage != null) {
-            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
-                runBlocking {
-                    processData(animeTemp)
-                }
-            }
-            ar = runBlocking {
-                client.get(ar.nextPage!!) {
-                    headers {
-                        contentType(ContentType.Application.Json)
-                    }
-                }.body()
-            }
+        runBlocking {
+            processData(ar)
         }
+//        while (ar.nextPage != null) {
+//            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
+//                runBlocking {
+//                    processData(animeTemp)
+//                }
+//            }
+//            ar = runBlocking {
+//                client.get(ar.nextPage!!) {
+//                    headers {
+//                        contentType(ContentType.Application.Json)
+//                    }
+//                }.body()
+//            }
+//        }
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
@@ -210,18 +213,19 @@ class AnimeParseComponent(
                         val similar = similarShikimoriIdsDeferred.await().toMutableList()
 
                         val relations = animeRelatedRepository.saveAll(
-                            relationShikimoriIdsDeferred.await().map { relation ->
-                                val shikimoriId = when (val media = relation.anime ?: relation.manga) {
-                                    is ShikimoriAnimeIdDto -> media.id
-                                    is ShikimoriMangaIdDto -> media.id
-                                    else -> throw IllegalArgumentException("Неизвестный тип медиа")
-                                }
-                                AnimeRelatedTable(
-                                    type = relation.relationRussian.toString(),
-                                    shikimoriId = shikimoriId,
-                                    typeEn = relation.relation.toString(),
-                                )
-                            },
+                            relationShikimoriIdsDeferred.await()
+                                .mapNotNull { relation ->
+                                    val shikimoriId = when (val media = relation.anime ?: relation.manga) {
+                                        is ShikimoriAnimeIdDto -> media.id
+                                        is ShikimoriMangaIdDto -> return@mapNotNull null
+                                        else -> throw IllegalArgumentException("Неизвестный тип медиа")
+                                    }
+                                    AnimeRelatedTable(
+                                        type = relation.relationRussian.toString(),
+                                        shikimoriId = shikimoriId,
+                                        typeEn = relation.relation.toString(),
+                                    )
+                                },
                         )
 
                         val animeIds = animeIdsDeferred.await()
@@ -243,7 +247,7 @@ class AnimeParseComponent(
                         val translationsCountReady = episodesComponent.translationsCount(episodesReady)
                         val translations = translationsCountReady.map { it.translation }
 
-                        val videos = videosShikimoriDeferred.await()?.let { videosList ->
+                        val videos = videosShikimoriDeferred.await().let { videosList ->
                             animeVideoRepository.saveAll(
                                 videosList
                                     .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
@@ -262,7 +266,7 @@ class AnimeParseComponent(
                                         )
                                     },
                             )
-                        } ?: emptyList()
+                        }
 
                         val screenshots = shikimoriScreenshotsDeferred.await().map { screenshot ->
                             fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)

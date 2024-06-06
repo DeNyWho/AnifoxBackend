@@ -23,9 +23,6 @@ class Network {
     @Bean
     fun httpClient(): HttpClient {
         return HttpClient(Java) {
-            defaultRequest {
-                contentType(ContentType.Application.Json)
-            }
             install("RateLimiter") {
                 requestPipeline.intercept(HttpRequestPipeline.Before) {
                     val allowedHosts = listOf(Constants.JIKAN, Constants.KITSU, Constants.HAGLUND, Constants.SHIKIMORI, Constants.EDGE)
