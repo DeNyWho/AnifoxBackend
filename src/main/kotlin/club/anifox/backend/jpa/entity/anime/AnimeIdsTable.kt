@@ -6,7 +6,7 @@ import jakarta.persistence.Table
 import java.util.*
 
 @Entity
-@Table(name = "anime_ids", schema = "anime")
+@Table(name = "ids", schema = "anime")
 data class AnimeIdsTable(
     @Id
     val id: String = UUID.randomUUID().toString(),

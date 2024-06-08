@@ -1,18 +1,18 @@
 package club.anifox.backend.service.anime.components
 
+import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
-import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
+import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
-import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
@@ -20,6 +20,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
+import club.anifox.backend.jpa.entity.anime.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
@@ -85,22 +86,22 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime not found")
         } else {
-            val similarCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-            val similarRoot = similarCriteriaQuery.from(AnimeTable::class.java)
-            similarCriteriaQuery.select(similarRoot)
-                .where(similarRoot.get<Int>("shikimoriId").`in`(anime[0].similarAnime))
-
-            val similarEntityList = entityManager.createQuery(similarCriteriaQuery).resultList as List<AnimeTable>
-
-            val similarEntityMap: Map<Int, AnimeTable> = similarEntityList.associateBy { it.shikimoriId }
-
-            val similarAnimeList: List<AnimeTable> = anime[0].similarAnime.mapNotNull { similarAnimeId ->
-                similarEntityMap[similarAnimeId]
-            }
-
-            if (similarAnimeList.isNotEmpty()) {
-                return similarAnimeList.map { it.toAnimeLight() }
-            }
+//            val similarCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+//            val similarRoot = similarCriteriaQuery.from(AnimeTable::class.java)
+//            similarCriteriaQuery.select(similarRoot)
+//                .where(similarRoot.get<Int>("shikimoriId").`in`(anime[0].similarAnime))
+//
+//            val similarEntityList = entityManager.createQuery(similarCriteriaQuery).resultList as List<AnimeTable>
+//
+//            val similarEntityMap: Map<Int, AnimeTable> = similarEntityList.associateBy { it.shikimoriId }
+//
+//            val similarAnimeList: List<AnimeTable> = anime[0].similarAnime.mapNotNull { similarAnimeId ->
+//                similarEntityMap[similarAnimeId]
+//            }
+//
+//            if (similarAnimeList.isNotEmpty()) {
+//                return similarAnimeList.map { it.toAnimeLight() }
+//            }
 
             throw NoContentException("There are no similar anime")
         }
@@ -121,26 +122,26 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime with url = $url not found")
         } else {
-            val relatedAnimeList: List<AnimeRelationLight> = anime[0].related.mapNotNull { related ->
-                val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-                val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
-                relatedCriteriaQuery.select(relatedRoot)
-                    .where(criteriaBuilder.equal(relatedRoot.get<Int>("shikimoriId"), related.shikimoriId))
+//            val relatedAnimeList: List<AnimeRelationLight> = anime[0].related.mapNotNull { related ->
+//                val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+//                val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
+//                relatedCriteriaQuery.select(relatedRoot)
+//                    .where(criteriaBuilder.equal(relatedRoot.get<Int>("shikimoriId"), related.shikimoriId))
+//
+//                val relatedAnimeList: List<AnimeTable> = entityManager.createQuery(relatedCriteriaQuery).resultList
+//
+//                if (relatedAnimeList.isNotEmpty()) {
+//                    val relatedAnime: AnimeTable = relatedAnimeList.first()
+//                    val animeLight = relatedAnime.toAnimeLight()
+//                    AnimeRelationLight(animeLight, AnimeRelation(type = related.type, typeEn = related.typeEn))
+//                } else {
+//                    null
+//                }
+//            }
 
-                val relatedAnimeList: List<AnimeTable> = entityManager.createQuery(relatedCriteriaQuery).resultList
-
-                if (relatedAnimeList.isNotEmpty()) {
-                    val relatedAnime: AnimeTable = relatedAnimeList.first()
-                    val animeLight = relatedAnime.toAnimeLight()
-                    AnimeRelationLight(animeLight, AnimeRelation(type = related.type, typeEn = related.typeEn))
-                } else {
-                    null
-                }
-            }
-
-            if (relatedAnimeList.isNotEmpty()) {
-                return relatedAnimeList
-            }
+//            if (relatedAnimeList.isNotEmpty()) {
+//                return relatedAnimeList
+//            }
 
             throw NoContentException("There are no related anime")
         }
@@ -278,6 +279,7 @@ class AnimeCommonComponent {
                 screenshots.clear()
                 ids = AnimeIdsTable()
                 images = AnimeImagesTable()
+                franchiseMultiple.clear()
             }
 
             entityManager.remove(animeEntity)
@@ -302,5 +304,48 @@ class AnimeCommonComponent {
                 animeBlockedRepository.saveAndFlush(animeBlocked)
             }
         }
+    }
+
+    fun getAnimeFranchise(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise> {
+        val anime: AnimeTable = animeUtils.checkAnime(url)
+
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeFranchiseTable> = criteriaBuilder.createQuery(AnimeFranchiseTable::class.java)
+
+        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
+
+        val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchise", JoinType.LEFT)
+
+        val predicates = mutableListOf(
+            criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
+        )
+
+        if (type != null) {
+            predicates.add(criteriaBuilder.equal(franchiseJoin.get<AnimeRelationFranchise>("type"), type))
+        }
+
+        criteriaQuery.select(franchiseJoin)
+        criteriaQuery.where(*predicates.toTypedArray())
+
+//        val franchisesTemp = entityManager.createQuery(criteriaQuery).resultList
+//
+//        if (franchisesTemp.isNotEmpty()) {
+//            franchisesTemp.map { franchise ->
+//                val criteriaAnimeQuery: CriteriaQuery<String> = criteriaBuilder.createQuery(String::class.java)
+//                val root: Root<AnimeTable> = criteriaAnimeQuery.from(AnimeTable::class.java)
+//
+//                criteriaAnimeQuery.select(root.get("url"))
+//                criteriaAnimeQuery.where(criteriaBuilder.equal(root.get<Long>("shikimoriId"), franchise.targetId))
+//
+//                val animeSource = entityManager.createQuery(criteriaAnimeQuery)
+//                AnimeFranchise(
+//                    anime = anime,
+//                    relation = franchise.relationTypeRus,
+//                    franchise.sourceId
+//                )
+//            }
+//        }
+
+        throw NoContentException("There are no videos")
     }
 }

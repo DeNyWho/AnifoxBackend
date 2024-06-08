@@ -12,7 +12,7 @@ import java.time.LocalDate
 import java.util.*
 
 @Entity
-@Table(name = "anime_episodes", schema = "anime")
+@Table(name = "episodes", schema = "anime")
 data class AnimeEpisodeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),

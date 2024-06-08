@@ -2,6 +2,7 @@ package club.anifox.backend.service.anime.components.shikimori
 
 import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriFranchise
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriRelationDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriScreenshotsDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriSimilarDto
@@ -24,6 +25,7 @@ class AnimeShikimoriComponent {
             client.get {
                 headers {
                     contentType(ContentType.Application.Json)
+                    contentType(ContentType.Text.Plain)
                     userAgent("AniFox")
                 }
                 url {
@@ -39,6 +41,7 @@ class AnimeShikimoriComponent {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
                 userAgent("AniFox")
             }
             url {
@@ -53,6 +56,7 @@ class AnimeShikimoriComponent {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
                 userAgent("AniFox")
             }
             url {
@@ -69,6 +73,7 @@ class AnimeShikimoriComponent {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
                 userAgent("AniFox")
             }
             url {
@@ -83,6 +88,7 @@ class AnimeShikimoriComponent {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
                 userAgent("AniFox")
             }
             url {
@@ -93,5 +99,20 @@ class AnimeShikimoriComponent {
         }.body<List<ShikimoriSimilarDto>>().flatMap { similar ->
             listOfNotNull(similar.id)
         }.map { it }
+    }
+
+    suspend fun fetchFranchise(shikimoriId: Int): ShikimoriFranchise {
+        return client.get {
+            headers {
+                contentType(ContentType.Application.Json)
+                contentType(ContentType.Text.Plain)
+                userAgent("AniFox")
+            }
+            url {
+                protocol = URLProtocol.HTTPS
+                host = Constants.SHIKIMORI
+                encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_FRANCHISE}"
+            }
+        }.body<ShikimoriFranchise>()
     }
 }

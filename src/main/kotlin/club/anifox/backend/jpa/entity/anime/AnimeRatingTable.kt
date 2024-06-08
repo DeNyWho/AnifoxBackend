@@ -10,7 +10,7 @@ import jakarta.persistence.Table
 import java.util.*
 
 @Entity
-@Table(name = "anime_rating", schema = "anime")
+@Table(name = "rating", schema = "anime")
 data class AnimeRatingTable(
     @Id
     val id: String = UUID.randomUUID().toString(),

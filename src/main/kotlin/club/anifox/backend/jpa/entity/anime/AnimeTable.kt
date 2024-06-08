@@ -59,16 +59,24 @@ data class AnimeTable(
     @CollectionTable(name = "anime_otherTitles", schema = "anime")
     @Column(columnDefinition = "text")
     val titleOther: MutableList<String> = mutableListOf(),
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "anime_similar", schema = "anime")
+    @ManyToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH],
+    )
+    @JoinTable(
+        name = "anime_similar",
+        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
+        inverseJoinColumns = [JoinColumn(name = "similar_anime_id", referencedColumnName = "id")],
+        schema = "anime",
+    )
     @BatchSize(size = 10)
-    val similarAnime: MutableList<Int> = mutableListOf(),
+    val similarAnime: MutableSet<AnimeTable> = mutableSetOf(),
     @OneToMany(
+        mappedBy = "animeTable",
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    @JoinTable(schema = "anime")
     @BatchSize(size = 10)
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
@@ -111,7 +119,6 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    @BatchSize(size = 10)
     var images: AnimeImagesTable = AnimeImagesTable(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
@@ -153,6 +160,17 @@ data class AnimeTable(
     )
     @BatchSize(size = 10)
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
+    @ManyToMany(
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
+    )
+    @JoinTable(
+        name = "anime_franchise",
+        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
+        inverseJoinColumns = [JoinColumn(name = "franchise_id", referencedColumnName = "id")],
+        schema = "anime",
+    )
+    var franchiseMultiple: MutableSet<AnimeFranchiseTable> = mutableSetOf(),
     var shikimoriRating: Double = 0.0,
     var shikimoriVotes: Int = 0,
     val ratingMpa: String = "",
@@ -208,6 +226,11 @@ data class AnimeTable(
 
     fun addVideos(videos: List<AnimeVideoTable>): AnimeTable {
         this.videos.addAll(videos)
+        return this
+    }
+
+    fun addFranchiseMultiple(franchises: List<AnimeFranchiseTable>): AnimeTable {
+        this.franchiseMultiple.addAll(franchises)
         return this
     }
 

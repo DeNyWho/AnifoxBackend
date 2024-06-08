@@ -7,7 +7,7 @@ import jakarta.persistence.Table
 import java.util.*
 
 @Entity
-@Table(name = "anime_parser", schema = "anime")
+@Table(name = "parser", schema = "anime")
 data class AnimeErrorParserTable(
     @Id
     val id: String = UUID.randomUUID().toString(),

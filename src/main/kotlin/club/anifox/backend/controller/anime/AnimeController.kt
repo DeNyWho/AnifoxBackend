@@ -1,5 +1,6 @@
 package club.anifox.backend.controller.anime
 
+import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
@@ -7,6 +8,7 @@ import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
+import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -141,6 +143,15 @@ class AnimeController {
         type: AnimeVideoType?,
     ): List<AnimeVideo> {
         return animeService.getAnimeVideos(url, type)
+    }
+
+    @GetMapping("{url}/franchise")
+    @Operation(summary = "anime franchise")
+    fun getAnimeFranchise(
+        @PathVariable url: String,
+        type: AnimeRelationFranchise?,
+    ): List<AnimeFranchise> {
+        return animeService.getAnimeFranchises(url, type)
     }
 
     @GetMapping("{url}/episodes")

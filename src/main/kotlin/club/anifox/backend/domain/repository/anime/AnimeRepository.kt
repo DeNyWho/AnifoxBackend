@@ -1,5 +1,6 @@
 package club.anifox.backend.domain.repository.anime
 
+import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
@@ -7,6 +8,7 @@ import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
+import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -49,4 +51,6 @@ interface AnimeRepository {
         translations: List<String>?,
         studio: String?,
     ): List<AnimeLight>
+
+    fun getAnimeFranchises(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise>
 }
