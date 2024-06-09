@@ -25,7 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.net.URL
@@ -60,21 +60,22 @@ class EpisodesComponent {
     private lateinit var animeTranslationCountRepository: AnimeTranslationCountRepository
 
     fun translationsCount(episodes: List<AnimeEpisodeTable>): List<AnimeEpisodeTranslationCountTable> {
-        val translationsAll = animeTranslationRepository.findAll()
+        val translationsAll = animeTranslationRepository.findAll().associateBy { it.id }
         val translationsCountMap = episodes
             .flatMap { it.translations }
-            .groupBy { it.translation.id }
-            .map { (id, translations) ->
+            .groupingBy { it.translation.id }
+            .eachCount()
+            .map { (id, count) ->
                 AnimeEpisodeTranslationCountTable(
-                    translation = translationsAll.find { it.id == id }!!,
-                    countEpisodes = translations.size,
+                    translation = translationsAll[id]!!,
+                    countEpisodes = count,
                 )
             }
 
         return animeTranslationCountRepository.saveAll(translationsCountMap)
     }
 
-    fun fetchEpisodes(shikimoriId: Int, kitsuId: String, type: AnimeType, urlLinkPath: String, defaultImage: String): List<AnimeEpisodeTable> {
+    suspend fun fetchEpisodes(shikimoriId: Int, kitsuId: String, type: AnimeType, urlLinkPath: String, defaultImage: String): List<AnimeEpisodeTable> {
         val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
         val episodesReady = mutableListOf<AnimeEpisodeTable>()
@@ -87,66 +88,41 @@ class EpisodesComponent {
             AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
                 kodikAnime.seasons.forEach { kodikSeason ->
                     if (kodikSeason.key != "0") {
-                        runBlocking {
-                            val deferredKitsu = async {
-                                val kitsuAsyncTask = async { kitsuComponent.fetchKitsuEpisodes("api${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${kitsuId}${Constants.KITSU_EPISODES}") }
+                        coroutineScope {
+                            val deferredKitsu = async { fetchKitsuEpisodes(kitsuId) }
+                            val deferredJikan = async { fetchJikanEpisodes(shikimoriId) }
 
-                                var responseKitsuEpisodes = kitsuAsyncTask.await()
-                                while (responseKitsuEpisodes.data != null) {
-                                    kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
-                                    val kitsuUrl = responseKitsuEpisodes.links.next?.replace("https://${Constants.KITSU}", "").toString()
-                                    responseKitsuEpisodes = if (kitsuUrl != "null") kitsuComponent.fetchKitsuEpisodes(kitsuUrl) else KitsuDefaultResponseDto()
-                                }
-                            }
-
-                            val deferredJikan = async {
-                                val jikanAsyncTask = async { jikanComponent.fetchJikanEpisodes(1, shikimoriId) }
-
-                                var responseJikanEpisodes = jikanAsyncTask.await()
-                                var page = 1
-                                jikanEpisodes.addAll(responseJikanEpisodes.data)
-                                while (responseJikanEpisodes.data.isNotEmpty()) {
-                                    page++
-                                    responseJikanEpisodes = jikanComponent.fetchJikanEpisodes(page, shikimoriId)
-                                    jikanEpisodes.addAll(responseJikanEpisodes.data)
-                                }
-                            }
-
-                            deferredJikan.await()
-                            deferredKitsu.await()
+                            kitsuEpisodes.addAll(deferredKitsu.await())
+                            jikanEpisodes.addAll(deferredJikan.await())
                         }
 
                         episodesReady.addAll(
-                            runBlocking {
-                                processEpisodes(
-                                    shikimoriId,
-                                    urlLinkPath,
-                                    kodikSeason.value.episodes,
-                                    kitsuEpisodes,
-                                    jikanEpisodes,
-                                    defaultImage,
-                                    translations,
-                                    type,
-                                )
-                            },
+                            processEpisodes(
+                                shikimoriId,
+                                urlLinkPath,
+                                kodikSeason.value.episodes,
+                                kitsuEpisodes,
+                                jikanEpisodes,
+                                defaultImage,
+                                translations,
+                                type,
+                            ),
                         )
                     }
                 }
                 if (kodikAnime.seasons.isEmpty()) {
                     if (kodikAnime.link.isNotEmpty()) {
                         episodesReady.addAll(
-                            runBlocking {
-                                processEpisodes(
-                                    shikimoriId,
-                                    urlLinkPath,
-                                    mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
-                                    kitsuEpisodes,
-                                    jikanEpisodes,
-                                    defaultImage,
-                                    translations,
-                                    type,
-                                )
-                            },
+                            processEpisodes(
+                                shikimoriId,
+                                urlLinkPath,
+                                mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
+                                kitsuEpisodes,
+                                jikanEpisodes,
+                                defaultImage,
+                                translations,
+                                type,
+                            ),
                         )
                     }
                 }
@@ -154,23 +130,45 @@ class EpisodesComponent {
 
             else -> {
                 episodesReady.addAll(
-                    runBlocking {
-                        processEpisodes(
-                            shikimoriId,
-                            urlLinkPath,
-                            mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
-                            kitsuEpisodes,
-                            jikanEpisodes,
-                            defaultImage,
-                            translations,
-                            type,
-                        )
-                    },
+                    processEpisodes(
+                        shikimoriId,
+                        urlLinkPath,
+                        mapOf(Pair("1", KodikEpisodeDto(link = kodikAnime.link, screenshots = listOf()))),
+                        kitsuEpisodes,
+                        jikanEpisodes,
+                        defaultImage,
+                        translations,
+                        type,
+                    ),
                 )
             }
         }
 
         return episodesReady
+    }
+
+    private suspend fun fetchKitsuEpisodes(kitsuId: String): List<KitsuEpisodeDto> {
+        val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
+        var responseKitsuEpisodes = kitsuComponent.fetchKitsuEpisodes("api${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${kitsuId}${Constants.KITSU_EPISODES}")
+        while (responseKitsuEpisodes.data != null) {
+            kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
+            val kitsuUrl = responseKitsuEpisodes.links.next?.replace("https://${Constants.KITSU}", "").toString()
+            responseKitsuEpisodes = if (kitsuUrl != "null") kitsuComponent.fetchKitsuEpisodes(kitsuUrl) else KitsuDefaultResponseDto()
+        }
+        return kitsuEpisodes
+    }
+
+    private suspend fun fetchJikanEpisodes(shikimoriId: Int): List<JikanEpisodeDto> {
+        val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
+        var responseJikanEpisodes = jikanComponent.fetchJikanEpisodes(1, shikimoriId)
+        var page = 1
+        jikanEpisodes.addAll(responseJikanEpisodes.data)
+        while (responseJikanEpisodes.data.isNotEmpty()) {
+            page++
+            responseJikanEpisodes = jikanComponent.fetchJikanEpisodes(page, shikimoriId)
+            jikanEpisodes.addAll(responseJikanEpisodes.data)
+        }
+        return jikanEpisodes
     }
 
     private suspend fun processEpisodes(
@@ -204,7 +202,7 @@ class EpisodesComponent {
                 }
             }
         } else {
-            kodikEpisodes.map { (episodeKey, episode) ->
+            kodikEpisodes.map { (episodeKey, _) ->
                 val number = episodeKey.toInt()
                 val kitsuEpisode = findEpisodeByNumber(number, kitsuEpisodes)
                 if (kitsuEpisode != null) {
@@ -249,17 +247,17 @@ class EpisodesComponent {
 
         val translateDescription = translateChunks(tempTranslatedDescription.values.toList())
 
-        translatedTitleMapped.map { (episodeKey, title) ->
+        translatedTitleMapped.map { (episodeKey, _) ->
             val episodeKeyList = if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
             translatedTitleMapped[episodeKey] = if (translateTitle[episodeKeyList].text.toString() == "null") "" else translateTitle[episodeKeyList].text.toString()
         }
 
-        translatedDescriptionMapped.map { (episodeKey, title) ->
+        translatedDescriptionMapped.map { (episodeKey, _) ->
             val number = if (translatedDescriptionMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
             translatedDescriptionMapped[episodeKey] = if (translateDescription[number].text.toString() == "null") "" else translateDescription[number].text.toString()
         }
 
-        val jobs = kodikEpisodes.map { (episodeKey, episode) ->
+        val jobs = kodikEpisodes.map { (episodeKey, _) ->
             CoroutineScope(Dispatchers.Default).async {
                 processEpisode(
                     urlLinking,
@@ -294,22 +292,22 @@ class EpisodesComponent {
         imageDefault: String,
         jikanEpisode: JikanEpisodeDto?,
     ): AnimeEpisodeTable {
-        return if (kitsuEpisode != null) {
-            val imageEpisode = try {
+        val imageEpisode = kitsuEpisode?.attributes?.thumbnail?.let { thumbnail ->
+            try {
                 when {
-                    kitsuEpisode.attributes?.thumbnail?.large != null -> {
+                    thumbnail.large != null -> {
                         imageService.saveFileInSThird(
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
-                            URL(kitsuEpisode.attributes.thumbnail.large).readBytes(),
+                            URL(thumbnail.large).readBytes(),
                             compress = false,
                             type = CompressAnimeImageType.Episodes,
                         )
                     }
-                    kitsuEpisode.attributes?.thumbnail?.original != null -> {
+                    thumbnail.original != null -> {
                         val extractedWidthAndHeight = CompressAnimeImageType.Episodes.extractWidthAndHeight()
                         imageService.saveFileInSThird(
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
-                            URL(kitsuEpisode.attributes.thumbnail.original).readBytes(),
+                            URL(thumbnail.original).readBytes(),
                             compress = true,
                             width = extractedWidthAndHeight.first,
                             height = extractedWidthAndHeight.second,
@@ -321,55 +319,28 @@ class EpisodesComponent {
             } catch (e: Exception) {
                 imageDefault
             }
+        } ?: imageDefault
 
-            val kitsuNumber = kitsuEpisode.attributes?.number ?: episode
+        val kitsuNumber = kitsuEpisode?.attributes?.number ?: episode
 
-            val airedDate = when {
-                jikanEpisode != null && jikanEpisode.aired.length > 3 -> {
-                    jikanEpisode.aired
-                }
-                kitsuEpisode.attributes?.airDate != null && kitsuEpisode.attributes.airDate.length > 3 -> {
-                    kitsuEpisode.attributes.airDate
-                }
-                else -> null
-            }
+        val airedDate = jikanEpisode?.aired?.takeIf { it.length > 3 }
+            ?: kitsuEpisode?.attributes?.airDate?.takeIf { it.length > 3 }
 
-            return AnimeEpisodeTable(
-                title = if (titleRu != null && titleRu.length > 3) titleRu else "$episode",
-                titleEn = kitsuEpisode.attributes?.titles?.enToUs ?: "",
-                description = descriptionRu,
-                descriptionEn = kitsuEpisode.attributes?.description ?: "",
-                number = kitsuNumber,
-                image = if (imageEpisode.length > 5) imageEpisode else imageDefault,
-                filler = jikanEpisode?.filler ?: false,
-                recap = jikanEpisode?.recap ?: false,
-                aired = if (airedDate != null) LocalDate.parse(if (airedDate.length > 10) airedDate.substring(0, 10) else airedDate, DateTimeFormatter.ISO_DATE) else null,
-            )
-        } else {
-            val airedDate = when {
-                jikanEpisode != null && jikanEpisode.aired.length > 3 -> {
-                    jikanEpisode.aired
-                }
-                else -> null
-            }
-
-            AnimeEpisodeTable(
-                title = episode.toString(),
-                titleEn = episode.toString(),
-                description = null,
-                descriptionEn = null,
-                number = episode,
-                image = imageDefault,
-                filler = jikanEpisode?.filler ?: false,
-                recap = jikanEpisode?.recap ?: false,
-                aired = if (airedDate != null) LocalDate.parse(if (airedDate.length > 10) airedDate.substring(0, 10) else airedDate, DateTimeFormatter.ISO_DATE) else null,
-            )
-        }
+        return AnimeEpisodeTable(
+            title = titleRu?.takeIf { it.length > 3 } ?: "$episode",
+            titleEn = kitsuEpisode?.attributes?.titles?.enToUs ?: "$episode",
+            description = descriptionRu,
+            descriptionEn = kitsuEpisode?.attributes?.description.orEmpty(),
+            number = kitsuNumber,
+            image = imageEpisode.takeIf { it.length > 5 } ?: imageDefault,
+            filler = jikanEpisode?.filler ?: false,
+            recap = jikanEpisode?.recap ?: false,
+            aired = airedDate?.let { LocalDate.parse(it.take(10), DateTimeFormatter.ISO_DATE) },
+        )
     }
 
-    private fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: Int, type: AnimeType, translationsId: String): List<AnimeEpisodeTable> {
-        val animeVariations = kodikComponent.checkKodikVariety(shikimoriId.toInt(), translationsId)
-
+    private suspend fun addEpisodeTranslations(episodes: List<AnimeEpisodeTable>, shikimoriId: Int, type: AnimeType, translationsId: String): List<AnimeEpisodeTable> {
+        val animeVariations = kodikComponent.checkKodikVariety(shikimoriId, translationsId)
         val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()
 
         animeVariations.forEach { anime ->
@@ -384,42 +355,38 @@ class EpisodesComponent {
                     if (anime.seasons.values.isEmpty()) {
                         if (anime.link.isNotEmpty()) {
                             val episode = episodes.first()
-                            episode.let {
-                                val episodeTranslation = EpisodeTranslationTable(
-                                    translation = translation,
-                                    link = anime.link,
-                                )
-                                episode.addTranslation(episodeTranslation)
-                                episodeTranslationsToSave.add(episodeTranslation)
-                            }
+                            val episodeTranslation = EpisodeTranslationTable(
+                                translation = translation,
+                                link = anime.link,
+                            )
+
+                            episode.addTranslation(episodeTranslation)
+                            episodeTranslationsToSave.add(episodeTranslation)
                         }
                     } else {
-                        val episodeNumbers = anime.seasons.values
-                            .flatMap { it.episodes.keys.mapNotNull { key -> key.toIntOrNull() } }
-
-                        episodeNumbers.forEach { episodeNumber ->
-                            val episode = episodes.find { it.number == episodeNumber }
-                            episode?.let {
-                                val episodeTranslation = EpisodeTranslationTable(
-                                    translation = translation,
-                                    link = "${anime.link}?episode=${episode.number}",
-                                )
-                                episode.addTranslation(episodeTranslation)
-                                episodeTranslationsToSave.add(episodeTranslation)
+                        val episodeTranslations = anime.seasons.values
+                            .flatMap { it.episodes.keys.mapNotNull(String::toIntOrNull) }
+                            .mapNotNull { episodeNumber ->
+                                episodes.find { it.number == episodeNumber }?.let { episode ->
+                                    EpisodeTranslationTable(
+                                        translation = translation,
+                                        link = "${anime.link}?episode=${episode.number}",
+                                    ).also { episodeTranslation ->
+                                        episode.addTranslation(episodeTranslation)
+                                    }
+                                }
                             }
-                        }
+                        episodeTranslationsToSave.addAll(episodeTranslations)
                     }
                 }
                 else -> {
                     val episode = episodes.first()
-                    episode.let {
-                        val episodeTranslation = EpisodeTranslationTable(
-                            translation = translation,
-                            link = anime.link,
-                        )
-                        episode.addTranslation(episodeTranslation)
-                        episodeTranslationsToSave.add(episodeTranslation)
-                    }
+                    val episodeTranslation = EpisodeTranslationTable(
+                        translation = translation,
+                        link = anime.link,
+                    )
+                    episode.addTranslation(episodeTranslation)
+                    episodeTranslationsToSave.add(episodeTranslation)
                 }
             }
         }

@@ -6,6 +6,8 @@ import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kitsu.KitsuComponent
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.mdFive
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
@@ -63,7 +65,7 @@ class FetchImageComponent {
         }
     }
 
-    private fun saveKitsuImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+    private suspend fun saveKitsuImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
         val (large, medium, cover) = images.extractUrlsWithCover()
 
         val finalImages = AnimeImages(
@@ -72,10 +74,15 @@ class FetchImageComponent {
             cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking),
         )
 
-        return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
+        return Pair(
+            finalImages,
+            withContext(Dispatchers.IO) {
+                ImageIO.read(URL(finalImages.large))
+            },
+        )
     }
 
-    private fun saveJikanImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+    private suspend fun saveJikanImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
         val (large, medium) = images.extractUrls()
 
         val finalImages = AnimeImages(
@@ -83,11 +90,16 @@ class FetchImageComponent {
             medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
         )
 
-        return Pair(finalImages, ImageIO.read(URL(finalImages.large)))
+        return Pair(
+            finalImages,
+            withContext(Dispatchers.IO) {
+                ImageIO.read(URL(finalImages.large))
+            },
+        )
     }
 
-    fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String {
-        return run {
+    suspend fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String {
+        return withContext(Dispatchers.IO) {
             val bytes = URL(url).readBytes()
             val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
             val path = "images/anime/${type.path}/$urlLinking/$fileName"

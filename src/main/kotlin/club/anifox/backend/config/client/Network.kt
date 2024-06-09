@@ -28,11 +28,18 @@ class Network {
             }
             install("RateLimiter") {
                 requestPipeline.intercept(HttpRequestPipeline.Before) {
-                    val allowedHosts = listOf(Constants.JIKAN, Constants.KITSU, Constants.HAGLUND, Constants.SHIKIMORI, Constants.EDGE)
-                    val originalHost = context.url.host
-                    if (allowedHosts.contains(originalHost)) {
+                    if (listOf(Constants.EDGE).contains(context.url.host)) {
                         domainMutex.lock()
                         delay(2000)
+                        try {
+                            this.proceed()
+                        } finally {
+                            domainMutex.unlock()
+                        }
+                    }
+                    if (listOf(Constants.JIKAN, Constants.KITSU, Constants.SHIKIMORI, Constants.EDGE).contains(context.url.host)) {
+                        domainMutex.lock()
+                        delay(1000)
                         try {
                             this.proceed()
                         } finally {

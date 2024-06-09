@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -21,16 +20,12 @@ class KodikComponent {
     @Value("\${anime.ko.token}")
     private lateinit var animeToken: String
 
-    fun checkKodikSingle(shikimoriId: Int, translationID: String): KodikAnimeDto {
-        return runBlocking {
-            checkKodik(shikimoriId, translationID).result[0]
-        }
+    suspend fun checkKodikSingle(shikimoriId: Int, translationID: String): KodikAnimeDto {
+        return checkKodik(shikimoriId, translationID).result[0]
     }
 
-    fun checkKodikVariety(shikimoriId: Int, translationID: String): List<KodikAnimeDto> {
-        return runBlocking {
-            checkKodik(shikimoriId, translationID).result
-        }
+    suspend fun checkKodikVariety(shikimoriId: Int, translationID: String): List<KodikAnimeDto> {
+        return checkKodik(shikimoriId, translationID).result
     }
 
     suspend fun checkKodikList(translationsIds: String): KodikResponseDto<KodikAnimeDto> {

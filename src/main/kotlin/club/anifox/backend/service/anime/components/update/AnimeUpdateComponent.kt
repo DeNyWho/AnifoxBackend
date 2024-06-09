@@ -74,7 +74,11 @@ class AnimeUpdateComponent {
                 }
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
-                episodesReady.addAll(episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinkPath = anime.url, defaultImage = anime.images.medium))
+                episodesReady.addAll(
+                    runBlocking {
+                        episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinkPath = anime.url, defaultImage = anime.images.medium)
+                    },
+                )
 
                 val translationsCountReady = episodesComponent.translationsCount(episodesReady)
 

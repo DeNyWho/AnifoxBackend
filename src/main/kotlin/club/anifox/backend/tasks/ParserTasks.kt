@@ -20,8 +20,8 @@ class ParserTasks {
         animeService.parseAnime()
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
-    fun updateData() {
-        animeService.updateEpisodes()
-    }
+//    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
+//    fun updateData() {
+//        animeService.updateEpisodes()
+//    }
 }
