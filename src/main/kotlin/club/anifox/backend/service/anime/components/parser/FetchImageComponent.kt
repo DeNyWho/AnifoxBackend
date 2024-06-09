@@ -71,7 +71,7 @@ class FetchImageComponent {
         val finalImages = AnimeImages(
             large = saveImage(large, CompressAnimeImageType.Large, urlLinking),
             medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
-            cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking),
+            cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking, false),
         )
 
         return Pair(
