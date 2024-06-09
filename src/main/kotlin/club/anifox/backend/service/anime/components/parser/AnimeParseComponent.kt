@@ -75,7 +75,9 @@ class AnimeParseComponent(
                 val jobs = ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
                     async {
                         try {
-                            processData(animeTemp)
+                            if(!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
+                                processData(animeTemp)
+                            }
                         } catch (e: Exception) {
                             println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
                         }
