@@ -37,7 +37,16 @@ class Network {
                             domainMutex.unlock()
                         }
                     }
-                    if (listOf(Constants.JIKAN, Constants.KITSU, Constants.SHIKIMORI, Constants.EDGE).contains(context.url.host)) {
+                    if (listOf(Constants.SHIKIMORI).contains(context.url.host)) {
+                        domainMutex.lock()
+                        delay(3000)
+                        try {
+                            this.proceed()
+                        } finally {
+                            domainMutex.unlock()
+                        }
+                    }
+                    if (listOf(Constants.JIKAN, Constants.KITSU, Constants.EDGE).contains(context.url.host)) {
                         domainMutex.lock()
                         delay(1000)
                         try {
