@@ -31,9 +31,11 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
+import org.springframework.web.servlet.function.ServerResponse.async
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -65,21 +67,28 @@ class AnimeParseComponent(
 
     fun addDataToDB() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
-        var ar = runBlocking {
-            kodikComponent.checkKodikList(translationsIds)
-        }
-        while (ar.nextPage != null) {
-            ar.result.distinctBy { it.shikimoriId }.forEach Loop@{ animeTemp ->
-                runBlocking {
-                    processData(animeTemp)
-                }
+        runBlocking {
+            var ar = runBlocking {
+                kodikComponent.checkKodikList(translationsIds)
             }
-            ar = runBlocking {
-                client.get(ar.nextPage!!) {
-                    headers {
-                        contentType(ContentType.Application.Json)
+            while (ar.nextPage != null) {
+                val jobs = ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
+                    async {
+                        try {
+                            processData(animeTemp)
+                        } catch (e: Exception) {
+                            println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
+                        }
                     }
-                }.body()
+                }
+                jobs.awaitAll()
+                ar = runBlocking {
+                    client.get(ar.nextPage!!) {
+                        headers {
+                            contentType(ContentType.Application.Json)
+                        }
+                    }.body()
+                }
             }
         }
     }
