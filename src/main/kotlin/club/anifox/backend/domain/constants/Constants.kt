@@ -21,6 +21,7 @@ object Constants {
     const val KITSU_EDGE = "/edge"
     const val KITSU_ANIME = "/anime"
     const val KITSU_EPISODES = "/episodes"
+    const val KITSU_PAGE_LIMIT = "?page[limit]=20"
 
     const val JIKAN = "api.jikan.moe"
     const val JIKAN_VERSION = "/v4"

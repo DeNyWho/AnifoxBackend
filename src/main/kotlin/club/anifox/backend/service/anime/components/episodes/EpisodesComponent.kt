@@ -149,7 +149,7 @@ class EpisodesComponent {
 
     private suspend fun fetchKitsuEpisodes(kitsuId: String): List<KitsuEpisodeDto> {
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
-        var responseKitsuEpisodes = kitsuComponent.fetchKitsuEpisodes("api${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${kitsuId}${Constants.KITSU_EPISODES}")
+        var responseKitsuEpisodes = kitsuComponent.fetchKitsuEpisodes("api${Constants.KITSU_EDGE}${Constants.KITSU_ANIME}/${kitsuId}${Constants.KITSU_EPISODES}${Constants.KITSU_PAGE_LIMIT}")
         while (responseKitsuEpisodes.data != null) {
             kitsuEpisodes.addAll(responseKitsuEpisodes.data!!)
             val kitsuUrl = responseKitsuEpisodes.links.next?.replace("https://${Constants.KITSU}", "").toString()
