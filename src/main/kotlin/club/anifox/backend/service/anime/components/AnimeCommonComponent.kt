@@ -7,12 +7,14 @@ import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
+import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
 import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
+import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
@@ -76,7 +78,7 @@ class AnimeCommonComponent {
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
 
-        root.fetch<AnimeTable, Any>("similarAnime", JoinType.LEFT)
+        root.fetch<AnimeTable, Any>("similar", JoinType.LEFT)
 
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
@@ -86,22 +88,13 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime not found")
         } else {
-//            val similarCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-//            val similarRoot = similarCriteriaQuery.from(AnimeTable::class.java)
-//            similarCriteriaQuery.select(similarRoot)
-//                .where(similarRoot.get<Int>("shikimoriId").`in`(anime[0].similarAnime))
-//
-//            val similarEntityList = entityManager.createQuery(similarCriteriaQuery).resultList as List<AnimeTable>
-//
-//            val similarEntityMap: Map<Int, AnimeTable> = similarEntityList.associateBy { it.shikimoriId }
-//
-//            val similarAnimeList: List<AnimeTable> = anime[0].similarAnime.mapNotNull { similarAnimeId ->
-//                similarEntityMap[similarAnimeId]
-//            }
-//
-//            if (similarAnimeList.isNotEmpty()) {
-//                return similarAnimeList.map { it.toAnimeLight() }
-//            }
+            val similarAnimeList = anime[0].similar.map { similar ->
+                similar.similarAnime.toAnimeLight()
+            }
+
+            if (similarAnimeList.isNotEmpty()) {
+                return similarAnimeList
+            }
 
             throw NoContentException("There are no similar anime")
         }
@@ -122,26 +115,18 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime with url = $url not found")
         } else {
-//            val relatedAnimeList: List<AnimeRelationLight> = anime[0].related.mapNotNull { related ->
-//                val relatedCriteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-//                val relatedRoot = relatedCriteriaQuery.from(AnimeTable::class.java)
-//                relatedCriteriaQuery.select(relatedRoot)
-//                    .where(criteriaBuilder.equal(relatedRoot.get<Int>("shikimoriId"), related.shikimoriId))
-//
-//                val relatedAnimeList: List<AnimeTable> = entityManager.createQuery(relatedCriteriaQuery).resultList
-//
-//                if (relatedAnimeList.isNotEmpty()) {
-//                    val relatedAnime: AnimeTable = relatedAnimeList.first()
-//                    val animeLight = relatedAnime.toAnimeLight()
-//                    AnimeRelationLight(animeLight, AnimeRelation(type = related.type, typeEn = related.typeEn))
-//                } else {
-//                    null
-//                }
-//            }
+            val relatedAnimeList = anime[0].related.map { relation ->
+                AnimeRelationLight(
+                    relation.relatedAnime.toAnimeLight(),
+                    AnimeRelation(
+                        type = relation.type,
+                    ),
+                )
+            }
 
-//            if (relatedAnimeList.isNotEmpty()) {
-//                return relatedAnimeList
-//            }
+            if (relatedAnimeList.isNotEmpty()) {
+                return relatedAnimeList
+            }
 
             throw NoContentException("There are no related anime")
         }
