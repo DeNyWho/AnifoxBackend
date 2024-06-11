@@ -59,26 +59,6 @@ data class AnimeTable(
     @CollectionTable(name = "anime_otherTitles", schema = "anime")
     @Column(columnDefinition = "text")
     val titleOther: MutableList<String> = mutableListOf(),
-    @ManyToMany(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH],
-    )
-    @JoinTable(
-        name = "anime_similar",
-        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
-        inverseJoinColumns = [JoinColumn(name = "similar_anime_id", referencedColumnName = "id")],
-        schema = "anime",
-    )
-    @BatchSize(size = 10)
-    val similarAnime: MutableSet<AnimeTable> = mutableSetOf(),
-    @OneToMany(
-        mappedBy = "animeTable",
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
-    @BatchSize(size = 10)
-    val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinTable(schema = "anime")
     @BatchSize(size = 10)
@@ -94,6 +74,20 @@ data class AnimeTable(
     )
     @BatchSize(size = 10)
     var ids: AnimeIdsTable = AnimeIdsTable(),
+    @OneToMany(
+        mappedBy = "anime",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    val similar: MutableSet<AnimeSimilarTable> = mutableSetOf(),
+    @OneToMany(
+        mappedBy = "anime",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
     var episodesCount: Int? = null,
@@ -219,8 +213,13 @@ data class AnimeTable(
         return this
     }
 
-    fun addRelated(relatedList: List<AnimeRelatedTable>): AnimeTable {
-        related.addAll(relatedList)
+    fun addSimilar(similarList: List<AnimeSimilarTable>): AnimeTable {
+        this.similar.addAll(similarList)
+        return this
+    }
+
+    fun addRelation(relationList: List<AnimeRelatedTable>): AnimeTable {
+        this.related.addAll(relationList)
         return this
     }
 
@@ -262,5 +261,19 @@ data class AnimeTable(
     fun addAllAnimeStudios(studio: List<AnimeStudioTable>): AnimeTable {
         studios.addAll(studio)
         return this
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AnimeTable) return false
+        return id == other.id
+    }
+
+    override fun toString(): String {
+        return "AnimeTable(id='$id')"
     }
 }

@@ -20,5 +20,9 @@ data class AnimeRelatedTable(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
-    val animeTable: AnimeTable,
+    val anime: AnimeTable,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_anime_id")
+    val relatedAnime: AnimeTable,
 )

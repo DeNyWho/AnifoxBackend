@@ -1,7 +1,9 @@
 package club.anifox.backend.service.anime.components.parser
 
 import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
@@ -11,6 +13,8 @@ import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
+import club.anifox.backend.jpa.entity.anime.AnimeRelatedTable
+import club.anifox.backend.jpa.entity.anime.AnimeSimilarTable
 import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
@@ -18,7 +22,9 @@ import club.anifox.backend.jpa.repository.anime.AnimeBlockedByStudioRepository
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
+import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
+import club.anifox.backend.jpa.repository.anime.AnimeSimilarRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.jpa.repository.anime.AnimeVideoRepository
@@ -30,12 +36,16 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import jakarta.persistence.EntityManager
+import jakarta.persistence.PersistenceContext
+import jakarta.persistence.criteria.CriteriaBuilder
+import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.JoinType
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
-import org.springframework.web.servlet.function.ServerResponse.async
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -59,8 +69,13 @@ class AnimeParseComponent(
     private val animeErrorParserRepository: AnimeErrorParserRepository,
     private val animeRepository: AnimeRepository,
     private val animeVideoRepository: AnimeVideoRepository,
+    private val animeRelatedRepository: AnimeRelatedRepository,
+    private val animeSimilarRepository: AnimeSimilarRepository,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
+
+    @PersistenceContext
+    private lateinit var entityManager: EntityManager
 
     private val genreCache = ConcurrentHashMap<String, AnimeGenreTable>()
     private val studioCache = ConcurrentHashMap<String, AnimeStudioTable>()
@@ -91,6 +106,106 @@ class AnimeParseComponent(
                         }
                     }.body()
                 }
+            }
+        }
+    }
+
+    fun integrateSimilarRelatedFranchise() {
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
+        val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
+        criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
+
+        val query = entityManager.createQuery(criteriaQueryShikimori)
+        val shikimoriIds = query.resultList
+
+        shikimoriIds.forEach Loop@{ shikimoriId ->
+            try {
+                runBlocking {
+                    val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
+                    val root = criteriaQuery.from(AnimeTable::class.java)
+
+                    root.fetch<AnimeSimilarTable, Any>("similar", JoinType.LEFT)
+                    root.fetch<AnimeRelatedTable, Any>("related", JoinType.LEFT)
+
+                    criteriaQuery.select(root)
+                        .where(criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
+
+                    val anime = entityManager
+                        .createQuery(criteriaQuery)
+                        .resultList
+                        .first()
+
+                    val similarShikimoriIdsDeferred = async {
+                        shikimoriComponent.fetchSimilar(shikimoriId)
+                    }
+
+                    val relatedShikimoriDeferred = async {
+                        shikimoriComponent.fetchRelated(shikimoriId)
+                    }
+
+                    val similar = animeSimilarRepository.saveAll(
+                        similarShikimoriIdsDeferred.await()
+                            .mapNotNull { id ->
+                                val animeToSimilar = animeRepository.findByShikimoriId(id)
+                                if (animeToSimilar.isPresent) {
+                                    val existingSimilar = anime.similar.any { it.similarAnime.id == animeToSimilar.get().id }
+                                    if (existingSimilar) {
+                                        null
+                                    } else {
+                                        AnimeSimilarTable(
+                                            anime = anime,
+                                            similarAnime = animeToSimilar.get(),
+                                        )
+                                    }
+                                } else {
+                                    null
+                                }
+                            },
+                    )
+
+                    val related = animeRelatedRepository.saveAll(
+                        relatedShikimoriDeferred.await()
+                            .mapNotNull { relation ->
+                                val id = when (val media = relation.anime ?: relation.manga) {
+                                    is ShikimoriAnimeIdDto -> media.id
+                                    is ShikimoriMangaIdDto -> return@mapNotNull null
+                                    else -> throw IllegalArgumentException("Неизвестный тип медиа")
+                                }
+                                val animeToRelation = animeRepository.findByShikimoriId(id)
+                                if (animeToRelation.isPresent) {
+                                    val existingRelation = anime.related.any { it.relatedAnime.id == animeToRelation.get().id }
+                                    if (existingRelation) {
+                                        null
+                                    } else {
+                                        AnimeRelatedTable(
+                                            anime = anime,
+                                            type = relation.relationRussian.toString(),
+                                            relatedAnime = animeToRelation.get(),
+                                        )
+                                    }
+                                } else {
+                                    null
+                                }
+                            },
+                    )
+
+                    anime.addSimilar(similar)
+                    anime.addRelation(related)
+                    animeRepository.saveAndFlush(anime)
+                }
+            } catch (e: Exception) {
+                e.stackTrace.forEach {
+                    println(it)
+                }
+                animeErrorParserRepository.save(
+                    AnimeErrorParserTable(
+                        message = e.message,
+                        cause = "INTEGRATE SIMILAR, RELATED",
+                        shikimoriId = shikimoriId,
+                    ),
+                )
+                return@Loop
             }
         }
     }
@@ -147,18 +262,6 @@ class AnimeParseComponent(
                                 urlLinkPath = "${commonParserComponent.translit(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)}-${airedOn.year}"
                             }
 
-//                        val relationShikimoriIdsDeferred = async {
-//                            shikimoriComponent.fetchRelated(shikimori.id).take(30)
-//                        }
-//
-//                        val similarShikimoriIdsDeferred = async {
-//                            shikimoriComponent.fetchSimilar(shikimori.id).take(30)
-//                        }
-
-//                        val franchiseShikimoriDeferred = async {
-//                            shikimoriComponent.fetchFranchise(shikimori.id)
-//                        }
-
                             val videosShikimoriDeferred = async {
                                 shikimoriComponent.fetchVideos(shikimori.id)
                             }
@@ -205,24 +308,6 @@ class AnimeParseComponent(
 
                             val otherTitles = animeKodik.materialData.otherTitles.toMutableList()
                             otherTitles.add(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
-
-//                        val similar = similarShikimoriIdsDeferred.await().toMutableList()
-
-//                        val relations = animeRelatedRepository.saveAll(
-//                            relationShikimoriIdsDeferred.await()
-//                                .mapNotNull { relation ->
-//                                    val shikimoriId = when (val media = relation.anime ?: relation.manga) {
-//                                        is ShikimoriAnimeIdDto -> media.id
-//                                        is ShikimoriMangaIdDto -> return@mapNotNull null
-//                                        else -> throw IllegalArgumentException("Неизвестный тип медиа")
-//                                    }
-//                                    AnimeRelatedTable(
-//                                        type = relation.relationRussian.toString(),
-//                                        shikimoriId = shikimoriId,
-//                                        typeEn = relation.relation.toString(),
-//                                    )
-//                                },
-//                        )
 
 //                        val franchise = animeFranchiseRepository.saveAll(
 //                            franchiseShikimoriDeferred.await().links

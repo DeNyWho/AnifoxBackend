@@ -118,6 +118,7 @@ class AnimeService : AnimeRepository {
 
     override fun parseAnime() {
         animeParseComponent.addDataToDB()
+        animeParseComponent.integrateSimilarRelatedFranchise()
     }
 
     override fun updateEpisodes() {

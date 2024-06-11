@@ -261,7 +261,7 @@ class AnimeCommonComponent {
             val animeEntity = anime[0]
 
             animeEntity.apply {
-                related.clear()
+//                related.clear()
                 episodes.clear()
                 translationsCountEpisodes.clear()
                 translations.clear()
@@ -275,7 +275,7 @@ class AnimeCommonComponent {
                 synonyms.clear()
                 titleOther.clear()
                 episodes.clear()
-                similarAnime.clear()
+                similar.clear()
                 screenshots.clear()
                 ids = AnimeIdsTable()
                 images = AnimeImagesTable()
