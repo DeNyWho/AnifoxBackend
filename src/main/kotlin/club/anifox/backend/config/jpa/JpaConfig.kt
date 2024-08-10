@@ -17,7 +17,7 @@ import javax.sql.DataSource
 
 @Configuration
 @EnableJpaRepositories(basePackages = ["club.anifox.backend.jpa.repository"])
-@EntityScan(basePackages = ["club.anifox.backend.persistence.entity"])
+@EntityScan(basePackages = ["club.anifox.backend.jpa.entity"])
 class JpaConfig(
     @Value("\${spring.datasource.url}") private val url: String,
     @Value("\${spring.datasource.username}") private val username: String,

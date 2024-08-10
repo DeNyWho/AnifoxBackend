@@ -6,9 +6,11 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
 import java.util.*
 
 @Entity
+@BatchSize(size = 10)
 @Table(name = "episode_translation_count", schema = "anime")
 data class AnimeEpisodeTranslationCountTable(
     @Id

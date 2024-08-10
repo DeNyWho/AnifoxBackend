@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.util.*
 
 @Entity
+@BatchSize(size = 10)
 @Table(name = "episodes", schema = "anime")
 data class AnimeEpisodeTable(
     @Id

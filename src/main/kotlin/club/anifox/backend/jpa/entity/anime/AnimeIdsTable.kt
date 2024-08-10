@@ -3,10 +3,12 @@ package club.anifox.backend.jpa.entity.anime
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
 import java.util.*
 
 @Entity
 @Table(name = "ids", schema = "anime")
+@BatchSize(size = 10)
 data class AnimeIdsTable(
     @Id
     val id: String = UUID.randomUUID().toString(),

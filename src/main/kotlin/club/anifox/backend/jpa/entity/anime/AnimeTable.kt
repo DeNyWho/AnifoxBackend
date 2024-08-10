@@ -61,18 +61,15 @@ data class AnimeTable(
     val titleOther: MutableList<String> = mutableListOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinTable(schema = "anime")
-    @BatchSize(size = 10)
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @JoinTable(schema = "anime")
-    @BatchSize(size = 10)
     val translationsCountEpisodes: MutableSet<AnimeEpisodeTranslationCountTable> = mutableSetOf(),
     @OneToOne(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    @BatchSize(size = 10)
     var ids: AnimeIdsTable = AnimeIdsTable(),
     @OneToMany(
         mappedBy = "anime",
@@ -129,7 +126,6 @@ data class AnimeTable(
         inverseJoinColumns = [JoinColumn(name = "genre_id", referencedColumnName = "id")],
         schema = "anime",
     )
-    @BatchSize(size = 10)
     var genres: MutableSet<AnimeGenreTable> = mutableSetOf(),
     @ManyToMany(
         fetch = FetchType.LAZY,
@@ -152,7 +148,6 @@ data class AnimeTable(
         inverseJoinColumns = [JoinColumn(name = "studio_id", referencedColumnName = "id")],
         schema = "anime",
     )
-    @BatchSize(size = 10)
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
     @ManyToMany(
         fetch = FetchType.LAZY,
