@@ -19,14 +19,14 @@ jobs:
         with:
           submodules: 'true'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Trigger release build
+      - name: Set up SSH
         run: |
           mkdir -p $HOME/.ssh
           echo "$SSHK" > $HOME/.ssh/id_rsa
           chmod 600 $HOME/.ssh/id_rsa
           ssh-keyscan github.com >> $HOME/.ssh/known_hosts
           git submodule update --init --recursive
-          env:
+        env:
           SSHK: ${{ secrets.SSH_KEY }}
 
       - uses: actions/setup-java@v4
