@@ -6,8 +6,7 @@ on:
       - main
 
 env:
-  GITHUB_USERNAME: ${{ secrets.USERNAME }}
-  GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
 jobs:
@@ -19,6 +18,7 @@ jobs:
         with:
           submodules: 'true'
           token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up SSH
         run: |
           mkdir -p $HOME/.ssh
@@ -27,12 +27,13 @@ jobs:
           ssh-keyscan github.com >> $HOME/.ssh/known_hosts
           git submodule update --init --recursive
         env:
-          SSHK: ${{ secrets.SSH_KEY }}
+          SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin' # See 'Supported distributions' for available options
+          distribution: 'temurin'
           java-version: '17'
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -46,7 +47,7 @@ jobs:
         run: docker build --build-arg JAR_FILE=build/libs/*.jar -t app .
 
       - name: Save Docker image as tar
-        run:  docker save -o app.tar app
+        run: docker save -o app.tar app
 
       - name: Transfer backend files to remote server
         uses: appleboy/scp-action@v0.1.4
