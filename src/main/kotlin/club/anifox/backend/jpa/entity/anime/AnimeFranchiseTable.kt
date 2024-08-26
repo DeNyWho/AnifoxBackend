@@ -18,6 +18,10 @@ class AnimeFranchiseTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
 
+    val title: String = UUID.randomUUID().toString(),
+
+    val urlPath: String = UUID.randomUUID().toString(),
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id")
     val source: AnimeTable,

@@ -4,12 +4,14 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
+import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
+import club.anifox.backend.jpa.entity.anime.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
@@ -21,6 +23,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedByStudioRepository
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
+import club.anifox.backend.jpa.repository.anime.AnimeFranchiseRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
@@ -71,6 +74,7 @@ class AnimeParseComponent(
     private val animeVideoRepository: AnimeVideoRepository,
     private val animeRelatedRepository: AnimeRelatedRepository,
     private val animeSimilarRepository: AnimeSimilarRepository,
+    private val animeFranchiseRepository: AnimeFranchiseRepository,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
 
@@ -117,7 +121,8 @@ class AnimeParseComponent(
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList
+//        val shikimoriIds = query.resultList
+        val shikimoriIds = listOf(21)
 
         shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
@@ -127,6 +132,7 @@ class AnimeParseComponent(
 
                     root.fetch<AnimeSimilarTable, Any>("similar", JoinType.LEFT)
                     root.fetch<AnimeRelatedTable, Any>("related", JoinType.LEFT)
+                    root.fetch<AnimeFranchiseTable, Any>("franchiseMultiple", JoinType.LEFT)
 
                     criteriaQuery.select(root)
                         .where(criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
@@ -142,6 +148,10 @@ class AnimeParseComponent(
 
                     val relatedShikimoriDeferred = async {
                         shikimoriComponent.fetchRelated(shikimoriId)
+                    }
+
+                    val franchiseShikimoriDeferred = async {
+                        shikimoriComponent.fetchFranchise(shikimoriId)
                     }
 
                     val similar = animeSimilarRepository.saveAll(
@@ -163,6 +173,48 @@ class AnimeParseComponent(
                                 }
                             },
                     )
+
+                    val franchise = if (anime.franchise != null) {
+                        animeFranchiseRepository.saveAll(
+                            franchiseShikimoriDeferred.await().links
+                                .mapNotNull { fran ->
+                                    val animeToTarget = animeRepository.findByShikimoriId(fran.targetId)
+                                    val animeToSource = animeRepository.findByShikimoriId(fran.sourceId)
+                                    if (animeToTarget.isPresent && animeToSource.isPresent) {
+                                        val existingFranchise = anime.franchiseMultiple.any { (it.target.shikimoriId == animeToTarget.get().shikimoriId) && (it.source.shikimoriId == animeToSource.get().shikimoriId) }
+                                        if (existingFranchise) {
+                                            null
+                                        } else {
+                                            val relationType = when (fran.relation) {
+                                                "sequel" -> AnimeRelationFranchise.Sequel
+                                                "prequel" -> AnimeRelationFranchise.Prequel
+                                                "side_story" -> AnimeRelationFranchise.SideStory
+                                                "parent_story" -> AnimeRelationFranchise.SideStory
+                                                "full_story" -> AnimeRelationFranchise.SideStory
+                                                "summary" -> AnimeRelationFranchise.Summary
+                                                "alternative_version" -> AnimeRelationFranchise.AlternativeVersion
+                                                "adaptation" -> AnimeRelationFranchise.Adaptation
+                                                "alternative_setting" -> AnimeRelationFranchise.AlternativeSetting
+                                                "spin_off" -> AnimeRelationFranchise.SpinOff
+                                                "character" -> AnimeRelationFranchise.Character
+                                                else -> AnimeRelationFranchise.Other
+                                            }
+                                            AnimeFranchiseTable(
+                                                source = animeToSource.get(),
+                                                target = animeToTarget.get(),
+                                                relationType = relationType,
+                                                relationTypeRus = relationType.russian,
+                                                urlPath = anime.franchise!!,
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    }
+                                },
+                        )
+                    } else {
+                        null
+                    }
 
                     val related = animeRelatedRepository.saveAll(
                         relatedShikimoriDeferred.await()
@@ -192,6 +244,9 @@ class AnimeParseComponent(
 
                     anime.addSimilar(similar)
                     anime.addRelation(related)
+                    if (franchise != null) {
+                        anime.addFranchiseMultiple(franchise)
+                    }
                     animeRepository.saveAndFlush(anime)
                 }
             } catch (e: Exception) {

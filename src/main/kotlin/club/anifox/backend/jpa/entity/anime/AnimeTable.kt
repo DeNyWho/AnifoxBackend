@@ -46,23 +46,29 @@ data class AnimeTable(
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_titleEnglish", schema = "anime")
     @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
     val titleEn: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_titleJapan", schema = "anime")
     @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
     val titleJapan: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_synonyms", schema = "anime")
     @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
     val synonyms: MutableList<String> = mutableListOf(),
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_otherTitles", schema = "anime")
     @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
     val titleOther: MutableList<String> = mutableListOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @BatchSize(size = 10)
     @JoinTable(schema = "anime")
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @BatchSize(size = 10)
     @JoinTable(schema = "anime")
     val translationsCountEpisodes: MutableSet<AnimeEpisodeTranslationCountTable> = mutableSetOf(),
     @OneToOne(
@@ -77,6 +83,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     val similar: MutableSet<AnimeSimilarTable> = mutableSetOf(),
     @OneToMany(
         mappedBy = "anime",
@@ -84,6 +91,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
@@ -120,6 +128,7 @@ data class AnimeTable(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
+    @BatchSize(size = 10)
     @JoinTable(
         name = "anime_genres",
         joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
@@ -131,6 +140,7 @@ data class AnimeTable(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
+    @BatchSize(size = 10)
     @JoinTable(
         name = "anime_video",
         joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
@@ -142,6 +152,7 @@ data class AnimeTable(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
+    @BatchSize(size = 10)
     @JoinTable(
         name = "anime_studios",
         joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
@@ -153,6 +164,7 @@ data class AnimeTable(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
+    @BatchSize(size = 10)
     @JoinTable(
         name = "anime_franchise",
         joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
@@ -174,6 +186,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     val favorites: MutableSet<UserFavoriteAnimeTable> = mutableSetOf(),
     @Column(nullable = true)
     var totalRating: Double? = null,
@@ -183,6 +196,7 @@ data class AnimeTable(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {

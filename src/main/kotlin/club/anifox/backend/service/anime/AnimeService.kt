@@ -117,12 +117,12 @@ class AnimeService : AnimeRepository {
     }
 
     override fun parseAnime() {
-        animeParseComponent.addDataToDB()
+//        animeParseComponent.addDataToDB()
         animeParseComponent.integrateSimilarRelatedFranchise()
     }
 
     override fun updateEpisodes() {
-        animeUpdateComponent.update()
+//        animeUpdateComponent.update()
     }
 
     override fun addBlocked(url: String?, shikimoriId: Int?) {

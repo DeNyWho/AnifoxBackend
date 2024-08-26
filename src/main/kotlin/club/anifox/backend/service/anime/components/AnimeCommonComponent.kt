@@ -299,38 +299,32 @@ class AnimeCommonComponent {
 
         val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
 
-        val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchise", JoinType.LEFT)
+        val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchiseMultiple", JoinType.LEFT)
+        val targetJoin = franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
 
         val predicates = mutableListOf(
             criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
         )
 
         if (type != null) {
-            predicates.add(criteriaBuilder.equal(franchiseJoin.get<AnimeRelationFranchise>("type"), type))
+            predicates.add(criteriaBuilder.equal(franchiseJoin.get<AnimeRelationFranchise>("relationType"), type))
         }
 
         criteriaQuery.select(franchiseJoin)
         criteriaQuery.where(*predicates.toTypedArray())
 
-//        val franchisesTemp = entityManager.createQuery(criteriaQuery).resultList
-//
-//        if (franchisesTemp.isNotEmpty()) {
-//            franchisesTemp.map { franchise ->
-//                val criteriaAnimeQuery: CriteriaQuery<String> = criteriaBuilder.createQuery(String::class.java)
-//                val root: Root<AnimeTable> = criteriaAnimeQuery.from(AnimeTable::class.java)
-//
-//                criteriaAnimeQuery.select(root.get("url"))
-//                criteriaAnimeQuery.where(criteriaBuilder.equal(root.get<Long>("shikimoriId"), franchise.targetId))
-//
-//                val animeSource = entityManager.createQuery(criteriaAnimeQuery)
-//                AnimeFranchise(
-//                    anime = anime,
-//                    relation = franchise.relationTypeRus,
-//                    franchise.sourceId
-//                )
-//            }
-//        }
+        val results = entityManager.createQuery(criteriaQuery).resultList
 
-        throw NoContentException("There are no videos")
+        if (results.isEmpty()) {
+            throw NoContentException("There are no franchise relations for this anime")
+        }
+
+        return results.map { franchise ->
+            AnimeFranchise(
+                anime = franchise.target.toAnimeLight(),
+                relation = franchise.relationTypeRus,
+                targetUrl = franchise.target.url,
+            )
+        }
     }
 }
