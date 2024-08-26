@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 env:
   GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
