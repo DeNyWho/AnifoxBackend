@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SSH_TOKEN }}
 
       - name: Set up SSH
         run: |
