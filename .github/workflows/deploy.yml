@@ -12,6 +12,7 @@ permissions:
 
 env:
   GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
+  SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
 jobs:
   build:
@@ -19,6 +20,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'true' # Включаем поддержку субмодулей
+          fetch-depth: 0 # Обязательно для правильной работы с субмодулями
+
+      - name: Set up SSH
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "$SSHK" > $HOME/.ssh/id_rsa
+          chmod 600 $HOME/.ssh/id_rsa
+          ssh-keyscan github.com >> $HOME/.ssh/known_hosts
+          git submodule update --init --recursive # Обновление субмодуля
+        env:
+          SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }} # Приватный ключ для доступа к субмодулю
 
       - uses: actions/setup-java@v4
         with:
