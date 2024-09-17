@@ -21,8 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true # Включаем поддержку субмодулей через SSH
-          fetch-depth: 0
+          token: ${{ secrets.SSH_TOKEN }}
+          submodules: 'true'
 
       - name: Set up SSH
         run: |

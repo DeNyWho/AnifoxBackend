@@ -1,3 +1,3 @@
 [submodule "ConfigBackend"]
 	path = ConfigBackend
-	url = git@github.com:ANIFOX-CLUB/ConfigBackend.git
+	url = https://github.com/DeNyWho/ConfigBackend.git
