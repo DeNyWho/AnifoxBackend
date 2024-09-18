@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @CrossOrigin("*")
 @Tag(name = "AnimeAPI", description = "All about anime")
-@RequestMapping("/api/anime/")
+@RequestMapping("/api/anime")
 class AnimeController {
 
     @Autowired
@@ -95,7 +95,7 @@ class AnimeController {
         )
     }
 
-    @PostMapping("block")
+    @PostMapping("/block")
     fun addBlockedAnime(
         @RequestHeader(value = "Authorization") token: String,
         @RequestParam(required = false) url: String?,
@@ -104,7 +104,7 @@ class AnimeController {
         animeService.addBlocked(url, shikimoriId)
     }
 
-    @GetMapping("{url}")
+    @GetMapping("/{url}")
     @Operation(summary = "detail anime")
     fun getAnimeDetails(
         @PathVariable url: String,
@@ -112,7 +112,7 @@ class AnimeController {
         return animeService.getAnimeDetails(url)
     }
 
-    @GetMapping("{url}/similar")
+    @GetMapping("/{url}/similar")
     @Operation(summary = "similar anime")
     fun getAnimeSimilar(
         @PathVariable url: String,
@@ -120,7 +120,7 @@ class AnimeController {
         return animeService.getAnimeSimilar(url)
     }
 
-    @GetMapping("{url}/related")
+    @GetMapping("/{url}/related")
     @Operation(summary = "related anime")
     fun getAnimeRelated(
         @PathVariable url: String,
@@ -128,7 +128,7 @@ class AnimeController {
         return animeService.getAnimeRelated(url)
     }
 
-    @GetMapping("{url}/screenshots")
+    @GetMapping("/{url}/screenshots")
     @Operation(summary = "anime screenshots")
     fun getAnimeScreenshots(
         @PathVariable url: String,
@@ -136,7 +136,7 @@ class AnimeController {
         return animeService.getAnimeScreenshots(url)
     }
 
-    @GetMapping("{url}/videos")
+    @GetMapping("/{url}/videos")
     @Operation(summary = "anime videos")
     fun getAnimeVideos(
         @PathVariable url: String,
@@ -145,7 +145,7 @@ class AnimeController {
         return animeService.getAnimeVideos(url, type)
     }
 
-    @GetMapping("{url}/franchise")
+    @GetMapping("/{url}/franchise")
     @Operation(summary = "anime franchise")
     fun getAnimeFranchise(
         @PathVariable url: String,
@@ -154,7 +154,7 @@ class AnimeController {
         return animeService.getAnimeFranchises(url, type)
     }
 
-    @GetMapping("{url}/episodes")
+    @GetMapping("/{url}/episodes")
     @Operation(summary = "anime episodes")
     fun getAnimeEpisodes(
         @PathVariable url: String,
@@ -171,25 +171,25 @@ class AnimeController {
         return animeService.getAnimeEpisodes(url, page, limit, sort)
     }
 
-    @GetMapping("years")
+    @GetMapping("/years")
     @Operation(summary = "anime years")
     fun getAnimeYears(): List<String> {
         return animeService.getAnimeYears()
     }
 
-    @GetMapping("studios")
+    @GetMapping("/studios")
     @Operation(summary = "anime studios")
     fun getAnimeStudios(): List<AnimeStudio> {
         return animeService.getAnimeStudios()
     }
 
-    @GetMapping("genres")
+    @GetMapping("/genres")
     @Operation(summary = "anime genres")
     fun getAnimeGenres(): List<AnimeGenre> {
         return animeService.getAnimeGenres()
     }
 
-    @GetMapping("{url}/translations/count")
+    @GetMapping("/{url}/translations/count")
     @Operation(summary = "anime translations count")
     fun getAnimeTranslationCount(
         @PathVariable url: String,
@@ -197,7 +197,7 @@ class AnimeController {
         return animeService.getAnimeTranslationsCount(url)
     }
 
-    @GetMapping("translations")
+    @GetMapping("/translations")
     @Operation(summary = "anime translations")
     fun getAnimeTranslations(): List<AnimeTranslationTable> {
         return animeService.getAnimeTranslations()
