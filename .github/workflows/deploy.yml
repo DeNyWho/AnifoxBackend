@@ -5,12 +5,8 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 env:
+  GITHUB_USERNAME: ${{ secrets.USERNAME }}
   GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
   SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
@@ -21,24 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.SSH_TOKEN }}
           submodules: 'true'
-
-      - name: Set up SSH
+          token: ${{ secrets.SSH_TOKEN }}
+      - name: Trigger release build
         run: |
           mkdir -p $HOME/.ssh
-          echo "$SSHK" > $HOME/.ssh/id_rsa
-          chmod 600 $HOME/.ssh/id_rsa
-          ssh-keyscan github.com >> $HOME/.ssh/known_hosts
+          echo "$SSHK" > $HOME/.ssh/ssh.key
+          chmod 600 $HOME/.ssh/ssh.key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ssh.key"
           git submodule update --init --recursive
-        env:
-          SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
 
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '17'
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -52,7 +44,7 @@ jobs:
         run: docker build --build-arg JAR_FILE=build/libs/*.jar -t app .
 
       - name: Save Docker image as tar
-        run: docker save -o app.tar app
+        run:  docker save -o app.tar app
 
       - name: Transfer backend files to remote server
         uses: appleboy/scp-action@v0.1.4
