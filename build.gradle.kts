@@ -19,7 +19,6 @@ java {
 }
 
 dependencies {
-    implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
     implementation(libs.kotlin.serialization)
