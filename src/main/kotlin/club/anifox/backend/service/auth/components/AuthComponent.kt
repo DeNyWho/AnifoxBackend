@@ -4,6 +4,7 @@ import club.anifox.backend.domain.dto.auth.keycloak.KeycloakTokenRefreshDto
 import club.anifox.backend.domain.dto.users.registration.UserCreateResponseDto
 import club.anifox.backend.domain.enums.user.UserIdentifierType
 import club.anifox.backend.domain.exception.common.BadRequestException
+import club.anifox.backend.domain.exception.common.ConflictException
 import club.anifox.backend.domain.model.user.request.CreateUserRequest
 import club.anifox.backend.jpa.entity.user.UserTable
 import club.anifox.backend.jpa.repository.user.UserRepository
@@ -154,6 +155,38 @@ class AuthComponent(
         )
 
         response.status = HttpStatus.CREATED.value()
+    }
+
+    fun checkEmail(email: String, response: HttpServletResponse) {
+        val emailRegex = "^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+\\.[a-zA-Z]{2,6}\$".toRegex()
+        val isEmailFormatValid = email.matches(emailRegex)
+
+        if (!isEmailFormatValid) {
+            throw BadRequestException("Invalid email format")
+        }
+
+        if (keycloakService.findByEmail(email) != null) {
+            throw BadCredentialsException("The email already exists in the system")
+        }
+
+        response.status = HttpStatus.OK.value()
+        response.writer.write("Email is available")
+    }
+
+    fun checkLogin(login: String, response: HttpServletResponse) {
+        val loginRegex = "^[a-zA-Z][a-zA-Z0-9_]{2,19}$".toRegex()
+        val isLoginFormatValid = login.matches(loginRegex)
+
+        if (!isLoginFormatValid) {
+            throw BadRequestException("Invalid login format")
+        }
+
+        if (keycloakService.findByUsername(login) != null) {
+            throw ConflictException("The login already exists in the system")
+        }
+
+        response.status = HttpStatus.OK.value()
+        response.writer.write("Login is available")
     }
 
     private fun makeCookieAniFox(

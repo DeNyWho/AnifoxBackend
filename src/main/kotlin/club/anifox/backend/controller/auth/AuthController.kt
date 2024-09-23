@@ -77,6 +77,48 @@ class AuthController(
         return authService.authenticate(loginRequest = loginRequest, res)
     }
 
+    @PostMapping("check/email")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Email is available",
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "The email already exists in the system",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid email format",
+            ),
+        ],
+    )
+    fun checkEmail(email: String, response: HttpServletResponse) {
+        return authService.checkEmail(email, response)
+    }
+
+    @PostMapping("check/login")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Login is available",
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "The login already exists in the system",
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Invalid login format",
+            ),
+        ],
+    )
+    fun checkLogin(login: String, response: HttpServletResponse) {
+        return authService.checkLogin(login, response)
+    }
+
     @PostMapping("registration")
     fun registration(@RequestBody signUpRequest: CreateUserRequest, response: HttpServletResponse) {
         return authService.registration(signUpRequest, response)

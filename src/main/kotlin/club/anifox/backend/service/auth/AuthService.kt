@@ -20,6 +20,14 @@ class AuthService(
         authComponent.registration(signUpRequest = signUpRequest, response = response)
     }
 
+    override fun checkEmail(email: String, response: HttpServletResponse) {
+        authComponent.checkEmail(email = email, response = response)
+    }
+
+    override fun checkLogin(login: String, response: HttpServletResponse) {
+        authComponent.checkLogin(login = login, response = response)
+    }
+
     override fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
         authComponent.refreshAccessToken(refreshToken = refreshToken, response = response)
     }
