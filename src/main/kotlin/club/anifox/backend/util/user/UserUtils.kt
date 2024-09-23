@@ -4,18 +4,24 @@ import club.anifox.backend.domain.enums.user.UserIdentifierType
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.jpa.entity.user.UserTable
 import club.anifox.backend.jpa.repository.user.UserRepository
+import club.anifox.backend.service.keycloak.KeycloakService
 import club.anifox.backend.util.TokenHelper
 import org.springframework.stereotype.Component
 
 @Component
 class UserUtils(
     private val tokenHelper: TokenHelper,
+    private val keycloakService: KeycloakService,
     private val userRepository: UserRepository,
 ) {
-
     fun checkUser(token: String): UserTable {
-        return userRepository.findByLogin(tokenHelper.getTokenInfo(token).preferredUsername!!)
-            .orElseThrow { throw NotFoundException("User not found") }
+        val keycloakUser = keycloakService.findByUserID(tokenHelper.getTokenInfo(token).sub!!)
+        return if (keycloakUser != null) {
+            userRepository.findById(tokenHelper.getTokenInfo(token).preferredUsername!!)
+                .orElseThrow { throw NotFoundException("User not found") }
+        } else {
+            throw NotFoundException("User not found")
+        }
     }
 
     fun checkUserIdentifier(userIdentifier: String): UserIdentifierType {

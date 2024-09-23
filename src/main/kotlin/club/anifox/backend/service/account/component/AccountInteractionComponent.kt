@@ -28,7 +28,7 @@ class AccountInteractionComponent {
 
         user.image = runBlocking {
             imageService.saveFileInSThird(
-                filePath = "images/user/${mdFive(user.login)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.id)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
+                filePath = "images/user/${mdFive(user.id)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.login)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
                 data = image.bytes,
                 compress = true,
                 width = 400,

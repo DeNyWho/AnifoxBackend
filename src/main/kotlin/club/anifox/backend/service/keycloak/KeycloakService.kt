@@ -27,4 +27,15 @@ class KeycloakService(
             .realm(realm)
             .users()
             .searchByUsername(username, true).firstOrNull()
+
+    fun findByUserID(id: String): UserRepresentation? =
+        try {
+            keycloak
+                .realm(realm)
+                .users()
+                .get(id)
+                .toRepresentation()
+        } catch (e: Exception) {
+            null
+        }
 }

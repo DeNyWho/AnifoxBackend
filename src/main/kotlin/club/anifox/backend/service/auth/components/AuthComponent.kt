@@ -26,6 +26,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Component
+import java.util.*
+import kotlin.random.Random
 
 @Component
 class AuthComponent(
@@ -97,12 +99,8 @@ class AuthComponent(
     }
 
     fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
-        if (keycloakService.findByEmail(signUpRequest.email) != null) {
-            throw BadCredentialsException("User with email ${signUpRequest.email} exist")
-        }
-        if (keycloakService.findByUsername(signUpRequest.login) != null) {
-            throw BadCredentialsException("User with username ${signUpRequest.login} exist")
-        }
+        validateEmail(signUpRequest.email)
+        validateLogin(signUpRequest.login)
 
         val user = UserRepresentation()
 
@@ -131,9 +129,9 @@ class AuthComponent(
                     val userEntity = UserTable(
                         id = userId,
                         login = signUpRequest.login,
-                        email = signUpRequest.email,
                         image = "",
-                        nickName = signUpRequest.nickname,
+                        birthday = signUpRequest.birthday,
+                        nickName = "user${(1..10).map { Random.nextInt(0, 10) }.joinToString("")}",
                     )
 
                     userRepository.save(userEntity)
@@ -158,32 +156,14 @@ class AuthComponent(
     }
 
     fun checkEmail(email: String, response: HttpServletResponse) {
-        val emailRegex = "^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+\\.[a-zA-Z]{2,6}\$".toRegex()
-        val isEmailFormatValid = email.matches(emailRegex)
-
-        if (!isEmailFormatValid) {
-            throw BadRequestException("Invalid email format")
-        }
-
-        if (keycloakService.findByEmail(email) != null) {
-            throw BadCredentialsException("The email already exists in the system")
-        }
+        validateEmail(email)
 
         response.status = HttpStatus.OK.value()
         response.writer.write("Email is available")
     }
 
     fun checkLogin(login: String, response: HttpServletResponse) {
-        val loginRegex = "^[a-zA-Z][a-zA-Z0-9_]{2,19}$".toRegex()
-        val isLoginFormatValid = login.matches(loginRegex)
-
-        if (!isLoginFormatValid) {
-            throw BadRequestException("Invalid login format")
-        }
-
-        if (keycloakService.findByUsername(login) != null) {
-            throw ConflictException("The login already exists in the system")
-        }
+        validateLogin(login)
 
         response.status = HttpStatus.OK.value()
         response.writer.write("Login is available")
@@ -208,5 +188,43 @@ class AuthComponent(
 
         response.addCookie(cookieAccess)
         response.addCookie(cookieRefresh)
+    }
+
+    private fun validateEmail(email: String) {
+        if (!isValidEmailFormat(email)) {
+            throw BadRequestException("Invalid email format")
+        }
+
+        if (emailExistsInSystem(email)) {
+            throw BadCredentialsException("The email already exists in the system")
+        }
+    }
+
+    private fun isValidEmailFormat(email: String): Boolean {
+        val emailRegex = "^[a-zA-Z0-9]+([._-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+\\.[a-zA-Z]{2,6}\$".toRegex()
+        return email.matches(emailRegex)
+    }
+
+    private fun emailExistsInSystem(email: String): Boolean {
+        return keycloakService.findByEmail(email) != null
+    }
+
+    private fun validateLogin(login: String) {
+        if (!isValidLoginFormat(login)) {
+            throw BadRequestException("Invalid login format")
+        }
+
+        if (loginExistsInSystem(login)) {
+            throw ConflictException("The login already exists in the system")
+        }
+    }
+
+    private fun isValidLoginFormat(login: String): Boolean {
+        val loginRegex = "^[a-zA-Z][a-zA-Z0-9_]{3,15}$".toRegex()
+        return login.matches(loginRegex)
+    }
+
+    private fun loginExistsInSystem(login: String): Boolean {
+        return keycloakService.findByUsername(login) != null
     }
 }
