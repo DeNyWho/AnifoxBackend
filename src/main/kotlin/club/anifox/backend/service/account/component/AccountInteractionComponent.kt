@@ -1,6 +1,7 @@
 package club.anifox.backend.service.account.component
 
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
+import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.jpa.repository.user.UserRepository
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.mdFive
@@ -10,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
+import java.time.LocalDate
 
 @Component
 class AccountInteractionComponent {
@@ -41,11 +43,27 @@ class AccountInteractionComponent {
         userRepository.save(user)
     }
 
+    fun changeBirthday(token: String, newBirthday: LocalDate, response: HttpServletResponse) {
+        try {
+            val user = userUtils.checkUser(token)
+
+            user.birthday = newBirthday
+
+            userRepository.save(user)
+        } catch (e: Exception) {
+            throw BadRequestException(e.message)
+        }
+    }
+
     fun changeNickName(token: String, newNickName: String, response: HttpServletResponse) {
-        val user = userUtils.checkUser(token)
+        try {
+            val user = userUtils.checkUser(token)
 
-        user.nickName = newNickName
+            user.nickName = newNickName
 
-        userRepository.save(user)
+            userRepository.save(user)
+        } catch (e: Exception) {
+            throw BadRequestException(e.message)
+        }
     }
 }

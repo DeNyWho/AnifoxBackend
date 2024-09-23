@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.time.LocalDate
 
 @RestController
 @CrossOrigin("*")
@@ -30,6 +31,15 @@ class AccountController(
         response: HttpServletResponse,
     ) {
         accountService.changeAvatar(token, image, response)
+    }
+
+    @PostMapping("birthday")
+    fun changeBirthday(
+        @RequestHeader(value = "Authorization") token: String,
+        @RequestParam(name = "birthday") newBirthday: LocalDate,
+        response: HttpServletResponse,
+    ) {
+        accountService.changeBirthday(token, newBirthday, response)
     }
 
     @PostMapping("nickname")
