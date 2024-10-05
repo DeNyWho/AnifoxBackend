@@ -69,7 +69,9 @@ class AnimeController {
         rating_mpa: String?,
         @Schema(name = "age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") age: Int?,
         type: AnimeType?,
-        @Schema(name = "studio", required = false, nullable = true, description = "Anime studio made by") studio: String?,
+        @RequestParam(name = "studios", required = false)
+        @Parameter(name = "studios", description = "Require studios IDS", required = false)
+        studios: List<String>?,
         @RequestParam(name = "year", required = false)
         @Parameter(name = "year", description = "Require list of year", required = false)
         year: List<Int>?,
@@ -91,7 +93,7 @@ class AnimeController {
             type = type,
             year = year,
             translations = translations,
-            studio = studio,
+            studios = studios,
         )
     }
 

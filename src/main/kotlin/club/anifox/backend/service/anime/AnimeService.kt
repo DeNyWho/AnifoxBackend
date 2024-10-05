@@ -59,9 +59,9 @@ class AnimeService : AnimeRepository {
         type: AnimeType?,
         year: List<Int>?,
         translations: List<String>?,
-        studio: String?,
+        studios: List<String>?,
     ): List<AnimeLight> {
-        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, orderBy, sort, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studio)
+        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, orderBy, sort, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studios)
     }
 
     override fun getAnimeDetails(url: String): AnimeDetail {
@@ -117,12 +117,12 @@ class AnimeService : AnimeRepository {
     }
 
     override fun parseAnime() {
-//        animeParseComponent.addDataToDB()
+        animeParseComponent.addDataToDB()
         animeParseComponent.integrateSimilarRelatedFranchise()
     }
 
     override fun updateEpisodes() {
-//        animeUpdateComponent.update()
+        animeUpdateComponent.update()
     }
 
     override fun addBlocked(url: String?, shikimoriId: Int?) {

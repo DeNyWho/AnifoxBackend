@@ -49,7 +49,7 @@ interface AnimeRepository {
         type: AnimeType?,
         year: List<Int>?,
         translations: List<String>?,
-        studio: String?,
+        studios: List<String>?,
     ): List<AnimeLight>
 
     fun getAnimeFranchises(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise>

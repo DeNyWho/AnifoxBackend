@@ -5,7 +5,6 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
-import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
@@ -53,7 +52,7 @@ class AnimeSearchComponent {
         type: AnimeType?,
         year: List<Int>?,
         translations: List<String>?,
-        studio: String?,
+        studios: List<String>?,
     ): List<AnimeLight> {
         return findAnime(
             pageable = PageRequest.of(page, limit),
@@ -66,7 +65,7 @@ class AnimeSearchComponent {
             year = year,
             genres = genres,
             translationIds = translations,
-            studio = studio,
+            studios = studios,
             orderBy = orderBy,
             sort = sort,
         ).map {
@@ -84,7 +83,7 @@ class AnimeSearchComponent {
         type: AnimeType?,
         year: List<Int>?,
         genres: List<String>?,
-        studio: String?,
+        studios: List<String>?,
         translationIds: List<String>?,
         orderBy: AnimeSearchFilter?,
         sort: AnimeSortFilter?,
@@ -120,13 +119,16 @@ class AnimeSearchComponent {
             predicates.add(root.get<Int>("year").`in`(year))
         }
 
-        if (!studio.isNullOrEmpty()) {
-            val studioTable = animeStudiosRepository.findByStudio(studio)
-                .orElseThrow { throw NotFoundException("Studio not found") }
-            val studioPredicate = criteriaBuilder.isMember(studioTable, root.get<List<AnimeStudioTable>>("studios"))
-            predicates.add(studioPredicate)
+        if (!studios.isNullOrEmpty()) {
+            val s = mutableListOf<AnimeStudioTable>()
+            studios.forEach {
+                s.add(animeStudiosRepository.findById(it).get())
+            }
+            for (studio in s) {
+                val studioPredicate = criteriaBuilder.isMember(studio, root.get<List<AnimeStudioTable>>("studios"))
+                predicates.add(studioPredicate)
+            }
         }
-
         if (!genres.isNullOrEmpty()) {
             val g = mutableListOf<AnimeGenreTable>()
             genres.forEach {
