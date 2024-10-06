@@ -60,8 +60,25 @@ class AnimeService : AnimeRepository {
         year: List<Int>?,
         translations: List<String>?,
         studios: List<String>?,
+        episodeCount: Int?,
     ): List<AnimeLight> {
-        return animeSearchComponent.getAnimeSearch(page, limit, genres, status, orderBy, sort, searchQuery, season, ratingMpa, minimalAge, type, year, translations, studios)
+        return animeSearchComponent.getAnimeSearch(
+            page = page,
+            limit = limit,
+            genres = genres,
+            status = status,
+            orderBy = orderBy,
+            sort = sort,
+            searchQuery = searchQuery,
+            season = season,
+            ratingMpa = ratingMpa,
+            minimalAge = minimalAge,
+            type = type,
+            year = year,
+            translations = translations,
+            studios = studios,
+            episodeCount = episodeCount,
+        )
     }
 
     override fun getAnimeDetails(url: String): AnimeDetail {

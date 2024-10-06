@@ -65,8 +65,12 @@ class AnimeController {
         sort: AnimeSortFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
+        @RequestParam(name = "rating_mpa", required = false)
         @Parameter(name = "rating_mpa", required = false, description = "Must be one of: PG | PG-13 | R | R+ | G")
-        rating_mpa: String?,
+        ratingMpa: String?,
+        @RequestParam(name = "episode_count", required = false)
+        @Parameter(name = "episode_count", required = false)
+        episodeCount: Int?,
         @Schema(name = "age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") age: Int?,
         type: AnimeType?,
         @RequestParam(name = "studios", required = false)
@@ -88,12 +92,13 @@ class AnimeController {
             sort = sort,
             searchQuery = search,
             season = season,
-            ratingMpa = rating_mpa,
+            ratingMpa = ratingMpa,
             minimalAge = age,
             type = type,
             year = year,
             translations = translations,
             studios = studios,
+            episodeCount = episodeCount,
         )
     }
 

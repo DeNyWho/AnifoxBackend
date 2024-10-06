@@ -50,6 +50,7 @@ interface AnimeRepository {
         year: List<Int>?,
         translations: List<String>?,
         studios: List<String>?,
+        episodeCount: Int?,
     ): List<AnimeLight>
 
     fun getAnimeFranchises(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise>

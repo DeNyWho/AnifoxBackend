@@ -53,6 +53,7 @@ class AnimeSearchComponent {
         year: List<Int>?,
         translations: List<String>?,
         studios: List<String>?,
+        episodeCount: Int?,
     ): List<AnimeLight> {
         return findAnime(
             pageable = PageRequest.of(page, limit),
@@ -68,6 +69,7 @@ class AnimeSearchComponent {
             studios = studios,
             orderBy = orderBy,
             sort = sort,
+            episodeCount = episodeCount,
         ).map {
             it.toAnimeLight()
         }
@@ -87,6 +89,7 @@ class AnimeSearchComponent {
         translationIds: List<String>?,
         orderBy: AnimeSearchFilter?,
         sort: AnimeSortFilter?,
+        episodeCount: Int?,
     ): List<AnimeTable> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
@@ -113,6 +116,10 @@ class AnimeSearchComponent {
 
         if (minimalAge != null) {
             predicates.add(criteriaBuilder.equal(root.get<Int>("minimalAge"), minimalAge))
+        }
+
+        if (episodeCount != null) {
+            predicates.add(criteriaBuilder.equal(root.get<Int>("episodesCount"), episodeCount))
         }
 
         if (!year.isNullOrEmpty()) {
