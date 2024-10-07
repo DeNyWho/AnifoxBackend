@@ -123,7 +123,13 @@ class AnimeSearchComponent {
         }
 
         if (!year.isNullOrEmpty()) {
-            predicates.add(root.get<Int>("year").`in`(year))
+            if (year.size == 1) {
+                predicates.add(criteriaBuilder.equal(root.get<Int>("year"), year[0]))
+            } else if (year.size == 2) {
+                predicates.add(
+                    criteriaBuilder.between(root.get("year"), year[0], year[1]),
+                )
+            }
         }
 
         if (!studios.isNullOrEmpty()) {

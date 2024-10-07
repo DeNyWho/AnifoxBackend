@@ -54,6 +54,9 @@ jobs:
       - name: Save Docker image as tar
         run: docker save -o app.tar app
 
+      - name: Change permissions for app.tar
+        run: chmod 755 app.tar
+
       - name: Transfer backend files to remote server
         uses: appleboy/scp-action@v0.1.7
         with:
