@@ -5,4 +5,5 @@ enum class AnimeSearchFilter {
     Aired,
     Released,
     Random,
+    Rating,
 }

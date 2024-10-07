@@ -203,6 +203,7 @@ class AnimeSearchComponent {
         val sortOrder: List<Order> = when (orderBy) {
             AnimeSearchFilter.Update -> {
                 predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("updatedAt")))
+
                 if (sort == AnimeSortFilter.Asc) {
                     listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
                 } else {
@@ -211,6 +212,7 @@ class AnimeSearchComponent {
             }
             AnimeSearchFilter.Aired -> {
                 predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("airedOn")))
+
                 if (sort == AnimeSortFilter.Asc) {
                     listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
                 } else {
@@ -219,11 +221,27 @@ class AnimeSearchComponent {
             }
             AnimeSearchFilter.Released -> {
                 predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("releasedOn")))
+
                 if (sort == AnimeSortFilter.Asc) {
                     listOf(criteriaBuilder.asc(root.get<AnimeTable>("releasedOn")))
                 } else {
                     listOf(criteriaBuilder.desc(root.get<AnimeTable>("releasedOn")))
                 }
+            }
+            AnimeSearchFilter.Rating -> {
+                val votesOrder = if (sort == AnimeSortFilter.Asc) {
+                    criteriaBuilder.asc(root.get<Double>("shikimoriVotes"))
+                } else {
+                    criteriaBuilder.desc(root.get<Double>("shikimoriVotes"))
+                }
+
+                val ratingOrder = if (sort == AnimeSortFilter.Asc) {
+                    criteriaBuilder.asc(root.get<Double>("shikimoriRating"))
+                } else {
+                    criteriaBuilder.desc(root.get<Double>("shikimoriRating"))
+                }
+
+                listOf(ratingOrder, votesOrder)
             }
             AnimeSearchFilter.Random -> {
                 listOf(criteriaBuilder.asc(criteriaBuilder.function("RANDOM", Double::class.java)))
