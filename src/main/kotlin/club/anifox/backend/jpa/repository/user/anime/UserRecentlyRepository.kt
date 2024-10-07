@@ -11,7 +11,6 @@ import java.util.*
 
 @Repository
 interface UserRecentlyRepository : JpaRepository<UserRecentlyAnimeTable, String> {
-    fun findByUserTableAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): Optional<UserRecentlyAnimeTable>
-
-    fun findByUserTable(@Param("user") user: UserTable, pageable: Pageable): List<UserRecentlyAnimeTable>
+    fun findByUserAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): Optional<UserRecentlyAnimeTable>
+    fun findByUser(@Param("user") user: UserTable, pageable: Pageable): List<UserRecentlyAnimeTable>
 }

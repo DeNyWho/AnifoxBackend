@@ -1,9 +1,8 @@
 package club.anifox.backend.controller.users
 
 import club.anifox.backend.domain.enums.user.StatusFavourite
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeProgressRequest
 import club.anifox.backend.domain.model.anime.light.AnimeLight
-import club.anifox.backend.domain.model.anime.recently.AnimeRecently
-import club.anifox.backend.domain.model.anime.recently.AnimeRecentlyRequest
 import club.anifox.backend.service.user.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
@@ -36,10 +35,12 @@ class UsersAnimeController(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
         @RequestParam status: StatusFavourite,
-        @Schema(name = "episodeNumber", required = false, nullable = true) episodeNumber: Int?,
+        @RequestParam(name = "episodes_watched", required = false)
+        @Schema(name = "episodes_watched", required = false, nullable = true)
+        episodesWatched: Int?,
         response: HttpServletResponse,
     ) {
-        userService.addToFavoritesAnime(token, url, status, episodeNumber, response)
+        userService.addToFavoritesAnime(token, url, status, episodesWatched, response)
     }
 
     @GetMapping("favorite/{status}")
@@ -74,14 +75,14 @@ class UsersAnimeController(
         return userService.getRecommendations(token, page, limit)
     }
 
-    @PostMapping("{url}/recently")
-    fun addToRecentlyAnime(
+    @PostMapping("{url}/episode/{number}/progress")
+    fun changeEpisodeProgress(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
-        @RequestBody recently: AnimeRecentlyRequest,
-        response: HttpServletResponse,
+        @PathVariable number: Int,
+        @RequestBody progress: AnimeEpisodeProgressRequest,
     ) {
-        userService.addToRecentlyAnime(token, url, recently, response)
+        userService.changeEpisodeProgress(token, url, number, progress)
     }
 
     @PostMapping("genres")
@@ -105,17 +106,8 @@ class UsersAnimeController(
             Int,
         @RequestHeader(value = "Authorization") token: String,
         response: HttpServletResponse,
-    ): List<AnimeRecently> {
+    ): List<AnimeLight> {
         return userService.getRecentlyAnimeAll(token, page, limit)
-    }
-
-    @GetMapping("{url}/recently")
-    fun getRecentlyAnimeByUrl(
-        @RequestHeader(value = "Authorization") token: String,
-        @PathVariable url: String,
-        response: HttpServletResponse,
-    ): AnimeRecently {
-        return userService.getRecentlyAnimeByUrl(token, url)
     }
 
     @PostMapping("{url}/rating")

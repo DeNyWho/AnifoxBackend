@@ -9,6 +9,7 @@ import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
+import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeUser
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
@@ -18,22 +19,24 @@ import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
-import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
-import club.anifox.backend.jpa.entity.anime.AnimeFranchiseTable
-import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
-import club.anifox.backend.jpa.entity.anime.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.AnimeVideoTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.AnimeUtils
+import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
@@ -59,11 +62,17 @@ class AnimeCommonComponent {
     @Autowired
     private lateinit var animeGenreRepository: AnimeGenreRepository
 
+    @Autowired
+    private lateinit var userProgressAnimeRepository: UserProgressAnimeRepository
+
     @PersistenceContext
     private lateinit var entityManager: EntityManager
 
     @Autowired
     private lateinit var animeUtils: AnimeUtils
+
+    @Autowired
+    private lateinit var userUtils: UserUtils
 
     @Autowired
     private lateinit var imageService: ImageService
@@ -196,7 +205,7 @@ class AnimeCommonComponent {
         return animeGenreRepository.findAll().map { it.toGenre() }
     }
 
-    fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight> {
+    fun getAnimeEpisodes(token: String?, url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisode> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -221,7 +230,20 @@ class AnimeCommonComponent {
         val firstResult = (page - 1) * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
-        return query.resultList.map { it.toAnimeEpisodeLight() }
+        val episodes = query.resultList
+
+        return if (token != null) {
+            val user = userUtils.checkUser(token)
+            val userProgress = userProgressAnimeRepository.findByUserAndAnime(user, anime)
+            val progressMap = userProgress.associateBy { it.episode.id }
+
+            episodes.map { episode ->
+                val timing = progressMap[episode.id]?.timing ?: 0.0
+                episode.toAnimeEpisodeUser(timing)
+            }
+        } else {
+            episodes.map { it.toAnimeEpisodeLight() }
+        }
     }
 
     @Transactional

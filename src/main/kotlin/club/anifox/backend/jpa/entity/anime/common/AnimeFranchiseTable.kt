@@ -1,6 +1,7 @@
-package club.anifox.backend.jpa.entity.anime
+package club.anifox.backend.jpa.entity.anime.common
 
 import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
+import club.anifox.backend.jpa.entity.anime.AnimeTable
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType

@@ -3,21 +3,21 @@ package club.anifox.backend.service.user.component
 import club.anifox.backend.domain.enums.user.StatusFavourite
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
-import club.anifox.backend.domain.mappers.anime.recently.toRecently
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeProgressRequest
 import club.anifox.backend.domain.model.anime.light.AnimeLight
-import club.anifox.backend.domain.model.anime.recently.AnimeRecently
-import club.anifox.backend.domain.model.anime.recently.AnimeRecentlyRequest
-import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingCountTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
-import club.anifox.backend.jpa.entity.anime.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
+import club.anifox.backend.jpa.entity.user.UserProgressAnimeTable
 import club.anifox.backend.jpa.entity.user.UserRecentlyAnimeTable
 import club.anifox.backend.jpa.entity.user.UserTable
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserFavoriteAnimeRepository
+import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRatingCountRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRatingRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRecentlyRepository
@@ -56,6 +56,9 @@ class UserAnimeInteractionsComponent {
     private lateinit var userFavoriteAnimeRepository: UserFavoriteAnimeRepository
 
     @Autowired
+    private lateinit var userProgressAnimeRepository: UserProgressAnimeRepository
+
+    @Autowired
     private lateinit var animeRepository: AnimeRepository
 
     @Autowired
@@ -68,22 +71,21 @@ class UserAnimeInteractionsComponent {
         token: String,
         url: String,
         status: StatusFavourite,
-        episodeNumber: Int?,
+        episodesWatched: Int?,
         response: HttpServletResponse,
     ) {
         val user = userUtils.checkUser(token)
         val anime = animeUtils.checkAnime(url)
-        val episode = if (episodeNumber != null) animeUtils.checkEpisode(url, episodeNumber) else null
 
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
         if (existingFavorite.isPresent) {
             val existFavorite = existingFavorite.get()
-            if (existFavorite.status == status && existFavorite.episode != null && existFavorite.episode?.number == episodeNumber) {
+            if (existFavorite.status == status && existFavorite.episodesWatched == episodesWatched) {
                 return
             } else {
                 existFavorite.status = status
-                if (episode != null && existFavorite.episode != episode) {
-                    existFavorite.episode = episode
+                if (episodesWatched != null && existFavorite.episodesWatched != episodesWatched) {
+                    existFavorite.episodesWatched = episodesWatched
                 }
 
                 userFavoriteAnimeRepository.save(existFavorite)
@@ -97,9 +99,10 @@ class UserAnimeInteractionsComponent {
                 anime = anime,
                 status = status,
                 updateDate = LocalDateTime.now(),
-                episode = episode,
+                episodesWatched = episodesWatched,
             ),
         )
+
         response.status = HttpStatus.CREATED.value()
     }
 
@@ -244,106 +247,72 @@ class UserAnimeInteractionsComponent {
         user.addPreferredGenres(genresExist)
     }
 
-    fun addRecently(token: String, url: String, recently: AnimeRecentlyRequest, response: HttpServletResponse) {
-        val user = userUtils.checkUser(token)
-        val anime = animeUtils.checkAnime(url)
-        val episode = animeUtils.checkEpisode(url, recently.episodeNumber)
-        val translation = episode.translations.find { it.translation.id == recently.translationId } ?: throw NotFoundException("Translation not found")
-
-        val existingRecently = userRecentlyRepository.findByUserTableAndAnime(user, anime)
-        val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
-
-        val favoriteAnime = existingFavorite.orElse(null)
-
-        if (favoriteAnime == null) {
-            userFavoriteAnimeRepository.save(
-                UserFavoriteAnimeTable(
-                    user = user,
-                    anime = anime,
-                    status = if (anime.episodesCount == episode.number && recently.timingInSeconds > 1000) {
-                        StatusFavourite.Watched
-                    } else {
-                        StatusFavourite.Watching
-                    },
-                    updateDate = LocalDateTime.now(),
-                    episode = episode,
-                ),
-            )
-        } else {
-            favoriteAnime.episode = episode
-
-            when (favoriteAnime.status) {
-                StatusFavourite.Watching -> {
-                    if (anime.episodesCount == episode.number && recently.timingInSeconds > 1000) {
-                        favoriteAnime.status = StatusFavourite.Watched
-                    } else {
-                        favoriteAnime.status = StatusFavourite.Watching
-                    }
-                }
-                StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> {
-                    favoriteAnime.status = StatusFavourite.Watching
-                }
-            }
-
-            userFavoriteAnimeRepository.save(favoriteAnime)
-        }
-
-        if (existingRecently.isPresent) {
-            val existRecently = existingRecently.get()
-            if (existRecently.date == recently.date && recently.timingInSeconds == existRecently.timingInSeconds && existRecently.episode == episode && existRecently.selectedTranslation.translation.id == recently.translationId) {
-                response.status = HttpStatus.OK.value()
-                return
-            } else {
-                existRecently.date = recently.date
-                existRecently.timingInSeconds = recently.timingInSeconds
-                existRecently.episode = episode
-                existRecently.selectedTranslation = translation
-
-                userRecentlyRepository.save(existRecently)
-                response.status = HttpStatus.OK.value()
-                return
-            }
-        }
-
-        userRecentlyRepository.save(
-            UserRecentlyAnimeTable(
-                userTable = user,
-                anime = anime,
-                timingInSeconds = recently.timingInSeconds,
-                date = recently.date,
-                episode = episode,
-                selectedTranslation = translation,
-            ),
-        )
-        response.status = HttpStatus.CREATED.value()
-    }
-
-    fun getRecentlyByUrl(
-        token: String,
-        url: String,
-    ): AnimeRecently {
-        val anime = animeUtils.checkAnime(url)
-        val user = userUtils.checkUser(token)
-        val recently = userRecentlyRepository.findByUserTableAndAnime(user, anime)
-        if (recently.isPresent) {
-            return recently.get().toRecently()
-        }
-
-        throw NotFoundException("Recently not found")
-    }
-
     fun getRecentlyAnimeList(
         token: String,
         page: Int,
         limit: Int,
-    ): List<AnimeRecently> {
+    ): List<AnimeLight> {
         val user = userUtils.checkUser(token)
-        val recently = userRecentlyRepository.findByUserTable(user, PageRequest.of(page, limit))
+        val recently = userRecentlyRepository.findByUser(user, PageRequest.of(page, limit))
 
         if (recently.isNotEmpty()) {
-            return recently.map { it.toRecently() }
+            return recently.map { it.anime.toAnimeLight() }
         }
 
         throw NotFoundException("The user has no recent anime")
+    }
+
+    fun changeEpisodeProgress(token: String, url: String, episodeNumber: Int, progress: AnimeEpisodeProgressRequest) {
+        val anime = animeUtils.checkAnime(url)
+        val user = userUtils.checkUser(token)
+        val episode = animeUtils.checkEpisode(url, episodeNumber)
+        val translation = episode.translations.find { it.translation.id == progress.translationId }
+            ?: throw NotFoundException("Translation not found")
+
+        val existingRecently = userRecentlyRepository.findByUserAndAnime(user, anime).orElse(null)
+        val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime).orElse(null)
+        val existingProgress = userProgressAnimeRepository.findByUserAndAnimeAndEpisode(user, anime, episode).orElse(null)
+
+        val isEpisodeWatched = anime.episodesCount == episode.number && progress.timingInSeconds > 1000
+
+        val favoriteStatus = when {
+            isEpisodeWatched -> StatusFavourite.Watched
+            else -> StatusFavourite.Watching
+        }
+
+        val favorite = existingFavorite ?: UserFavoriteAnimeTable(
+            user = user,
+            anime = anime,
+            episodesWatched = episode.number,
+            status = favoriteStatus,
+            updateDate = LocalDateTime.now(),
+        )
+
+        favorite.episodesWatched = episode.number
+        favorite.status = when (favorite.status) {
+            StatusFavourite.Watching -> if (isEpisodeWatched) StatusFavourite.Watched else StatusFavourite.Watching
+            StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> StatusFavourite.Watching
+        }
+
+        userFavoriteAnimeRepository.save(favorite)
+
+        val progressRecord = existingProgress ?: UserProgressAnimeTable(
+            user = user,
+            anime = anime,
+            episode = episode,
+            selectedTranslation = translation,
+            timing = progress.timingInSeconds,
+        )
+
+        progressRecord.timing = progress.timingInSeconds
+        progressRecord.selectedTranslation = translation
+
+        userProgressAnimeRepository.save(progressRecord)
+
+        if (existingRecently == null) {
+            userRecentlyRepository.save(
+                UserRecentlyAnimeTable(user = user, anime = anime),
+            )
+        }
     }
 }

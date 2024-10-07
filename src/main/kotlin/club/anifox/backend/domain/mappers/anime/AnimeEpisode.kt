@@ -1,6 +1,7 @@
 package club.anifox.backend.domain.mappers.anime
 
-import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeUser
 import club.anifox.backend.domain.model.anime.translation.AnimeEpisodeTranslations
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
@@ -12,6 +13,17 @@ fun AnimeEpisodeTable.toAnimeEpisodeLight(): AnimeEpisodeLight {
         number = number,
         image = image,
         translations = translationsNormal(translations),
+    )
+}
+
+fun AnimeEpisodeTable.toAnimeEpisodeUser(timing: Double): AnimeEpisodeUser {
+    return AnimeEpisodeUser(
+        title = title,
+        description = description,
+        number = number,
+        image = image,
+        translations = translationsNormal(translations),
+        timing = timing,
     )
 }
 

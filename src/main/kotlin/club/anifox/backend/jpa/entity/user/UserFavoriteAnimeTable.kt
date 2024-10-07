@@ -2,7 +2,6 @@ package club.anifox.backend.jpa.entity.user
 
 import club.anifox.backend.domain.enums.user.StatusFavourite
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -35,7 +34,6 @@ data class UserFavoriteAnimeTable(
     @Column(length = 20)
     var status: StatusFavourite = StatusFavourite.Watching,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "episode_id", nullable = true)
-    var episode: AnimeEpisodeTable? = null,
+    @Column(length = 5, nullable = true)
+    var episodesWatched: Int? = null,
 )

@@ -1,4 +1,4 @@
-package club.anifox.backend.jpa.entity.anime
+package club.anifox.backend.jpa.entity.anime.common
 
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import jakarta.persistence.Column

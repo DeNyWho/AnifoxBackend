@@ -1,7 +1,7 @@
 package club.anifox.backend.jpa.entity.user
 
-import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

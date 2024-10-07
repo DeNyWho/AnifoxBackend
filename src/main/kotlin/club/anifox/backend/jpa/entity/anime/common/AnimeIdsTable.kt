@@ -1,4 +1,4 @@
-package club.anifox.backend.jpa.entity.anime
+package club.anifox.backend.jpa.entity.anime.common
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

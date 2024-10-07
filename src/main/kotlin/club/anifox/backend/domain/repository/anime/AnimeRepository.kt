@@ -13,7 +13,7 @@ import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
-import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
@@ -32,7 +32,7 @@ interface AnimeRepository {
     fun getAnimeYears(): List<String>
     fun getAnimeStudios(): List<AnimeStudio>
     fun getAnimeGenres(): List<AnimeGenre>
-    fun getAnimeEpisodes(url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisodeLight>
+    fun getAnimeEpisodes(token: String?, url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisode>
     fun updateEpisodes()
     fun addBlocked(url: String?, shikimoriId: Int?)
     fun getAnime(

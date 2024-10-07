@@ -13,7 +13,7 @@ import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
-import club.anifox.backend.domain.model.anime.light.AnimeEpisodeLight
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
@@ -164,6 +164,7 @@ class AnimeController {
     @GetMapping("/{url}/episodes")
     @Operation(summary = "anime episodes")
     fun getAnimeEpisodes(
+        @RequestHeader(value = "Authorization", required = false) token: String?,
         @PathVariable url: String,
         @RequestParam(defaultValue = "0", name = "page") page:
             @Min(0)
@@ -174,8 +175,8 @@ class AnimeController {
             @Max(500)
             Int,
         sort: AnimeEpisodeFilter?,
-    ): List<AnimeEpisodeLight> {
-        return animeService.getAnimeEpisodes(url, page, limit, sort)
+    ): List<AnimeEpisode> {
+        return animeService.getAnimeEpisodes(token, url, page, limit, sort)
     }
 
     @GetMapping("/years")

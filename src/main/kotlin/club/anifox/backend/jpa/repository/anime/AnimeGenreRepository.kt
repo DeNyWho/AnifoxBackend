@@ -1,6 +1,6 @@
 package club.anifox.backend.jpa.repository.anime
 
-import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository

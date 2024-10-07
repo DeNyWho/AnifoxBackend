@@ -1,7 +1,7 @@
 package club.anifox.backend.domain.mappers.anime
 
 import club.anifox.backend.domain.model.anime.AnimeGenre
-import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 
 fun AnimeGenreTable.toGenre(): AnimeGenre {
     return AnimeGenre(

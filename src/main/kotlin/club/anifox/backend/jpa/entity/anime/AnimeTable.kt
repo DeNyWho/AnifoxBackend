@@ -3,6 +3,14 @@ package club.anifox.backend.jpa.entity.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeRelatedTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeSimilarTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable

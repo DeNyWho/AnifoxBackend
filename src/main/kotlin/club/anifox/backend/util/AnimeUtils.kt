@@ -1,8 +1,8 @@
 package club.anifox.backend.util
 
 import club.anifox.backend.domain.exception.common.NotFoundException
-import club.anifox.backend.jpa.entity.anime.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import jakarta.persistence.EntityManager

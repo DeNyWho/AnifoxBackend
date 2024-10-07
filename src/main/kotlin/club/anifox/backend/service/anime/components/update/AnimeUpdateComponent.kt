@@ -2,8 +2,8 @@ package club.anifox.backend.service.anime.components.update
 
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
-import club.anifox.backend.jpa.entity.anime.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
