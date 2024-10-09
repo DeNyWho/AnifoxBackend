@@ -47,24 +47,31 @@ class AnimeController {
     @GetMapping
     @Operation(summary = "get all anime")
     fun getAnime(
+        @RequestParam(required = true)
         @Schema(defaultValue = "0", name = "page")
         page:
             @Min(0)
             @Max(500)
             Int,
+        @RequestParam(required = true)
         @Schema(defaultValue = "48", name = "limit")
         limit:
             @Min(1)
             @Max(500)
             Int,
-        @RequestParam(name = "genres", required = false)
-        @Parameter(name = "genres", description = "Require genres IDS", required = false)
-        genres: List<String>?,
+        @RequestParam(required = false)
         status: AnimeStatus?,
+        @RequestParam(required = false)
         order: AnimeSearchFilter?,
+        @RequestParam(required = false)
         sort: AnimeSortFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
+        @RequestParam(required = false)
+        type: AnimeType?,
+        @RequestParam(name = "genres", required = false)
+        @Parameter(name = "genres", description = "Require genres IDS", required = false)
+        genres: List<String>?,
         @RequestParam(name = "rating_mpa", required = false)
         @Parameter(name = "rating_mpa", required = false, description = "Must be one of: PG | PG-13 | R | R+ | G")
         ratingMpa: String?,
@@ -72,7 +79,6 @@ class AnimeController {
         @Parameter(name = "episode_count", required = false)
         episodeCount: Int?,
         @Schema(name = "age", required = false, nullable = true, description = "Must be one of: 18 | 16 | 12 | 6 | 0") age: Int?,
-        type: AnimeType?,
         @RequestParam(name = "studios", required = false)
         @Parameter(name = "studios", description = "Require studios IDS", required = false)
         studios: List<String>?,
