@@ -48,7 +48,7 @@ data class AnimeTable(
     @Column(columnDefinition = "TEXT")
     val url: String = "",
     @Column(columnDefinition = "TEXT")
-    val playerLink: String = "",
+    val playerLink: String? = null,
     @Column(columnDefinition = "TEXT")
     val title: String = "",
     @ElementCollection(fetch = FetchType.LAZY)
