@@ -484,7 +484,7 @@ class AnimeParseComponent(
                                 createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 airedOn = airedOn,
                                 releasedOn = releasedOn,
-                                updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
+                                updatedAt = null,
                                 status = status,
                                 description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                 franchise = shikimori.franchise,

@@ -109,7 +109,7 @@ data class AnimeTable(
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val airedOn: LocalDate = LocalDate.now(),
     val releasedOn: LocalDate? = null,
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    var updatedAt: LocalDateTime? = null,
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "licensors", schema = "anime")
     @Column(columnDefinition = "text")
