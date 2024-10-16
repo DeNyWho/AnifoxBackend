@@ -379,7 +379,7 @@ class AnimeParseComponent(
 
                             val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
 
-                            val licensors = shikimori.licensors.filter { it != "Crunchyroll" }
+                            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "2x2" || it == "Ракета Релизинг" }
 
                             val episodesReady = if (licensors.isNotEmpty()) {
                                 episodesComponent.fetchEpisodes(
