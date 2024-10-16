@@ -447,6 +447,20 @@ class AnimeParseComponent(
                                 )
                             }
 
+                            var episodesCount = when {
+                                episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
+                                shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
+                                else -> shikimori.episodes
+                            }
+                            val episodesAiredCount = when {
+                                episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
+                                else -> shikimori.episodesAired
+                            }
+
+                            if (episodesCount != null && episodesCount < episodesAiredCount) {
+                                episodesCount = episodesAiredCount
+                            }
+
                             val animeToSave = AnimeTable(
                                 type = type,
                                 url = urlLinkPath,
@@ -468,18 +482,11 @@ class AnimeParseComponent(
                                     thetvdb = animeIds.theMovieDb,
                                     myAnimeList = animeIds.myAnimeList,
                                 ),
-                                isLicensed = shikimori.licensors.isNotEmpty(),
+                                isLicensed = licensors.isNotEmpty(),
                                 year = airedOn.year,
                                 nextEpisode = nextEpisode,
-                                episodesCount = when {
-                                    shikimori.episodes == 0 -> null
-                                    episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
-                                    else -> shikimori.episodes
-                                },
-                                episodesAired = when {
-                                    episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
-                                    else -> shikimori.episodesAired
-                                },
+                                episodesCount = episodesCount,
+                                episodesAired = episodesAiredCount,
                                 shikimoriId = shikimori.id,
                                 createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 airedOn = airedOn,
