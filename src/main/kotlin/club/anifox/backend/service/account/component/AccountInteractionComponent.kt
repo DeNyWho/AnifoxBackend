@@ -33,8 +33,6 @@ class AccountInteractionComponent {
                 filePath = "images/user/${mdFive(user.id)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.login)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
                 data = image.bytes,
                 compress = true,
-                width = 400,
-                height = 400,
                 newImage = true,
                 type = CompressAnimeImageType.Avatar,
             )

@@ -110,6 +110,17 @@ data class AnimeTable(
     val airedOn: LocalDate = LocalDate.now(),
     val releasedOn: LocalDate? = null,
     var updatedAt: LocalDateTime = LocalDateTime.now(),
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "licensors", schema = "anime")
+    @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
+    val licensors: MutableList<String> = mutableListOf(),
+    @Column(nullable = false)
+    val isLicensed: Boolean = false,
+    @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    @BatchSize(size = 10)
+    @JoinTable(schema = "anime")
+    val externalLinks: MutableSet<AnimeExternalLinksTable> = mutableSetOf(),
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(schema = "anime")
     @BatchSize(size = 20)
@@ -227,6 +238,16 @@ data class AnimeTable(
                 existingTranslation.countEpisodes = newTranslation.countEpisodes
             }
         }
+        return this
+    }
+
+    fun addExternalLinks(externalLinksList: List<AnimeExternalLinksTable>): AnimeTable {
+        this.externalLinks.addAll(externalLinksList)
+        return this
+    }
+
+    fun addLicensors(licensorsList: List<String>): AnimeTable {
+        this.licensors.addAll(licensorsList)
         return this
     }
 

@@ -6,6 +6,7 @@ object Constants {
     const val SHIKIMORI_ANIMES = "/animes"
     const val SHIKIMORI_SIMILAR = "/similar"
     const val SHIKIMORI_RELATED = "/related"
+    const val SHIKIMORI_EXTERNAL_LINKS = "/external_links"
     const val SHIKIMORI_FRANCHISE = "/franchise"
     const val SHIKIMORI_SCREENSHOTS = "/screenshots"
     const val SHIKIMORI_VIDEOS = "/videos"

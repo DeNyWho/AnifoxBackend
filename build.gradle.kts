@@ -23,6 +23,8 @@ dependencies {
     implementation(libs.kotlin.logging)
     implementation(libs.kotlin.serialization)
 
+    implementation(libs.imageio.webp)
+
     implementation(libs.mapstruct)
 
     implementation(libs.jackson)

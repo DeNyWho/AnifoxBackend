@@ -32,15 +32,30 @@ class ImageService {
         }
     }
 
-    suspend fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, width: Int = 0, height: Int = 0, newImage: Boolean = false, type: CompressAnimeImageType): String = withContext(Dispatchers.IO) {
-        val readyData = if (compress) compressImage(data, type, width, height) else data
+    suspend fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, newImage: Boolean = false, type: CompressAnimeImageType): String = withContext(Dispatchers.IO) {
+        when (type) {
+            CompressAnimeImageType.LargeKitsu, CompressAnimeImageType.LargeJikan, CompressAnimeImageType.MediumKitsu, CompressAnimeImageType.MediumJikan, CompressAnimeImageType.Cover -> {
+                val folderPath = filePath.substringBeforeLast("/")
+                val existingObjects = amazonS3.listObjects(bucketNameS3, folderPath)
+                if (existingObjects.objectSummaries.isNotEmpty()) {
+                    return@withContext "$domainS3/${existingObjects.objectSummaries.first().key}"
+                }
+            }
+            CompressAnimeImageType.Episodes -> { }
+            CompressAnimeImageType.Screenshot -> { }
+            CompressAnimeImageType.Avatar -> { }
+        }
+
+        val readyData = if (compress) compressImage(data, type) else data
         val inputStream = ByteArrayInputStream(readyData)
         val metadata = ObjectMetadata().apply {
             contentLength = readyData.size.toLong()
         }
+
         if (newImage) {
             amazonS3.deleteObject(bucketNameS3, filePath)
         }
+
         var uploaded = false
         var times = 3
         while (!uploaded && times > 0) {
@@ -56,12 +71,14 @@ class ImageService {
         return@withContext "$domainS3/$filePath"
     }
 
-    private fun compressImage(imageBytes: ByteArray, type: CompressAnimeImageType, width: Int, height: Int): ByteArray {
+    private fun compressImage(imageBytes: ByteArray, type: CompressAnimeImageType): ByteArray {
         val image = ImageIO.read(ByteArrayInputStream(imageBytes))
         val outputStream = ByteArrayOutputStream()
+        val size = type.extractWidthAndHeight()
+
         Thumbnails.of(image)
             .outputFormat(type.imageType.textFormat())
-            .size(width, height)
+            .size(size.first, size.second)
             .outputQuality(type.compressQuality)
             .toOutputStream(outputStream)
         return outputStream.toByteArray()

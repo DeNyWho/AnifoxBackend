@@ -29,6 +29,9 @@ data class ShikimoriDto(
     @SerialName("synonyms")
     val synonyms: List<String> = listOf(),
     @Nullable
+    @SerialName("licensors")
+    val licensors: List<String> = listOf(),
+    @Nullable
     @SerialName("rating")
     val rating: String,
     @Nullable

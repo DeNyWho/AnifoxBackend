@@ -48,7 +48,7 @@ class FetchImageComponent {
         return kitsuData?.let {
             AnimeImages(
                 large = it.attributesKitsu.posterImage.large ?: "",
-                medium = it.attributesKitsu.posterImage.original ?: "",
+                medium = it.attributesKitsu.posterImage.medium ?: "",
                 cover = it.attributesKitsu.coverImage.coverLarge,
             )
         }
@@ -59,7 +59,7 @@ class FetchImageComponent {
         return jikanData.images.jikanJpg.let {
             AnimeImages(
                 large = it.largeImageUrl,
-                medium = it.mediumImageUrl,
+                medium = it.largeImageUrl,
                 cover = null,
             )
         }
@@ -69,8 +69,8 @@ class FetchImageComponent {
         val (large, medium, cover) = images.extractUrlsWithCover()
 
         val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.Large, urlLinking),
-            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
+            large = saveImage(large, CompressAnimeImageType.LargeKitsu, urlLinking, false),
+            medium = saveImage(medium, CompressAnimeImageType.MediumKitsu, urlLinking, false),
             cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking, false),
         )
 
@@ -86,8 +86,8 @@ class FetchImageComponent {
         val (large, medium) = images.extractUrls()
 
         val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.Large, urlLinking),
-            medium = saveImage(medium, CompressAnimeImageType.Medium, urlLinking),
+            large = saveImage(large, CompressAnimeImageType.LargeJikan, urlLinking, false),
+            medium = saveImage(medium, CompressAnimeImageType.MediumJikan, urlLinking, true),
         )
 
         return Pair(
@@ -104,15 +104,11 @@ class FetchImageComponent {
             val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
             val path = "images/anime/${type.path}/$urlLinking/$fileName"
 
-            val extractedWidthAndHeight = type.extractWidthAndHeight()
-
             imageService.saveFileInSThird(
                 filePath = path,
                 data = bytes,
                 type = type,
                 compress = compress,
-                width = extractedWidthAndHeight.first,
-                height = extractedWidthAndHeight.second,
             )
         }
     }

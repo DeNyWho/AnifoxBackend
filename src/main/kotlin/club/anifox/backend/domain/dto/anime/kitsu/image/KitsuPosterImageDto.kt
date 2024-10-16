@@ -9,4 +9,6 @@ data class KitsuPosterImageDto(
     val original: String? = "",
     @SerialName("large")
     val large: String? = "",
+    @SerialName("medium")
+    val medium: String? = "",
 )

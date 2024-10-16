@@ -304,13 +304,10 @@ class EpisodesComponent {
                         )
                     }
                     thumbnail.original != null -> {
-                        val extractedWidthAndHeight = CompressAnimeImageType.Episodes.extractWidthAndHeight()
                         imageService.saveFileInSThird(
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(thumbnail.original).readBytes(),
                             compress = true,
-                            width = extractedWidthAndHeight.first,
-                            height = extractedWidthAndHeight.second,
                             type = CompressAnimeImageType.Episodes,
                         )
                     }

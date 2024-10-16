@@ -4,6 +4,7 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
+import club.anifox.backend.domain.enums.anime.AnimeExternalLinksType
 import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
@@ -11,6 +12,7 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
+import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
@@ -23,6 +25,7 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedByStudioRepository
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
+import club.anifox.backend.jpa.repository.anime.AnimeExternalLinksRepository
 import club.anifox.backend.jpa.repository.anime.AnimeFranchiseRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
@@ -75,6 +78,7 @@ class AnimeParseComponent(
     private val animeRelatedRepository: AnimeRelatedRepository,
     private val animeSimilarRepository: AnimeSimilarRepository,
     private val animeFranchiseRepository: AnimeFranchiseRepository,
+    private val animeExternalLinksRepository: AnimeExternalLinksRepository,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
 
@@ -121,8 +125,7 @@ class AnimeParseComponent(
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-//        val shikimoriIds = query.resultList
-        val shikimoriIds = listOf(21)
+        val shikimoriIds = query.resultList
 
         shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
@@ -276,7 +279,7 @@ class AnimeParseComponent(
 
                     runBlocking {
                         if (!animeBlockedRepository.findById(shikimori.id).isPresent &&
-                            (userRatesStats > 1500 || (userRatesStats > 500 && shikimori.status == "ongoing")) &&
+                            (userRatesStats > 4000 || (userRatesStats > 1000 && shikimori.status == "ongoing")) &&
                             shikimori.studios.none { studio ->
                                 animeBlockedByStudioRepository.findById(studio.id).isPresent
                             } &&
@@ -325,6 +328,10 @@ class AnimeParseComponent(
                                 shikimoriComponent.fetchScreenshots(shikimori.id)
                             }
 
+                            val shikimoriExternalLinksDeferred = async {
+                                shikimoriComponent.fetchExternalLinks(shikimori.id)
+                            }
+
                             val status = when (shikimori.status) {
                                 "released" -> AnimeStatus.Released
                                 "ongoing" -> AnimeStatus.Ongoing
@@ -364,33 +371,6 @@ class AnimeParseComponent(
                             val otherTitles = animeKodik.materialData.otherTitles.toMutableList()
                             otherTitles.add(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
 
-//                        val franchise = animeFranchiseRepository.saveAll(
-//                            franchiseShikimoriDeferred.await().links
-//                                .map { franchise ->
-//                                    val relationType = when (franchise.relation) {
-//                                        "sequel" -> AnimeRelationFranchise.Sequel
-//                                        "prequel" -> AnimeRelationFranchise.Prequel
-//                                        "side_story" -> AnimeRelationFranchise.SideStory
-//                                        "parent_story" -> AnimeRelationFranchise.SideStory
-//                                        "full_story" -> AnimeRelationFranchise.SideStory
-//                                        "summary" -> AnimeRelationFranchise.Summary
-//                                        "alternative_version" -> AnimeRelationFranchise.AlternativeVersion
-//                                        "adaptation" -> AnimeRelationFranchise.Adaptation
-//                                        "alternative_setting" -> AnimeRelationFranchise.AlternativeSetting
-//                                        "spin_off" -> AnimeRelationFranchise.SpinOff
-//                                        "character" -> AnimeRelationFranchise.Character
-//                                        else -> AnimeRelationFranchise.Other
-//                                    }
-//
-//                                    AnimeFranchiseTable(
-//                                        sourceId = franchise.sourceId,
-//                                        targetId = franchise.targetId,
-//                                        relationType = relationType,
-//                                        relationTypeRus = relationType.russian,
-//                                    )
-//                                },
-//                        )
-
                             val animeIds = animeIdsDeferred.await()
 
                             val imagesDeferred = async {
@@ -399,16 +379,23 @@ class AnimeParseComponent(
 
                             val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
 
-                            val episodesReady = episodesComponent.fetchEpisodes(
-                                shikimoriId = shikimori.id,
-                                kitsuId = animeIds.kitsu.toString(),
-                                type = type,
-                                urlLinkPath = urlLinkPath,
-                                defaultImage = images.medium,
-                            )
+                            val licensors = shikimori.licensors.filter { it != "Crunchyroll" }
 
-                            val translationsCountReady = episodesComponent.translationsCount(episodesReady)
-                            val translations = translationsCountReady.map { it.translation }
+                            val episodesReady = if (licensors.isNotEmpty()) {
+                                episodesComponent.fetchEpisodes(
+                                    shikimoriId = shikimori.id,
+                                    kitsuId = animeIds.kitsu.toString(),
+                                    type = type,
+                                    urlLinkPath = urlLinkPath,
+                                    defaultImage = images.medium,
+                                )
+                            } else null
+
+                            val translationsCountReady = if (episodesReady != null) {
+                                episodesComponent.translationsCount(episodesReady)
+                            } else null
+
+                            val translations = translationsCountReady?.map { it.translation }
 
                             val videos = videosShikimoriDeferred.await().let { videosList ->
                                 animeVideoRepository.saveAll(
@@ -435,6 +422,27 @@ class AnimeParseComponent(
                                 fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)
                             }.toMutableList()
 
+                            val externalLinks = shikimoriExternalLinksDeferred.await().let { externalList ->
+                                animeExternalLinksRepository.saveAll(
+                                    externalList
+                                        .filter { it.kind == "official_site" || it.kind == "wikipedia" || it.kind == "kinopoisk" || it.kind == "ivi" || it.kind == "wink" || it.kind == "okko" }
+                                        .map { external ->
+                                            AnimeExternalLinksTable(
+                                                kind = when (external.kind) {
+                                                    "official_site" -> AnimeExternalLinksType.OfficialSite
+                                                    "wikipedia" -> AnimeExternalLinksType.Wikipedia
+                                                    "kinopoisk" -> AnimeExternalLinksType.Kinopoisk
+                                                    "ivi" -> AnimeExternalLinksType.Ivi
+                                                    "wink" -> AnimeExternalLinksType.Wink
+                                                    "okko" -> AnimeExternalLinksType.Okko
+                                                    else -> AnimeExternalLinksType.Okko
+                                                },
+                                                url = external.url,
+                                            )
+                                        },
+                                )
+                            }
+
                             val animeToSave = AnimeTable(
                                 type = type,
                                 url = urlLinkPath,
@@ -444,7 +452,6 @@ class AnimeParseComponent(
                                 titleJapan = shikimori.japanese.toMutableList(),
                                 synonyms = shikimori.synonyms.toMutableList(),
                                 titleOther = otherTitles,
-//                            similarAnime = similar,
                                 ids = AnimeIdsTable(
                                     aniDb = animeIds.aniDb,
                                     aniList = animeIds.aniList,
@@ -457,14 +464,18 @@ class AnimeParseComponent(
                                     thetvdb = animeIds.theMovieDb,
                                     myAnimeList = animeIds.myAnimeList,
                                 ),
+                                isLicensed = shikimori.licensors.isNotEmpty(),
                                 year = airedOn.year,
                                 nextEpisode = nextEpisode,
                                 episodesCount = when {
                                     shikimori.episodes == 0 -> null
-                                    shikimori.episodes < episodesReady.size -> episodesReady.size
+                                    episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
                                     else -> shikimori.episodes
                                 },
-                                episodesAired = episodesReady.size,
+                                episodesAired = when {
+                                    episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
+                                    else -> shikimori.episodesAired
+                                },
                                 shikimoriId = shikimori.id,
                                 createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 airedOn = airedOn,
@@ -487,14 +498,21 @@ class AnimeParseComponent(
                                 accentColor = commonParserComponent.getMostCommonColor(bufferedLargeImage),
                             )
 
-                            animeToSave.addTranslationCount(translationsCountReady)
-//                        animeToSave.addRelated(relations)
-                            animeToSave.addTranslation(translations)
-                            animeToSave.addEpisodesAll(episodesReady)
+                            if (translationsCountReady != null) {
+                                animeToSave.addTranslationCount(translationsCountReady)
+                            }
+                            if (translations != null) {
+                                animeToSave.addTranslation(translations)
+                            }
+                            if (episodesReady != null) {
+                                animeToSave.addEpisodesAll(episodesReady)
+                            }
+
                             animeToSave.addAllAnimeGenre(genres)
                             animeToSave.addAllAnimeStudios(studios)
                             animeToSave.addVideos(videos)
-//                        animeToSave.addFranchiseMultiple(franchise)
+                            animeToSave.addExternalLinks(externalLinks)
+                            animeToSave.addLicensors(shikimori.licensors)
 
                             val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
                             if (preparationToSaveAnime.isPresent) {
