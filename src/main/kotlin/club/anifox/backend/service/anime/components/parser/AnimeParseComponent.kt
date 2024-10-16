@@ -389,11 +389,15 @@ class AnimeParseComponent(
                                     urlLinkPath = urlLinkPath,
                                     defaultImage = images.medium,
                                 )
-                            } else null
+                            } else {
+                                null
+                            }
 
                             val translationsCountReady = if (episodesReady != null) {
                                 episodesComponent.translationsCount(episodesReady)
-                            } else null
+                            } else {
+                                null
+                            }
 
                             val translations = translationsCountReady?.map { it.translation }
 
