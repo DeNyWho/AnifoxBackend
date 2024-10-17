@@ -530,6 +530,10 @@ class AnimeParseComponent(
                                 animeToSave.addEpisodesAll(episodesReady)
                             }
 
+                            animeToSave.nextEpisode?.let { nextEpisodeDate ->
+                                animeToSave.addEpisodeSchedule(nextEpisodeDate)
+                            }
+
                             animeToSave.addAllAnimeGenre(genres)
                             animeToSave.addAllAnimeStudios(studios)
                             animeToSave.addVideos(videos)

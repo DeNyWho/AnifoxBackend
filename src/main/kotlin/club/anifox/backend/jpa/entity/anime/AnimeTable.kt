@@ -11,6 +11,7 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeRelatedTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeSimilarTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
@@ -103,6 +104,8 @@ data class AnimeTable(
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
+    @OneToMany(mappedBy = "anime", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
+    val episodeSchedules: MutableList<AnimeEpisodeScheduleTable> = mutableListOf(),
     var episodesCount: Int? = null,
     var episodesAired: Int = 0,
     val shikimoriId: Int = 0,
@@ -218,6 +221,13 @@ data class AnimeTable(
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
+    fun addEpisodeSchedule(nextEpisodeDate: LocalDateTime): AnimeTable {
+        val dayOfWeek = nextEpisodeDate.dayOfWeek
+        val schedule = AnimeEpisodeScheduleTable(anime = this, nextEpisodeDate = nextEpisodeDate, dayOfWeek = dayOfWeek)
+        episodeSchedules.add(schedule)
+        return this
+    }
+
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)
         translation.forEach { newTranslation ->
