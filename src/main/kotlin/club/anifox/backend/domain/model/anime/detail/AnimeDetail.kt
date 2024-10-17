@@ -22,7 +22,7 @@ data class AnimeDetail(
     var title: String = "",
     var image: AnimeImages = AnimeImages(),
     @SerialName("player_link")
-    val playerLink: String = "",
+    val playerLink: String? = null,
     val url: String = "",
     val type: AnimeType? = null,
     @SerialName("rating_mpa")

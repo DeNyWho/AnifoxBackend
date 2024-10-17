@@ -383,7 +383,7 @@ class AnimeParseComponent(
 
                             val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
 
-                            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "2x2" || it == "Ракета Релизинг" }
+                            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
 
                             val episodesReady = if (licensors.isNotEmpty()) {
                                 episodesComponent.fetchEpisodes(
@@ -465,10 +465,24 @@ class AnimeParseComponent(
                                 )
                             }
 
+                            var episodesCount = when {
+                                episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
+                                shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
+                                else -> shikimori.episodes
+                            }
+                            val episodesAiredCount = when {
+                                episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
+                                else -> shikimori.episodesAired
+                            }
+
+                            if (episodesCount != null && episodesCount < episodesAiredCount) {
+                                episodesCount = episodesAiredCount
+                            }
+
                             val animeToSave = AnimeTable(
                                 type = type,
                                 url = urlLinkPath,
-                                playerLink = animeKodik.link,
+                                playerLink = if (licensors.isEmpty()) animeKodik.link else null,
                                 title = if (!shikimori.russianLic.isNullOrEmpty() && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian,
                                 titleEn = shikimori.english.map { it.toString() }.toMutableList(),
                                 titleJapan = shikimori.japanese.toMutableList(),
@@ -486,23 +500,16 @@ class AnimeParseComponent(
                                     thetvdb = animeIds.theMovieDb,
                                     myAnimeList = animeIds.myAnimeList,
                                 ),
-                                isLicensed = shikimori.licensors.isNotEmpty(),
+                                isLicensed = licensors.isNotEmpty(),
                                 year = airedOn.year,
                                 nextEpisode = nextEpisode,
-                                episodesCount = when {
-                                    shikimori.episodes == 0 -> null
-                                    episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
-                                    else -> shikimori.episodes
-                                },
-                                episodesAired = when {
-                                    episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
-                                    else -> shikimori.episodesAired
-                                },
+                                episodesCount = episodesCount,
+                                episodesAired = episodesAiredCount,
                                 shikimoriId = shikimori.id,
                                 createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 airedOn = airedOn,
                                 releasedOn = releasedOn,
-                                updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
+                                updatedAt = null,
                                 status = status,
                                 description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                 franchise = shikimori.franchise,
@@ -538,7 +545,7 @@ class AnimeParseComponent(
                             animeToSave.addAllAnimeStudios(studios)
                             animeToSave.addVideos(videos)
                             animeToSave.addExternalLinks(externalLinks)
-                            animeToSave.addLicensors(shikimori.licensors)
+                            animeToSave.addLicensors(licensors)
 
                             val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
                             if (preparationToSaveAnime.isPresent) {

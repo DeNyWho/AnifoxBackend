@@ -49,7 +49,7 @@ data class AnimeTable(
     @Column(columnDefinition = "TEXT")
     val url: String = "",
     @Column(columnDefinition = "TEXT")
-    val playerLink: String = "",
+    val playerLink: String? = null,
     @Column(columnDefinition = "TEXT")
     val title: String = "",
     @ElementCollection(fetch = FetchType.LAZY)
@@ -112,7 +112,7 @@ data class AnimeTable(
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val airedOn: LocalDate = LocalDate.now(),
     val releasedOn: LocalDate? = null,
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    var updatedAt: LocalDateTime? = null,
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "licensors", schema = "anime")
     @Column(columnDefinition = "text")
