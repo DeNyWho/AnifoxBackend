@@ -11,6 +11,6 @@ data class AnimeVideo(
     val imageUrl: String = "",
     @SerialName("player_url")
     val playerUrl: String = "",
-    val name: String = "",
+    val name: String? = null,
     val type: AnimeVideoType,
 )

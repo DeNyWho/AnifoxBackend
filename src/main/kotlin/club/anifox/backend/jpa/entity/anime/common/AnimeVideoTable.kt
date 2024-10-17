@@ -17,7 +17,7 @@ data class AnimeVideoTable(
     val url: String = "",
     val imageUrl: String = "",
     val playerUrl: String = "",
-    val name: String = "",
+    val name: String? = null,
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     val type: AnimeVideoType,

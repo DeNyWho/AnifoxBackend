@@ -36,6 +36,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.jpa.repository.anime.AnimeVideoRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.haglund.HaglundComponent
+import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import io.ktor.client.*
@@ -79,6 +80,7 @@ class AnimeParseComponent(
     private val animeSimilarRepository: AnimeSimilarRepository,
     private val animeFranchiseRepository: AnimeFranchiseRepository,
     private val animeExternalLinksRepository: AnimeExternalLinksRepository,
+    private val jikanComponent: JikanComponent,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
 
@@ -115,6 +117,7 @@ class AnimeParseComponent(
                     }.body()
                 }
             }
+            integrateSimilarRelatedFranchise()
         }
     }
 
@@ -272,6 +275,7 @@ class AnimeParseComponent(
         coroutineScope {
             try {
                 val shikimori = shikimoriComponent.fetchAnime(animeKodik.shikimoriId)
+                val jikan = jikanComponent.fetchJikan(animeKodik.shikimoriId)
 
                 if (shikimori != null) {
                     val shikimoriRating = shikimori.score.toDoubleOrNull() ?: 0.0
@@ -389,11 +393,15 @@ class AnimeParseComponent(
                                     urlLinkPath = urlLinkPath,
                                     defaultImage = images.medium,
                                 )
-                            } else null
+                            } else {
+                                null
+                            }
 
                             val translationsCountReady = if (episodesReady != null) {
                                 episodesComponent.translationsCount(episodesReady)
-                            } else null
+                            } else {
+                                null
+                            }
 
                             val translations = translationsCountReady?.map { it.translation }
 
@@ -416,6 +424,20 @@ class AnimeParseComponent(
                                             )
                                         },
                                 )
+                            }
+
+                            jikan.data.trailer?.let { trailer ->
+                                if (trailer.url != null && trailer.embedUrl != null && trailer.images?.maximumImageUrl != null) {
+                                    videos.add(
+                                        AnimeVideoTable(
+                                            url = trailer.url,
+                                            imageUrl = trailer.images.maximumImageUrl,
+                                            playerUrl = trailer.embedUrl.replace("?enablejsapi=1&wmode=opaque&autoplay=1", ""),
+                                            name = null,
+                                            type = AnimeVideoType.MainTrailer,
+                                        ),
+                                    )
+                                }
                             }
 
                             val screenshots = shikimoriScreenshotsDeferred.await().map { screenshot ->

@@ -5,6 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class JikanTrailerImagesDto(
-    @SerialName("large_image_url")
-    val largeImageUrl: String? = null,
+    @SerialName("maximum_image_url")
+    val maximumImageUrl: String? = null,
 )

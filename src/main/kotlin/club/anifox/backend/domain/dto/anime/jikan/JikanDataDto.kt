@@ -9,4 +9,6 @@ data class JikanDataDto(
     val malId: Int = 0,
     @SerialName("images")
     val images: JikanImagesDto = JikanImagesDto(),
+    @SerialName("trailer")
+    val trailer: JikanTrailerDto? = null,
 )
