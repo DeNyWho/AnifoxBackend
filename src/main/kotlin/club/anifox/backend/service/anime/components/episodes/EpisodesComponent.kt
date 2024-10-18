@@ -300,6 +300,7 @@ class EpisodesComponent {
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(thumbnail.large).readBytes(),
                             compress = false,
+                            newImage = true,
                             type = CompressAnimeImageType.Episodes,
                         )
                     }
@@ -308,6 +309,7 @@ class EpisodesComponent {
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(thumbnail.original).readBytes(),
                             compress = true,
+                            newImage = true,
                             type = CompressAnimeImageType.Episodes,
                         )
                     }
