@@ -32,9 +32,6 @@ class ImageService {
         }
     }
 
-    suspend fun saveEpisodesFileInThird(filePath: String, data: ByteArray, compress: Boolean = false, newImage: Boolean = false) {
-    }
-
     suspend fun saveFileInSThird(filePath: String, data: ByteArray, compress: Boolean = false, newImage: Boolean = false, type: CompressAnimeImageType): String = withContext(Dispatchers.IO) {
         when (type) {
             CompressAnimeImageType.LargeKitsu, CompressAnimeImageType.LargeJikan, CompressAnimeImageType.MediumKitsu, CompressAnimeImageType.MediumJikan, CompressAnimeImageType.Cover -> {

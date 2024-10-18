@@ -384,8 +384,9 @@ class AnimeParseComponent(
                             val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
 
                             val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
+                            val isLicensed = licensors.isNotEmpty()
 
-                            val episodesReady = if (licensors.isNotEmpty()) {
+                            val episodesReady = if (!isLicensed) {
                                 episodesComponent.fetchEpisodes(
                                     shikimoriId = shikimori.id,
                                     kitsuId = animeIds.kitsu.toString(),
@@ -500,7 +501,7 @@ class AnimeParseComponent(
                                     thetvdb = animeIds.theMovieDb,
                                     myAnimeList = animeIds.myAnimeList,
                                 ),
-                                isLicensed = licensors.isNotEmpty(),
+                                isLicensed = isLicensed,
                                 year = airedOn.year,
                                 nextEpisode = nextEpisode,
                                 episodesCount = episodesCount,
