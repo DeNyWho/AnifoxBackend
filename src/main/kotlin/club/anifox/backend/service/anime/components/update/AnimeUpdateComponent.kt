@@ -93,6 +93,9 @@ class AnimeUpdateComponent {
                     } else {
                         null
                     }
+                    anime.nextEpisode?.let { nextEpisodeDate ->
+                        anime.addEpisodeSchedule(nextEpisodeDate)
+                    }
                     if (anime.description.isEmpty()) {
                         anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
                     }
@@ -114,8 +117,21 @@ class AnimeUpdateComponent {
                     if (anime.episodesAired < episodesReady.size) {
                         anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
                     }
-                    anime.episodesCount = shikimori.episodes
-                    anime.episodesAired = episodesReady.size
+                    var episodesCount = when {
+                        shikimori.episodes < episodesReady.size -> episodesReady.size
+                        shikimori.episodes == 0 && anime.status == AnimeStatus.Ongoing -> null
+                        else -> shikimori.episodes
+                    }
+                    val episodesAiredCount = when {
+                        shikimori.episodesAired < episodesReady.size -> episodesReady.size
+                        else -> shikimori.episodesAired
+                    }
+
+                    if (episodesCount != null && episodesCount < episodesAiredCount) {
+                        episodesCount = episodesAiredCount
+                    }
+                    anime.episodesCount = episodesCount
+                    anime.episodesAired = episodesAiredCount
                 } else {
                     anime.episodesAired = episodesReady.size
                 }

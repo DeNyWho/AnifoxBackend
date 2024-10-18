@@ -138,7 +138,7 @@ class AnimeService : AnimeRepository {
     }
 
     override fun updateEpisodes() {
-//        animeUpdateComponent.update()
+        animeUpdateComponent.update()
     }
 
     override fun addBlocked(url: String?, shikimoriId: Int?) {
