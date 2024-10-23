@@ -18,6 +18,8 @@ import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 interface AnimeRepository {
     fun parseTranslations(translationsIDs: List<Int>)
@@ -41,6 +43,14 @@ interface AnimeRepository {
         type: AnimeVideoType?,
     ): List<AnimeVideo>
 
+    fun getWeeklySchedule(
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        page: Int,
+        limit: Int,
+        dayOfWeek: DayOfWeek?,
+    ): Map<DayOfWeek, List<AnimeLight>>
+
     fun getAnimeYears(): List<String>
 
     fun getAnimeStudios(): List<AnimeStudio>
@@ -53,7 +63,7 @@ interface AnimeRepository {
         page: Int,
         limit: Int,
         sort: AnimeEpisodeFilter?,
-        translationId: Int,
+        translationId: Int?,
     ): List<AnimeEpisode>
 
     fun updateEpisodes()

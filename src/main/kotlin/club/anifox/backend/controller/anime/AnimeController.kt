@@ -33,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 @RestController
 @CrossOrigin("*")
@@ -183,9 +185,37 @@ class AnimeController {
         Int,
         sort: AnimeEpisodeFilter?,
         @RequestParam(name = "translation_id", required = false)
-        translationId: Int,
+        translationId: Int?,
     ): List<AnimeEpisode> {
         return animeService.getAnimeEpisodes(token, url, page, limit, sort, translationId)
+    }
+
+    @GetMapping("/schedules")
+    @Operation(
+        summary = "anime schedules",
+        description = """
+            Get anime schedules filtered by date range and/or day of week.
+            Available days of week: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+        """,
+    )
+    fun getAnimeSchedules(
+        @RequestParam(name = "start_date", required = false)
+        startDate: LocalDate?,
+        @RequestParam(name = "end_date", required = false)
+        endDate: LocalDate?,
+        @RequestParam(defaultValue = "0", name = "page") page:
+        @Min(0)
+        @Max(500)
+        Int,
+        @RequestParam(defaultValue = "48", name = "limit") limit:
+        @Min(1)
+        @Max(500)
+        Int,
+        @RequestParam(name = "day_of_week", required = false)
+        @Schema(description = "Filter by day of week (MONDAY, TUESDAY, etc.)")
+        dayOfWeek: DayOfWeek?,
+    ): Map<DayOfWeek, List<AnimeLight>> {
+        return animeService.getWeeklySchedule(startDate, endDate, page, limit, dayOfWeek)
     }
 
     @GetMapping("/years")

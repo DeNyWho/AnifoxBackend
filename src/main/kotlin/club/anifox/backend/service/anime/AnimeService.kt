@@ -26,6 +26,8 @@ import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
 import club.anifox.backend.service.anime.components.update.AnimeUpdateComponent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 @Service
 class AnimeService : AnimeRepository {
@@ -102,7 +104,7 @@ class AnimeService : AnimeRepository {
         page: Int,
         limit: Int,
         sort: AnimeEpisodeFilter?,
-        translationId: Int,
+        translationId: Int?,
     ): List<AnimeEpisode> {
         return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort, translationId)
     }
@@ -112,6 +114,16 @@ class AnimeService : AnimeRepository {
         type: AnimeVideoType?,
     ): List<AnimeVideo> {
         return animeCommonComponent.getAnimeVideos(url, type)
+    }
+
+    override fun getWeeklySchedule(
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        page: Int,
+        limit: Int,
+        dayOfWeek: DayOfWeek?,
+    ): Map<DayOfWeek, List<AnimeLight>> {
+        return animeCommonComponent.getWeeklySchedule(startDate, endDate, page, limit, dayOfWeek)
     }
 
     override fun getAnimeFranchises(

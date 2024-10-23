@@ -28,6 +28,7 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
@@ -49,6 +50,10 @@ import jakarta.persistence.criteria.Root
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.TemporalAdjusters
 
 @Component
 class AnimeCommonComponent {
@@ -383,5 +388,68 @@ class AnimeCommonComponent {
                 targetUrl = franchise.target.url,
             )
         }
+    }
+
+    fun getWeeklySchedule(
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null,
+        page: Int,
+        limit: Int,
+        dayOfWeek: DayOfWeek? = null,
+    ): Map<DayOfWeek, List<AnimeLight>> {
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeEpisodeScheduleTable> =
+            criteriaBuilder.createQuery(AnimeEpisodeScheduleTable::class.java)
+
+        val scheduleRoot: Root<AnimeEpisodeScheduleTable> = criteriaQuery.from(AnimeEpisodeScheduleTable::class.java)
+        val animeJoin = scheduleRoot.join<AnimeEpisodeScheduleTable, AnimeTable>("anime", JoinType.INNER)
+
+        val predicates = mutableListOf<Predicate>()
+
+        if (startDate != null && endDate != null) {
+            predicates.add(
+                criteriaBuilder.and(
+                    criteriaBuilder.greaterThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), startDate),
+                    criteriaBuilder.lessThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), endDate),
+                ),
+            )
+        } else {
+            val now = LocalDateTime.now()
+            val weekStart = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val weekEnd = weekStart.plusDays(7)
+
+            predicates.add(
+                criteriaBuilder.and(
+                    criteriaBuilder.greaterThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), weekStart),
+                    criteriaBuilder.lessThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), weekEnd),
+                ),
+            )
+        }
+
+        dayOfWeek?.let {
+            predicates.add(criteriaBuilder.equal(scheduleRoot.get<DayOfWeek>("dayOfWeek"), it))
+        }
+
+        criteriaQuery.where(*predicates.toTypedArray())
+
+        criteriaQuery.orderBy(
+            criteriaBuilder.asc(scheduleRoot.get<DayOfWeek>("dayOfWeek")),
+            criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate")),
+        )
+
+        val query = entityManager.createQuery(criteriaQuery)
+
+        val firstResult = (page - 1) * limit
+        query.firstResult = if (firstResult >= 0) firstResult else 0
+        query.maxResults = limit
+
+        val schedules = query.resultList
+
+        return schedules.groupBy { it.dayOfWeek }
+            .mapValues { (_, schedules) ->
+                schedules.map { schedule ->
+                    schedule.anime.toAnimeLight()
+                }
+            }
     }
 }
