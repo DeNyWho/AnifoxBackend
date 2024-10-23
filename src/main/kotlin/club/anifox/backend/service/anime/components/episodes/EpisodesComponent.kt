@@ -295,19 +295,19 @@ class EpisodesComponent {
         val imageEpisode = kitsuEpisode?.attributes?.thumbnail?.let { thumbnail ->
             try {
                 when {
+                    thumbnail.original != null -> {
+                        imageService.saveFileInSThird(
+                            "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
+                            URL(thumbnail.original).readBytes(),
+                            compress = false,
+                            type = CompressAnimeImageType.Episodes,
+                        )
+                    }
                     thumbnail.large != null -> {
                         imageService.saveFileInSThird(
                             "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
                             URL(thumbnail.large).readBytes(),
                             compress = false,
-                            type = CompressAnimeImageType.Episodes,
-                        )
-                    }
-                    thumbnail.original != null -> {
-                        imageService.saveFileInSThird(
-                            "images/anime/${CompressAnimeImageType.Episodes.path}/$url/${mdFive(episode.toString())}.${CompressAnimeImageType.Episodes.imageType.textFormat()}",
-                            URL(thumbnail.original).readBytes(),
-                            compress = true,
                             type = CompressAnimeImageType.Episodes,
                         )
                     }

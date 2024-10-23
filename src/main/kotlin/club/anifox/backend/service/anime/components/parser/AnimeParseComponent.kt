@@ -471,13 +471,11 @@ class AnimeParseComponent(
                                 shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
                                 else -> shikimori.episodes
                             }
-                            val episodesAiredCount = when {
-                                episodesReady != null && shikimori.episodesAired < episodesReady.size -> episodesReady.size
-                                else -> shikimori.episodesAired
-                            }
 
-                            if (episodesCount != null && episodesCount < episodesAiredCount) {
-                                episodesCount = episodesAiredCount
+                            if (episodesCount != null) {
+                                if (episodesReady != null && episodesCount < episodesReady.size) {
+                                    episodesCount = episodesReady.size
+                                }
                             }
 
                             val animeToSave = AnimeTable(
@@ -505,7 +503,7 @@ class AnimeParseComponent(
                                 year = airedOn.year,
                                 nextEpisode = nextEpisode,
                                 episodesCount = episodesCount,
-                                episodesAired = episodesAiredCount,
+                                episodesAired = episodesReady?.size,
                                 shikimoriId = shikimori.id,
                                 createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
                                 airedOn = airedOn,

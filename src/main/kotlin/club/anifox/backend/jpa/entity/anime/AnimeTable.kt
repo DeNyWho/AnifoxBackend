@@ -107,7 +107,7 @@ data class AnimeTable(
     @OneToMany(mappedBy = "anime", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     val episodeSchedules: MutableList<AnimeEpisodeScheduleTable> = mutableListOf(),
     var episodesCount: Int? = null,
-    var episodesAired: Int = 0,
+    var episodesAired: Int? = null,
     val shikimoriId: Int = 0,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val airedOn: LocalDate = LocalDate.now(),

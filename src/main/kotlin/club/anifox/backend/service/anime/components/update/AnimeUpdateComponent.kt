@@ -122,7 +122,8 @@ class AnimeUpdateComponent {
                         "ongoing" -> AnimeStatus.Ongoing
                         else -> AnimeStatus.Ongoing
                     }
-                    if (anime.episodesAired < episodesReady.size) {
+                    val episodesAiredInBase = anime.episodesAired ?: 0
+                    if (episodesAiredInBase < episodesReady.size) {
                         anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
                     }
                     var episodesCount = when {
@@ -130,16 +131,12 @@ class AnimeUpdateComponent {
                         shikimori.episodes == 0 && anime.status == AnimeStatus.Ongoing -> null
                         else -> shikimori.episodes
                     }
-                    val episodesAiredCount = when {
-                        shikimori.episodesAired < episodesReady.size -> episodesReady.size
-                        else -> shikimori.episodesAired
-                    }
 
-                    if (episodesCount != null && episodesCount < episodesAiredCount) {
-                        episodesCount = episodesAiredCount
+                    if (episodesCount != null && episodesCount < episodesReady.size) {
+                        episodesCount = episodesReady.size
                     }
                     anime.episodesCount = episodesCount
-                    anime.episodesAired = episodesAiredCount
+                    anime.episodesAired = episodesReady.size
                 } else {
                     anime.episodesAired = episodesReady.size
                 }

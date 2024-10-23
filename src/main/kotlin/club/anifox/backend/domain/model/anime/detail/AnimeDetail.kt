@@ -38,7 +38,7 @@ data class AnimeDetail(
     @SerialName("episodes")
     val episodes: Int? = null,
     @SerialName("episodes_aired")
-    val episodesAired: Int = 0,
+    val episodesAired: Int? = null,
     @SerialName("next_episode_on")
     val nextEpisode: LocalDateTime? = null,
     @SerialName("released_on")

@@ -24,9 +24,9 @@ data class AnimeLight(
     val year: Int = 0,
     val status: AnimeStatus = AnimeStatus.Ongoing,
     val season: AnimeSeason = AnimeSeason.Summer,
-    val episodes: Int? = 0,
+    val episodes: Int? = null,
     @SerialName("episodes_aired")
-    val episodesAired: Int = 0,
+    val episodesAired: Int? = null,
     @SerialName("accent_color")
     val accentColor: String = "",
     val studio: List<AnimeStudio> = listOf(),
