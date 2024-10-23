@@ -21,14 +21,11 @@ data class AnimeEpisodeScheduleTable(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable,
-
     @Column(name = "next_episode_date", nullable = false)
     val nextEpisodeDate: LocalDateTime,
-
     @Column(name = "day_of_week", nullable = false)
     @Enumerated(EnumType.STRING)
     val dayOfWeek: DayOfWeek,

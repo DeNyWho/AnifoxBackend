@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class Network {
-
     val domainMutex = Mutex()
 
     @Bean

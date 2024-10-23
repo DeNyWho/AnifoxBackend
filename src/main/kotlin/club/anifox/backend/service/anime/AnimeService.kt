@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service
 
 @Service
 class AnimeService : AnimeRepository {
-
     @Autowired
     private lateinit var animeSearchComponent: AnimeSearchComponent
 
@@ -97,15 +96,28 @@ class AnimeService : AnimeRepository {
         return animeCommonComponent.getAnimeScreenshots(url)
     }
 
-    override fun getAnimeEpisodes(token: String?, url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisode> {
-        return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort)
+    override fun getAnimeEpisodes(
+        token: String?,
+        url: String,
+        page: Int,
+        limit: Int,
+        sort: AnimeEpisodeFilter?,
+        translationId: Int,
+    ): List<AnimeEpisode> {
+        return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort, translationId)
     }
 
-    override fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo> {
+    override fun getAnimeVideos(
+        url: String,
+        type: AnimeVideoType?,
+    ): List<AnimeVideo> {
         return animeCommonComponent.getAnimeVideos(url, type)
     }
 
-    override fun getAnimeFranchises(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise> {
+    override fun getAnimeFranchises(
+        url: String,
+        type: AnimeRelationFranchise?,
+    ): List<AnimeFranchise> {
         return animeCommonComponent.getAnimeFranchise(url, type)
     }
 
@@ -141,7 +153,10 @@ class AnimeService : AnimeRepository {
         animeUpdateComponent.update()
     }
 
-    override fun addBlocked(url: String?, shikimoriId: Int?) {
+    override fun addBlocked(
+        url: String?,
+        shikimoriId: Int?,
+    ) {
         animeCommonComponent.blockAnime(url, shikimoriId)
     }
 }

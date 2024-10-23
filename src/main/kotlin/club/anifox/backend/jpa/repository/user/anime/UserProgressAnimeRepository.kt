@@ -11,7 +11,14 @@ import java.util.*
 
 @Repository
 interface UserProgressAnimeRepository : JpaRepository<UserProgressAnimeTable, String> {
-    fun findByUserAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): List<UserProgressAnimeTable>
+    fun findByUserAndAnime(
+        @Param("user") user: UserTable,
+        @Param("anime") anime: AnimeTable,
+    ): List<UserProgressAnimeTable>
 
-    fun findByUserAndAnimeAndEpisode(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable, @Param("episode") episode: AnimeEpisodeTable): Optional<UserProgressAnimeTable>
+    fun findByUserAndAnimeAndEpisode(
+        @Param("user") user: UserTable,
+        @Param("anime") anime: AnimeTable,
+        @Param("episode") episode: AnimeEpisodeTable,
+    ): Optional<UserProgressAnimeTable>
 }

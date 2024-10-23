@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController
 class UsersAnimeController(
     private val userService: UserService,
 ) {
-
     @PostMapping("{url}/favorite")
     fun addToFavoriteAnime(
         @RequestHeader(value = "Authorization") token: String,
@@ -48,13 +47,13 @@ class UsersAnimeController(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable status: StatusFavourite,
         @RequestParam(defaultValue = "0", name = "page") page:
-            @Min(0)
-            @Max(500)
-            Int,
+        @Min(0)
+        @Max(500)
+        Int,
         @RequestParam(defaultValue = "48", name = "limit") limit:
-            @Min(1)
-            @Max(500)
-            Int,
+        @Min(1)
+        @Max(500)
+        Int,
     ): List<AnimeLight> {
         return userService.getFavoritesAnimeByStatus(token, status, page, limit)
     }
@@ -64,13 +63,13 @@ class UsersAnimeController(
     fun getAnimeRecommendations(
         @RequestHeader(value = "Authorization") token: String,
         @RequestParam(defaultValue = "0", name = "page") page:
-            @Min(0)
-            @Max(500)
-            Int,
+        @Min(0)
+        @Max(500)
+        Int,
         @RequestParam(defaultValue = "48", name = "limit") limit:
-            @Min(1)
-            @Max(500)
-            Int,
+        @Min(1)
+        @Max(500)
+        Int,
     ): List<AnimeLight> {
         return userService.getRecommendations(token, page, limit)
     }
@@ -97,13 +96,13 @@ class UsersAnimeController(
     @GetMapping("recently")
     fun getRecentlyAnime(
         @RequestParam(defaultValue = "0", name = "page") page:
-            @Min(0)
-            @Max(500)
-            Int,
+        @Min(0)
+        @Max(500)
+        Int,
         @RequestParam(defaultValue = "48", name = "limit") limit:
-            @Min(1)
-            @Max(500)
-            Int,
+        @Min(1)
+        @Max(500)
+        Int,
         @RequestHeader(value = "Authorization") token: String,
         response: HttpServletResponse,
     ): List<AnimeLight> {
@@ -115,9 +114,9 @@ class UsersAnimeController(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
         rating:
-            @Min(0)
-            @Max(10)
-            Int,
+        @Min(0)
+        @Max(10)
+        Int,
         response: HttpServletResponse,
     ) {
         userService.setAnimeRating(token, url, rating, response)

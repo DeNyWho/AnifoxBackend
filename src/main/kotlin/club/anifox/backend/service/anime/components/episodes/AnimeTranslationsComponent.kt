@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class AnimeTranslationsComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 
@@ -51,20 +50,21 @@ class AnimeTranslationsComponent {
     }
 
     fun addTranslationsToDB(translationsIDs: List<Int>) {
-        val translations = runBlocking {
-            client.get {
-                headers {
-                    contentType(ContentType.Application.Json)
-                }
-                url {
-                    protocol = URLProtocol.HTTPS
-                    host = Constants.KODIK
-                    encodedPath = "${Constants.KODIK_TRANSLATIONS}${Constants.KODIK_VERSION}"
-                }
-                parameter("token", animeToken)
-                parameter("types", "anime, anime-serial")
-            }.body<KodikResponseDto<KodikTranslationsDto>>()
-        }
+        val translations =
+            runBlocking {
+                client.get {
+                    headers {
+                        contentType(ContentType.Application.Json)
+                    }
+                    url {
+                        protocol = URLProtocol.HTTPS
+                        host = Constants.KODIK
+                        encodedPath = "${Constants.KODIK_TRANSLATIONS}${Constants.KODIK_VERSION}"
+                    }
+                    parameter("token", animeToken)
+                    parameter("types", "anime, anime-serial")
+                }.body<KodikResponseDto<KodikTranslationsDto>>()
+            }
         translationsIDs.forEach { translation ->
             val t = translations.result.find { it.id == translation }
             if (t != null) {
@@ -73,7 +73,11 @@ class AnimeTranslationsComponent {
         }
     }
 
-    private fun checkKodikTranslation(translationId: Int, title: String, voice: String): AnimeTranslationTable {
+    private fun checkKodikTranslation(
+        translationId: Int,
+        title: String,
+        voice: String,
+    ): AnimeTranslationTable {
         val translationCheck = animeTranslationRepository.findById(translationId).isPresent
         return if (translationCheck) {
             animeTranslationRepository.findById(translationId).get()

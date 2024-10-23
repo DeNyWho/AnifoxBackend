@@ -7,7 +7,11 @@ import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
 
 class UnauthorizedEntryPoint : AuthenticationEntryPoint {
-    override fun commence(request: HttpServletRequest?, response: HttpServletResponse?, authException: AuthenticationException?) {
+    override fun commence(
+        request: HttpServletRequest?,
+        response: HttpServletResponse?,
+        authException: AuthenticationException?,
+    ) {
         response?.status = HttpStatus.UNAUTHORIZED.value()
     }
 }

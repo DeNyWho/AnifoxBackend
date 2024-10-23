@@ -9,10 +9,14 @@ import java.util.*
 
 @Repository
 interface AnimeRepository : JpaRepository<AnimeTable, String> {
-    fun findByShikimoriId(@Param("shikimoriId") shikimoriId: Int): Optional<AnimeTable>
+    fun findByShikimoriId(
+        @Param("shikimoriId") shikimoriId: Int,
+    ): Optional<AnimeTable>
 
     @Query("Select distinct a.year from AnimeTable a order by a.year desc")
     fun findDistinctByYear(): List<String>
 
-    fun findByUrl(@Param("url") url: String): Optional<AnimeTable>
+    fun findByUrl(
+        @Param("url") url: String,
+    ): Optional<AnimeTable>
 }

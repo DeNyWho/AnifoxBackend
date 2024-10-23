@@ -12,9 +12,19 @@ import java.util.*
 
 @Repository
 interface UserFavoriteAnimeRepository : JpaRepository<UserFavoriteAnimeTable, String> {
-    fun findByUserAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): Optional<UserFavoriteAnimeTable>
+    fun findByUserAndAnime(
+        @Param("user") user: UserTable,
+        @Param("anime") anime: AnimeTable,
+    ): Optional<UserFavoriteAnimeTable>
 
-    fun findByUser(@Param("user") user: UserTable, pageable: Pageable): List<UserFavoriteAnimeTable>
+    fun findByUser(
+        @Param("user") user: UserTable,
+        pageable: Pageable,
+    ): List<UserFavoriteAnimeTable>
 
-    fun findByUserAndStatus(@Param("user") user: UserTable, @Param("status") status: StatusFavourite, pageable: Pageable): List<UserFavoriteAnimeTable>
+    fun findByUserAndStatus(
+        @Param("user") user: UserTable,
+        @Param("status") status: StatusFavourite,
+        pageable: Pageable,
+    ): List<UserFavoriteAnimeTable>
 }

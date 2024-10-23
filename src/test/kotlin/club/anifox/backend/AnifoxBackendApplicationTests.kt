@@ -14,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
 class AnifoxBackendApplicationTests {
-
     @Autowired
     private lateinit var client: HttpClient
 
@@ -30,18 +29,20 @@ class AnifoxBackendApplicationTests {
     @Test
     fun contextLoads() {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
-        var ar = runBlocking {
-            kodikComponent.checkKodikList(translationsIds)
-        }
+        var ar =
+            runBlocking {
+                kodikComponent.checkKodikList(translationsIds)
+            }
 
         while (ar.nextPage != null) {
-            ar = runBlocking {
-                client.get(ar.nextPage!!) {
-                    headers {
-                        contentType(ContentType.Application.Json)
-                    }
-                }.body()
-            }
+            ar =
+                runBlocking {
+                    client.get(ar.nextPage!!) {
+                        headers {
+                            contentType(ContentType.Application.Json)
+                        }
+                    }.body()
+                }
         }
     }
 

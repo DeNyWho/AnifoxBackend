@@ -12,16 +12,16 @@ import org.springframework.stereotype.Component
 
 @Component
 class JwtAuthConverter(private val properties: JwtAuthConverterProperties) : Converter<Jwt, AbstractAuthenticationToken> {
-
     override fun convert(jwt: Jwt): AbstractAuthenticationToken? {
         try {
             val jwtGrantedAuthoritiesConverter = JwtGrantedAuthoritiesConverter()
 
-            val authorities = (
-                jwtGrantedAuthoritiesConverter.convert(jwt)!!.asSequence() +
-                    extractResourceRoles(jwt).asSequence()
-                ).toSet()
-                .map { SimpleGrantedAuthority("$it") }
+            val authorities =
+                (
+                    jwtGrantedAuthoritiesConverter.convert(jwt)!!.asSequence() +
+                        extractResourceRoles(jwt).asSequence()
+                    ).toSet()
+                    .map { SimpleGrantedAuthority("$it") }
             return JwtAuthenticationToken(jwt, authorities.toList(), getPrincipalClaimName(jwt))
         } catch (e: Exception) {
             throw UnauthorizedException()

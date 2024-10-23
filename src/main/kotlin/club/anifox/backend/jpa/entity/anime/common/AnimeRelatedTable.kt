@@ -15,14 +15,11 @@ import java.util.*
 data class AnimeRelatedTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @Column(nullable = true)
     val type: String,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_anime_id")
     val relatedAnime: AnimeTable,

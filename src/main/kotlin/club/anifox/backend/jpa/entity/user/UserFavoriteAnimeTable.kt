@@ -19,21 +19,16 @@ import java.util.*
 data class UserFavoriteAnimeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     val user: UserTable = UserTable(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable = AnimeTable(),
-
     var updateDate: LocalDateTime = LocalDateTime.now(),
-
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     var status: StatusFavourite = StatusFavourite.Watching,
-
     @Column(length = 5, nullable = true)
     var episodesWatched: Int? = null,
 )

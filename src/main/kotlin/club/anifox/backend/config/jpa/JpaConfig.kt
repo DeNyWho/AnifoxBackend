@@ -23,7 +23,6 @@ class JpaConfig(
     @Value("\${spring.datasource.username}") private val username: String,
     @Value("\${spring.datasource.password}") private val password: String,
 ) {
-
     @Bean
     fun dataSource(): DataSource {
         val dataSource = DriverManagerDataSource()

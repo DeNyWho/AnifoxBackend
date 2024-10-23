@@ -14,11 +14,9 @@ import java.util.*
 data class AnimeExternalLinksTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @Enumerated(EnumType.STRING)
     @Column(length = 30, nullable = false)
     var kind: AnimeExternalLinksType = AnimeExternalLinksType.OfficialSite,
-
     @Column(columnDefinition = "TEXT")
     val url: String,
 )

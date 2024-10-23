@@ -11,24 +11,38 @@ import org.springframework.stereotype.Service
 class AuthService(
     private val authComponent: AuthComponent,
 ) : AuthRepository {
-
-    override fun authenticate(loginRequest: AuthenticationRequest, res: HttpServletResponse) {
+    override fun authenticate(
+        loginRequest: AuthenticationRequest,
+        res: HttpServletResponse,
+    ) {
         authComponent.authenticate(userIdentifier = loginRequest.userIdentifier, password = loginRequest.password, res)
     }
 
-    override fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
+    override fun registration(
+        signUpRequest: CreateUserRequest,
+        response: HttpServletResponse,
+    ) {
         authComponent.registration(signUpRequest = signUpRequest, response = response)
     }
 
-    override fun checkEmail(email: String, response: HttpServletResponse) {
+    override fun checkEmail(
+        email: String,
+        response: HttpServletResponse,
+    ) {
         authComponent.checkEmail(email = email, response = response)
     }
 
-    override fun checkLogin(login: String, response: HttpServletResponse) {
+    override fun checkLogin(
+        login: String,
+        response: HttpServletResponse,
+    ) {
         authComponent.checkLogin(login = login, response = response)
     }
 
-    override fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
+    override fun refreshAccessToken(
+        refreshToken: String,
+        response: HttpServletResponse,
+    ) {
         authComponent.refreshAccessToken(refreshToken = refreshToken, response = response)
     }
 }

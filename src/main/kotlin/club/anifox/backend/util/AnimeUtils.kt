@@ -18,7 +18,6 @@ class AnimeUtils(
     private val animeRepository: AnimeRepository,
     private val entityManager: EntityManager,
 ) {
-
     fun checkAnime(url: String): AnimeTable {
         return animeRepository.findByUrl(url).orElseThrow { NotFoundException("Anime not found") }
     }
@@ -28,9 +27,10 @@ class AnimeUtils(
         val criteriaQuery: CriteriaQuery<AnimeGenreTable> = criteriaBuilder.createQuery(AnimeGenreTable::class.java)
         val root: Root<AnimeGenreTable> = criteriaQuery.from(AnimeGenreTable::class.java)
 
-        val predicates: List<Predicate> = genres.map { id ->
-            criteriaBuilder.equal(root.get<String>("id"), id)
-        }
+        val predicates: List<Predicate> =
+            genres.map { id ->
+                criteriaBuilder.equal(root.get<String>("id"), id)
+            }
 
         val finalPredicate: Predicate = criteriaBuilder.or(*predicates.toTypedArray())
 
@@ -42,7 +42,10 @@ class AnimeUtils(
         return query.resultList
     }
 
-    fun checkEpisode(url: String, episodeNumber: Int): AnimeEpisodeTable {
+    fun checkEpisode(
+        url: String,
+        episodeNumber: Int,
+    ): AnimeEpisodeTable {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)

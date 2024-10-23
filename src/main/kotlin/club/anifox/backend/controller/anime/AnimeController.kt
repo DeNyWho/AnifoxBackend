@@ -29,7 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -40,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "AnimeAPI", description = "All about anime")
 @RequestMapping("/api/anime")
 class AnimeController {
-
     @Autowired
     lateinit var animeService: AnimeService
 
@@ -50,15 +48,15 @@ class AnimeController {
         @RequestParam(required = true)
         @Schema(defaultValue = "0", name = "page")
         page:
-            @Min(0)
-            @Max(500)
-            Int,
+        @Min(0)
+        @Max(500)
+        Int,
         @RequestParam(required = true)
         @Schema(defaultValue = "48", name = "limit")
         limit:
-            @Min(1)
-            @Max(500)
-            Int,
+        @Min(1)
+        @Max(500)
+        Int,
         @RequestParam(required = false)
         status: AnimeStatus?,
         @RequestParam(required = false)
@@ -108,14 +106,17 @@ class AnimeController {
         )
     }
 
-    @PostMapping("/block")
-    fun addBlockedAnime(
-        @RequestHeader(value = "Authorization") token: String,
-        @RequestParam(required = false) url: String?,
-        @RequestParam(required = false) shikimoriId: Int?,
-    ) {
-        animeService.addBlocked(url, shikimoriId)
-    }
+    /*
+        TODO: REWORK BLOCKED REQUEST
+     */
+//    @PostMapping("/block")
+//    fun addBlockedAnime(
+//        @RequestHeader(value = "Authorization") token: String,
+//        @RequestParam(required = false) url: String?,
+//        @RequestParam(required = false) shikimoriId: Int?,
+//    ) {
+//        animeService.addBlocked(url, shikimoriId)
+//    }
 
     @GetMapping("/{url}")
     @Operation(summary = "detail anime")
@@ -173,16 +174,18 @@ class AnimeController {
         @RequestHeader(value = "Authorization", required = false) token: String?,
         @PathVariable url: String,
         @RequestParam(defaultValue = "0", name = "page") page:
-            @Min(0)
-            @Max(500)
-            Int,
+        @Min(0)
+        @Max(500)
+        Int,
         @RequestParam(defaultValue = "48", name = "limit") limit:
-            @Min(1)
-            @Max(500)
-            Int,
+        @Min(1)
+        @Max(500)
+        Int,
         sort: AnimeEpisodeFilter?,
+        @RequestParam(name = "translation_id", required = false)
+        translationId: Int,
     ): List<AnimeEpisode> {
-        return animeService.getAnimeEpisodes(token, url, page, limit, sort)
+        return animeService.getAnimeEpisodes(token, url, page, limit, sort, translationId)
     }
 
     @GetMapping("/years")

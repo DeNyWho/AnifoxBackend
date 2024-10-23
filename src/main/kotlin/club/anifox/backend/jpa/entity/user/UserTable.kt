@@ -18,25 +18,19 @@ import java.util.*
 data class UserTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @Column(nullable = false)
     val login: String = "",
-
     @Column(nullable = true)
     var image: String? = null,
-
     @Column(nullable = true)
     var birthday: LocalDate? = null,
-
     @Column(nullable = true)
     var nickName: String? = null,
-
     @ManyToMany(
         fetch = FetchType.EAGER,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
     var preferredGenres: MutableSet<AnimeGenreTable> = mutableSetOf(),
-
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "user",
@@ -44,7 +38,6 @@ data class UserTable(
         orphanRemoval = true,
     )
     val favoritesAnime: MutableSet<UserFavoriteAnimeTable> = mutableSetOf(),
-
     @OneToMany(
         mappedBy = "user",
         fetch = FetchType.LAZY,

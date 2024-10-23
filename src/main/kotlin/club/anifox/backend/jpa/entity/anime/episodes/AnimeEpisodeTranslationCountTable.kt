@@ -15,10 +15,8 @@ import java.util.*
 data class AnimeEpisodeTranslationCountTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "translation_id", referencedColumnName = "id")
     val translation: AnimeTranslationTable = AnimeTranslationTable(),
-
     var countEpisodes: Int = 0,
 )

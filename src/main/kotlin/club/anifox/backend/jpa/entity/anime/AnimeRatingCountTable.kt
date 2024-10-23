@@ -13,12 +13,9 @@ import java.util.*
 data class AnimeRatingCountTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable = AnimeTable(),
-
     val rating: Int = 0,
-
     var count: Int = 0,
 )

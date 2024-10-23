@@ -28,7 +28,6 @@ class SSLConfig(
     @Value("\${trust-store}") private val trustStorePath: String,
     @Value("\${trust-store-password}") private val trustStorePassword: String,
 ) {
-
     @Bean
     fun sslContext(): SSLContext {
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
@@ -50,42 +49,44 @@ class SSLConfig(
         val builder = HttpClientBuilder.create()
         builder.setSSLContext(sslContext())
 
-        val configuration = org.keycloak.authorization.client.Configuration(
-            authUrl,
-            realm,
-            clientId,
-            clientCredentials,
-            builder.build(),
-        )
+        val configuration =
+            org.keycloak.authorization.client.Configuration(
+                authUrl,
+                realm,
+                clientId,
+                clientCredentials,
+                builder.build(),
+            )
 
         return AuthzClient.create(configuration)
     }
 
     @Bean
     fun keycloak(): Keycloak {
-        val config = KeycloakBuilder.builder()
-            .serverUrl(authUrl)
-            .realm(realm)
-            .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-            .clientId(clientId)
-            .clientSecret(secret)
-            .username(adminUser)
-            .password(adminPass)
-            .resteasyClient(
-                ResteasyClientBuilderImpl()
-                    .connectionPoolSize(12)
-                    .keyStore(
-                        KeyStore.getInstance(KeyStore.getDefaultType())
-                            .apply {
-                                FileInputStream(keyStorePath).use {
-                                    load(it, keyStorePassword.toCharArray())
-                                }
-                            },
-                        keyStorePassword.toCharArray(),
-                    )
-                    .build(),
-            )
-            .build()
+        val config =
+            KeycloakBuilder.builder()
+                .serverUrl(authUrl)
+                .realm(realm)
+                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
+                .clientId(clientId)
+                .clientSecret(secret)
+                .username(adminUser)
+                .password(adminPass)
+                .resteasyClient(
+                    ResteasyClientBuilderImpl()
+                        .connectionPoolSize(12)
+                        .keyStore(
+                            KeyStore.getInstance(KeyStore.getDefaultType())
+                                .apply {
+                                    FileInputStream(keyStorePath).use {
+                                        load(it, keyStorePassword.toCharArray())
+                                    }
+                                },
+                            keyStorePassword.toCharArray(),
+                        )
+                        .build(),
+                )
+                .build()
         return config
     }
 }

@@ -23,7 +23,6 @@ import java.time.LocalDate
 class AccountController(
     private val accountService: AccountService,
 ) {
-
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE], name = "avatar")
     fun changeAvatar(
         @RequestHeader(value = "Authorization") token: String,

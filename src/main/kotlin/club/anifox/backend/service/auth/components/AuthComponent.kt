@@ -43,7 +43,11 @@ class AuthComponent(
     private val authzClient: AuthzClient,
     private val httpClient: HttpClient,
 ) {
-    fun authenticate(userIdentifier: String, password: String, response: HttpServletResponse) {
+    fun authenticate(
+        userIdentifier: String,
+        password: String,
+        response: HttpServletResponse,
+    ) {
         when (userUtils.checkUserIdentifier(userIdentifier)) {
             UserIdentifierType.EMAIL -> {
                 if (keycloakService.findByEmail(userIdentifier) == null) {
@@ -72,22 +76,27 @@ class AuthComponent(
         }
     }
 
-    fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
-        val parameters = Parameters.build {
-            append("client_id", clientId)
-            append("grant_type", "refresh_token")
-            append("refresh_token", refreshToken)
-            append("client_secret", secret)
-        }
+    fun refreshAccessToken(
+        refreshToken: String,
+        response: HttpServletResponse,
+    ) {
+        val parameters =
+            Parameters.build {
+                append("client_id", clientId)
+                append("grant_type", "refresh_token")
+                append("refresh_token", refreshToken)
+                append("client_secret", secret)
+            }
 
-        val refresh = runBlocking {
-            httpClient.post("${authServer}realms/$realm/protocol/openid-connect/token") {
-                headers {
-                    contentType(ContentType.Application.FormUrlEncoded)
-                }
-                setBody(FormDataContent(parameters))
-            }.body<KeycloakTokenRefreshDto>()
-        }
+        val refresh =
+            runBlocking {
+                httpClient.post("${authServer}realms/$realm/protocol/openid-connect/token") {
+                    headers {
+                        contentType(ContentType.Application.FormUrlEncoded)
+                    }
+                    setBody(FormDataContent(parameters))
+                }.body<KeycloakTokenRefreshDto>()
+            }
 
         makeCookieAniFox(
             response = response,
@@ -98,7 +107,10 @@ class AuthComponent(
         )
     }
 
-    fun registration(signUpRequest: CreateUserRequest, response: HttpServletResponse) {
+    fun registration(
+        signUpRequest: CreateUserRequest,
+        response: HttpServletResponse,
+    ) {
         validateEmail(signUpRequest.email)
         validateLogin(signUpRequest.login)
 
@@ -126,13 +138,14 @@ class AuthComponent(
                     val userResource = usersResource[userId]
                     userResource.resetPassword(passwordCred)
 
-                    val userEntity = UserTable(
-                        id = userId,
-                        login = signUpRequest.login,
-                        image = "",
-                        birthday = signUpRequest.birthday,
-                        nickName = "user${(1..10).map { Random.nextInt(0, 10) }.joinToString("")}",
-                    )
+                    val userEntity =
+                        UserTable(
+                            id = userId,
+                            login = signUpRequest.login,
+                            image = "",
+                            birthday = signUpRequest.birthday,
+                            nickName = "user${(1..10).map { Random.nextInt(0, 10) }.joinToString("")}",
+                        )
 
                     userRepository.save(userEntity)
                 }
@@ -155,14 +168,20 @@ class AuthComponent(
         response.status = HttpStatus.CREATED.value()
     }
 
-    fun checkEmail(email: String, response: HttpServletResponse) {
+    fun checkEmail(
+        email: String,
+        response: HttpServletResponse,
+    ) {
         validateEmail(email)
 
         response.status = HttpStatus.OK.value()
         response.writer.write("Email is available")
     }
 
-    fun checkLogin(login: String, response: HttpServletResponse) {
+    fun checkLogin(
+        login: String,
+        response: HttpServletResponse,
+    ) {
         validateLogin(login)
 
         response.status = HttpStatus.OK.value()

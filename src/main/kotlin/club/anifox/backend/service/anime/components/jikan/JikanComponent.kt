@@ -14,11 +14,13 @@ import org.springframework.stereotype.Component
 
 @Component
 class JikanComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 
-    suspend fun fetchJikanEpisodes(page: Int, shikimoriId: Int): JikanResponseDefaultDto<JikanEpisodeDto> {
+    suspend fun fetchJikanEpisodes(
+        page: Int,
+        shikimoriId: Int,
+    ): JikanResponseDefaultDto<JikanEpisodeDto> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

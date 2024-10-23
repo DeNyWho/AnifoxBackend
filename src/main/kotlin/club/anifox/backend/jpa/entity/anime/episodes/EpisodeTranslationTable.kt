@@ -14,11 +14,9 @@ import java.util.*
 data class EpisodeTranslationTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "translation_id", referencedColumnName = "id")
     val translation: AnimeTranslationTable = AnimeTranslationTable(),
-
     @Column(nullable = false, columnDefinition = "TEXT")
     val link: String = "",
 )

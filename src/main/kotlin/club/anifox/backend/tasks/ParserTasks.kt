@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit
 @Component
 @Profile("parser")
 class ParserTasks {
-
     @Autowired
     private lateinit var animeService: AnimeService
 

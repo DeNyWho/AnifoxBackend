@@ -12,6 +12,9 @@ fun AnimeEpisodeTable.toAnimeEpisodeLight(): AnimeEpisodeLight {
         description = description,
         number = number,
         image = image,
+        aired = aired,
+        filler = filler,
+        recap = recap,
         translations = translationsNormal(translations),
     )
 }
@@ -22,6 +25,9 @@ fun AnimeEpisodeTable.toAnimeEpisodeUser(timing: Double): AnimeEpisodeUser {
         description = description,
         number = number,
         image = image,
+        aired = aired,
+        filler = filler,
+        recap = recap,
         translations = translationsNormal(translations),
         timing = timing,
     )

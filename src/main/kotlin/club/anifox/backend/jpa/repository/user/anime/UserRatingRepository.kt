@@ -10,7 +10,12 @@ import java.util.*
 
 @Repository
 interface UserRatingRepository : JpaRepository<AnimeRatingTable, String> {
-    fun findByUserAndAnime(@Param("user") user: UserTable, @Param("anime") anime: AnimeTable): Optional<AnimeRatingTable>
+    fun findByUserAndAnime(
+        @Param("user") user: UserTable,
+        @Param("anime") anime: AnimeTable,
+    ): Optional<AnimeRatingTable>
 
-    fun findByAnime(@Param("anime") anime: AnimeTable): List<AnimeRatingTable>
+    fun findByAnime(
+        @Param("anime") anime: AnimeTable,
+    ): List<AnimeRatingTable>
 }

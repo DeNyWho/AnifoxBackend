@@ -14,11 +14,9 @@ import java.util.*
 data class UserRecentlyAnimeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     val user: UserTable = UserTable(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable = AnimeTable(),

@@ -26,13 +26,15 @@ class AuthController(
 ) {
     @PostMapping("authentication")
     @Operation(
-        requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
+        requestBody =
+        io.swagger.v3.oas.annotations.parameters.RequestBody(
             content = [
                 Content(
                     mediaType = "application/json",
                     examples = [
                         ExampleObject(
-                            value = "{ \"user_identifier\": " +
+                            value =
+                            "{ \"user_identifier\": " +
                                 "\"user OR email\"," +
                                 "\"password\": \"String123!\" }",
                         ),
@@ -94,7 +96,10 @@ class AuthController(
             ),
         ],
     )
-    fun checkEmail(email: String, response: HttpServletResponse) {
+    fun checkEmail(
+        email: String,
+        response: HttpServletResponse,
+    ) {
         return authService.checkEmail(email, response)
     }
 
@@ -115,17 +120,26 @@ class AuthController(
             ),
         ],
     )
-    fun checkLogin(login: String, response: HttpServletResponse) {
+    fun checkLogin(
+        login: String,
+        response: HttpServletResponse,
+    ) {
         return authService.checkLogin(login, response)
     }
 
     @PostMapping("registration")
-    fun registration(@RequestBody signUpRequest: CreateUserRequest, response: HttpServletResponse) {
+    fun registration(
+        @RequestBody signUpRequest: CreateUserRequest,
+        response: HttpServletResponse,
+    ) {
         return authService.registration(signUpRequest, response)
     }
 
     @GetMapping("refreshToken")
-    fun refreshAccessToken(refreshToken: String, response: HttpServletResponse) {
+    fun refreshAccessToken(
+        refreshToken: String,
+        response: HttpServletResponse,
+    ) {
         return authService.refreshAccessToken(refreshToken, response)
     }
 }

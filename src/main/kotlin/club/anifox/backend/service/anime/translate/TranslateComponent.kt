@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class TranslateComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 
@@ -25,9 +24,7 @@ class TranslateComponent {
             .flatten()
     }
 
-    private suspend fun translateWithRetry(
-        text: List<TranslateTextDto>,
-    ): List<TranslatedTextDto> {
+    private suspend fun translateWithRetry(text: List<TranslateTextDto>): List<TranslatedTextDto> {
         return try {
             translateRequest(text)
         } catch (e: Exception) {

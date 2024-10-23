@@ -29,6 +29,8 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
+import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
@@ -42,6 +44,7 @@ import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,7 +52,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class AnimeCommonComponent {
-
     @Autowired
     private lateinit var animeRepository: AnimeRepository
 
@@ -97,9 +99,10 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime not found")
         } else {
-            val similarAnimeList = anime[0].similar.map { similar ->
-                similar.similarAnime.toAnimeLight()
-            }
+            val similarAnimeList =
+                anime[0].similar.map { similar ->
+                    similar.similarAnime.toAnimeLight()
+                }
 
             if (similarAnimeList.isNotEmpty()) {
                 return similarAnimeList
@@ -124,14 +127,15 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime with url = $url not found")
         } else {
-            val relatedAnimeList = anime[0].related.map { relation ->
-                AnimeRelationLight(
-                    relation.relatedAnime.toAnimeLight(),
-                    AnimeRelation(
-                        type = relation.type,
-                    ),
-                )
-            }
+            val relatedAnimeList =
+                anime[0].related.map { relation ->
+                    AnimeRelationLight(
+                        relation.relatedAnime.toAnimeLight(),
+                        AnimeRelation(
+                            type = relation.type,
+                        ),
+                    )
+                }
 
             if (relatedAnimeList.isNotEmpty()) {
                 return relatedAnimeList
@@ -151,10 +155,11 @@ class AnimeCommonComponent {
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
 
-        val anime = entityManager
-            .createQuery(criteriaQuery)
-            .resultList
-            .firstOrNull() ?: throw NotFoundException("Anime with url = $url not found")
+        val anime =
+            entityManager
+                .createQuery(criteriaQuery)
+                .resultList
+                .firstOrNull() ?: throw NotFoundException("Anime with url = $url not found")
 
         if (anime.screenshots.isNotEmpty()) {
             return anime.screenshots
@@ -163,7 +168,10 @@ class AnimeCommonComponent {
         throw NoContentException("There are no screenshots")
     }
 
-    fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo> {
+    fun getAnimeVideos(
+        url: String,
+        type: AnimeVideoType?,
+    ): List<AnimeVideo> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -173,9 +181,10 @@ class AnimeCommonComponent {
 
         val videosJoin = animeRoot.join<AnimeTable, AnimeVideoTable>("videos", JoinType.LEFT)
 
-        val predicates = mutableListOf(
-            criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
-        )
+        val predicates =
+            mutableListOf(
+                criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
+            )
 
         if (type != null) {
             predicates.add(criteriaBuilder.equal(videosJoin.get<AnimeVideoType>("type"), type))
@@ -205,7 +214,14 @@ class AnimeCommonComponent {
         return animeGenreRepository.findAll().map { it.toGenre() }
     }
 
-    fun getAnimeEpisodes(token: String?, url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisode> {
+    fun getAnimeEpisodes(
+        token: String?,
+        url: String,
+        page: Int,
+        limit: Int,
+        sort: AnimeEpisodeFilter?,
+        translationId: Int?,
+    ): List<AnimeEpisode> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -215,9 +231,15 @@ class AnimeCommonComponent {
 
         val episodesJoin = animeRoot.join<AnimeTable, AnimeEpisodeTable>("episodes", JoinType.LEFT)
 
-        criteriaQuery.where(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
+        val predicates = mutableListOf<Predicate>()
+        predicates.add(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
 
-        criteriaQuery.select(episodesJoin)
+        if (translationId != null) {
+            val translationsJoin = episodesJoin.join<AnimeEpisodeTable, EpisodeTranslationTable>("translations", JoinType.LEFT)
+            predicates.add(criteriaBuilder.equal(translationsJoin.get<AnimeTranslationTable>("translation").get<Int>("id"), translationId))
+        }
+
+        criteriaQuery.where(*predicates.toTypedArray())
 
         when (sort) {
             AnimeEpisodeFilter.NumberAsc -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
@@ -246,19 +268,26 @@ class AnimeCommonComponent {
         }
     }
 
+    /*
+        TODO: REWORK BLOCKED REQUEST
+     */
     @Transactional
-    fun blockAnime(url: String?, shikimoriId: Int?) {
+    fun blockAnime(
+        url: String?,
+        shikimoriId: Int?,
+    ) {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
 
         root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
 
-        val predicate = when {
-            url?.isNotEmpty() == true -> criteriaBuilder.equal(root.get<String>("url"), url)
-            shikimoriId != null -> criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId)
-            else -> return
-        }
+        val predicate =
+            when {
+                url?.isNotEmpty() == true -> criteriaBuilder.equal(root.get<String>("url"), url)
+                shikimoriId != null -> criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId)
+                else -> return
+            }
         criteriaQuery.where(predicate)
 
         val query = entityManager.createQuery(criteriaQuery)
@@ -297,23 +326,28 @@ class AnimeCommonComponent {
                 }
             }
 
-            val animeBlocked = AnimeBlockedTable(
-                shikimoriID = animeEntity.shikimoriId,
-            )
+            val animeBlocked =
+                AnimeBlockedTable(
+                    shikimoriID = animeEntity.shikimoriId,
+                )
 
             animeBlockedRepository.saveAndFlush(animeBlocked)
         } else {
             if (shikimoriId != null) {
-                val animeBlocked = AnimeBlockedTable(
-                    shikimoriID = shikimoriId,
-                )
+                val animeBlocked =
+                    AnimeBlockedTable(
+                        shikimoriID = shikimoriId,
+                    )
 
                 animeBlockedRepository.saveAndFlush(animeBlocked)
             }
         }
     }
 
-    fun getAnimeFranchise(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise> {
+    fun getAnimeFranchise(
+        url: String,
+        type: AnimeRelationFranchise?,
+    ): List<AnimeFranchise> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -324,9 +358,10 @@ class AnimeCommonComponent {
         val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchiseMultiple", JoinType.LEFT)
         val targetJoin = franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
 
-        val predicates = mutableListOf(
-            criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
-        )
+        val predicates =
+            mutableListOf(
+                criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
+            )
 
         if (type != null) {
             predicates.add(criteriaBuilder.equal(franchiseJoin.get<AnimeRelationFranchise>("relationType"), type))

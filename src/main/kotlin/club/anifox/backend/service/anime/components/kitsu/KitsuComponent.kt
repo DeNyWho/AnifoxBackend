@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class KitsuComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 

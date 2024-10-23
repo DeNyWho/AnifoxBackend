@@ -36,7 +36,6 @@ import java.time.LocalDateTime
 
 @Component
 class UserAnimeInteractionsComponent {
-
     @Autowired
     private lateinit var criteriaBuilder: CriteriaBuilder
 
@@ -154,7 +153,10 @@ class UserAnimeInteractionsComponent {
         throw NotFoundException("The user has not recommendations")
     }
 
-    private fun recommendationProcess(favorite: List<UserFavoriteAnimeTable>, pageable: Pageable): List<AnimeLight> {
+    private fun recommendationProcess(
+        favorite: List<UserFavoriteAnimeTable>,
+        pageable: Pageable,
+    ): List<AnimeLight> {
         val genres = favorite.flatMap { it.anime.genres }.distinct()
         val studios = favorite.flatMap { it.anime.studios }.distinct()
         val translations = favorite.flatMap { it.anime.translations }.distinct()
@@ -236,7 +238,11 @@ class UserAnimeInteractionsComponent {
         animeRepository.save(anime)
     }
 
-    fun updatePreferredGenres(token: String, genres: List<String>, response: HttpServletResponse) {
+    fun updatePreferredGenres(
+        token: String,
+        genres: List<String>,
+        response: HttpServletResponse,
+    ) {
         val user = userUtils.checkUser(token)
         val genresExist = animeUtils.checkGenres(genres)
 
@@ -262,12 +268,18 @@ class UserAnimeInteractionsComponent {
         throw NotFoundException("The user has no recent anime")
     }
 
-    fun changeEpisodeProgress(token: String, url: String, episodeNumber: Int, progress: AnimeEpisodeProgressRequest) {
+    fun changeEpisodeProgress(
+        token: String,
+        url: String,
+        episodeNumber: Int,
+        progress: AnimeEpisodeProgressRequest,
+    ) {
         val anime = animeUtils.checkAnime(url)
         val user = userUtils.checkUser(token)
         val episode = animeUtils.checkEpisode(url, episodeNumber)
-        val translation = episode.translations.find { it.translation.id == progress.translationId }
-            ?: throw NotFoundException("Translation not found")
+        val translation =
+            episode.translations.find { it.translation.id == progress.translationId }
+                ?: throw NotFoundException("Translation not found")
 
         val existingRecently = userRecentlyRepository.findByUserAndAnime(user, anime).orElse(null)
         val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime).orElse(null)
@@ -275,34 +287,38 @@ class UserAnimeInteractionsComponent {
 
         val isEpisodeWatched = anime.episodesCount == episode.number && progress.timingInSeconds > 1000
 
-        val favoriteStatus = when {
-            isEpisodeWatched -> StatusFavourite.Watched
-            else -> StatusFavourite.Watching
-        }
+        val favoriteStatus =
+            when {
+                isEpisodeWatched -> StatusFavourite.Watched
+                else -> StatusFavourite.Watching
+            }
 
-        val favorite = existingFavorite ?: UserFavoriteAnimeTable(
-            user = user,
-            anime = anime,
-            episodesWatched = episode.number,
-            status = favoriteStatus,
-            updateDate = LocalDateTime.now(),
-        )
+        val favorite =
+            existingFavorite ?: UserFavoriteAnimeTable(
+                user = user,
+                anime = anime,
+                episodesWatched = episode.number,
+                status = favoriteStatus,
+                updateDate = LocalDateTime.now(),
+            )
 
         favorite.episodesWatched = episode.number
-        favorite.status = when (favorite.status) {
-            StatusFavourite.Watching -> if (isEpisodeWatched) StatusFavourite.Watched else StatusFavourite.Watching
-            StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> StatusFavourite.Watching
-        }
+        favorite.status =
+            when (favorite.status) {
+                StatusFavourite.Watching -> if (isEpisodeWatched) StatusFavourite.Watched else StatusFavourite.Watching
+                StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> StatusFavourite.Watching
+            }
 
         userFavoriteAnimeRepository.save(favorite)
 
-        val progressRecord = existingProgress ?: UserProgressAnimeTable(
-            user = user,
-            anime = anime,
-            episode = episode,
-            selectedTranslation = translation,
-            timing = progress.timingInSeconds,
-        )
+        val progressRecord =
+            existingProgress ?: UserProgressAnimeTable(
+                user = user,
+                anime = anime,
+                episode = episode,
+                selectedTranslation = translation,
+                timing = progress.timingInSeconds,
+            )
 
         progressRecord.timing = progress.timingInSeconds
         progressRecord.selectedTranslation = translation

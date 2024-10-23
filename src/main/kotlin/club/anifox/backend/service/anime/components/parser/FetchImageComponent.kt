@@ -17,7 +17,6 @@ import javax.imageio.ImageIO
 
 @Component
 class FetchImageComponent {
-
     @Autowired
     private lateinit var jikanComponent: JikanComponent
 
@@ -27,12 +26,17 @@ class FetchImageComponent {
     @Autowired
     private lateinit var imageService: ImageService
 
-    suspend fun fetchAndSaveAnimeImages(shikimoriId: Int, kitsuId: Int?, urlLinking: String): Pair<AnimeImages, BufferedImage>? {
-        val kitsuImages = if (kitsuId != null) {
-            fetchKitsuImages(kitsuId)
-        } else {
-            null
-        }
+    suspend fun fetchAndSaveAnimeImages(
+        shikimoriId: Int,
+        kitsuId: Int?,
+        urlLinking: String,
+    ): Pair<AnimeImages, BufferedImage>? {
+        val kitsuImages =
+            if (kitsuId != null) {
+                fetchKitsuImages(kitsuId)
+            } else {
+                null
+            }
         val jikanImages = fetchJikanImages(shikimoriId)
 
         return runCatching {
@@ -65,14 +69,18 @@ class FetchImageComponent {
         }
     }
 
-    private suspend fun saveKitsuImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+    private suspend fun saveKitsuImages(
+        images: AnimeImages,
+        urlLinking: String,
+    ): Pair<AnimeImages, BufferedImage> {
         val (large, medium, cover) = images.extractUrlsWithCover()
 
-        val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.LargeKitsu, urlLinking, false),
-            medium = saveImage(medium, CompressAnimeImageType.MediumKitsu, urlLinking, false),
-            cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking, false),
-        )
+        val finalImages =
+            AnimeImages(
+                large = saveImage(large, CompressAnimeImageType.LargeKitsu, urlLinking, false),
+                medium = saveImage(medium, CompressAnimeImageType.MediumKitsu, urlLinking, false),
+                cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking, false),
+            )
 
         return Pair(
             finalImages,
@@ -82,13 +90,17 @@ class FetchImageComponent {
         )
     }
 
-    private suspend fun saveJikanImages(images: AnimeImages, urlLinking: String): Pair<AnimeImages, BufferedImage> {
+    private suspend fun saveJikanImages(
+        images: AnimeImages,
+        urlLinking: String,
+    ): Pair<AnimeImages, BufferedImage> {
         val (large, medium) = images.extractUrls()
 
-        val finalImages = AnimeImages(
-            large = saveImage(large, CompressAnimeImageType.LargeJikan, urlLinking, false),
-            medium = saveImage(medium, CompressAnimeImageType.MediumJikan, urlLinking, true),
-        )
+        val finalImages =
+            AnimeImages(
+                large = saveImage(large, CompressAnimeImageType.LargeJikan, urlLinking, false),
+                medium = saveImage(medium, CompressAnimeImageType.MediumJikan, urlLinking, true),
+            )
 
         return Pair(
             finalImages,
@@ -98,7 +110,12 @@ class FetchImageComponent {
         )
     }
 
-    suspend fun saveImage(url: String, type: CompressAnimeImageType, urlLinking: String, compress: Boolean = true): String {
+    suspend fun saveImage(
+        url: String,
+        type: CompressAnimeImageType,
+        urlLinking: String,
+        compress: Boolean = true,
+    ): String {
         return withContext(Dispatchers.IO) {
             val bytes = URL(url).readBytes()
             val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"

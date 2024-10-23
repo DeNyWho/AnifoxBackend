@@ -13,7 +13,11 @@ class KeycloakService(
 ) {
     fun getCredentialRepresentation(password: String?): CredentialRepresentation {
         val passwordCred = CredentialRepresentation()
-        return passwordCred.apply { isTemporary = false; type = CredentialRepresentation.PASSWORD; value = password }
+        return passwordCred.apply {
+            isTemporary = false
+            type = CredentialRepresentation.PASSWORD
+            value = password
+        }
     }
 
     fun findByEmail(email: String): UserRepresentation? =

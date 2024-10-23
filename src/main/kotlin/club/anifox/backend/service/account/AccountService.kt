@@ -11,16 +11,27 @@ import java.time.LocalDate
 class AccountService(
     private val accountInteractionComponent: AccountInteractionComponent,
 ) : AccountRepository {
-
-    override fun changeAvatar(token: String, image: MultipartFile, response: HttpServletResponse) {
+    override fun changeAvatar(
+        token: String,
+        image: MultipartFile,
+        response: HttpServletResponse,
+    ) {
         return accountInteractionComponent.changeAvatar(token = token, image = image, response = response)
     }
 
-    override fun changeBirthday(token: String, newBirthday: LocalDate, response: HttpServletResponse) {
+    override fun changeBirthday(
+        token: String,
+        newBirthday: LocalDate,
+        response: HttpServletResponse,
+    ) {
         return accountInteractionComponent.changeBirthday(token = token, newBirthday = newBirthday, response = response)
     }
 
-    override fun changeNickName(token: String, newNickName: String, response: HttpServletResponse) {
+    override fun changeNickName(
+        token: String,
+        newNickName: String,
+        response: HttpServletResponse,
+    ) {
         return accountInteractionComponent.changeNickName(token = token, newNickName = newNickName, response = response)
     }
 }

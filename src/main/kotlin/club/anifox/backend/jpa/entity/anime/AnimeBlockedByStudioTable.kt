@@ -13,7 +13,6 @@ import jakarta.persistence.Table
 data class AnimeBlockedByStudioTable(
     @Id
     val shikimoriStudioId: Int = 0,
-
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     var type: AnimeBlockedType = AnimeBlockedType.ALL,

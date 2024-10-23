@@ -15,7 +15,6 @@ import java.time.LocalDate
 
 @Component
 class AccountInteractionComponent {
-
     @Autowired
     private lateinit var imageService: ImageService
 
@@ -25,23 +24,32 @@ class AccountInteractionComponent {
     @Autowired
     private lateinit var userRepository: UserRepository
 
-    fun changeAvatar(token: String, image: MultipartFile, response: HttpServletResponse) {
+    fun changeAvatar(
+        token: String,
+        image: MultipartFile,
+        response: HttpServletResponse,
+    ) {
         val user = userUtils.checkUser(token)
 
-        user.image = runBlocking {
-            imageService.saveFileInSThird(
-                filePath = "images/user/${mdFive(user.id)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.login)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
-                data = image.bytes,
-                compress = true,
-                newImage = true,
-                type = CompressAnimeImageType.Avatar,
-            )
-        }
+        user.image =
+            runBlocking {
+                imageService.saveFileInSThird(
+                    filePath = "images/user/${mdFive(user.id)}/${CompressAnimeImageType.Avatar.path}/${mdFive(user.login)}.${CompressAnimeImageType.Avatar.imageType.textFormat()}",
+                    data = image.bytes,
+                    compress = true,
+                    newImage = true,
+                    type = CompressAnimeImageType.Avatar,
+                )
+            }
 
         userRepository.save(user)
     }
 
-    fun changeBirthday(token: String, newBirthday: LocalDate, response: HttpServletResponse) {
+    fun changeBirthday(
+        token: String,
+        newBirthday: LocalDate,
+        response: HttpServletResponse,
+    ) {
         try {
             val user = userUtils.checkUser(token)
 
@@ -53,7 +61,11 @@ class AccountInteractionComponent {
         }
     }
 
-    fun changeNickName(token: String, newNickName: String, response: HttpServletResponse) {
+    fun changeNickName(
+        token: String,
+        newNickName: String,
+        response: HttpServletResponse,
+    ) {
         try {
             val user = userUtils.checkUser(token)
 

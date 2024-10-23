@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
@@ -12,7 +13,7 @@ plugins {
 }
 
 group = "club.anifox"
-version = "0.1.0"
+version = "0.1.1"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -72,6 +73,7 @@ tasks.getByPath("compileKotlin").dependsOn("ktlintFormat")
 tasks.getByPath("runKtlintCheckOverTestSourceSet").dependsOn("ktlintFormat")
 
 ktlint {
+    version = "0.50.0"
     android = false
     ignoreFailures = false
 
@@ -87,9 +89,9 @@ allOpen {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "17"
+    compilerOptions {
+        freeCompilerArgs.add("-Xjsr305=strict")
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

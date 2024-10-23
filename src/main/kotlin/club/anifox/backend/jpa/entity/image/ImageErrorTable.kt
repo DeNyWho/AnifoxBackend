@@ -11,10 +11,8 @@ import java.util.*
 data class ImageErrorTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @Column(nullable = false, columnDefinition = "TEXT")
     val message: String? = null,
-
     @Column(nullable = false, columnDefinition = "TEXT")
     val cause: String? = null,
 )

@@ -17,9 +17,12 @@ import java.net.ConnectException
 
 @ControllerAdvice
 class ApiExceptionHandler : ResponseEntityExceptionHandler() {
-
     @ExceptionHandler(NoContentException::class)
-    fun handleNoContentException(response: HttpServletResponse, ex: NoContentException, request: WebRequest) {
+    fun handleNoContentException(
+        response: HttpServletResponse,
+        ex: NoContentException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.NO_CONTENT.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"message\": \"${ex.message}\"}")
@@ -27,7 +30,11 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     @ExceptionHandler(BadRequestException::class)
-    fun handleBadRequest(response: HttpServletResponse, ex: BadRequestException, request: WebRequest) {
+    fun handleBadRequest(
+        response: HttpServletResponse,
+        ex: BadRequestException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.BAD_REQUEST.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
@@ -35,14 +42,21 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     @ExceptionHandler(UnauthorizedException::class)
-    fun handleUnauthorizedRequest(response: HttpServletResponse, request: WebRequest) {
+    fun handleUnauthorizedRequest(
+        response: HttpServletResponse,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.flush()
     }
 
     @ExceptionHandler(NotFoundException::class)
-    fun handleNotFoundRequest(response: HttpServletResponse, ex: NotFoundException, request: WebRequest) {
+    fun handleNotFoundRequest(
+        response: HttpServletResponse,
+        ex: NotFoundException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.NOT_FOUND.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
@@ -50,7 +64,11 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     @ExceptionHandler(BadCredentialsException::class)
-    fun handleBadCredentialsException(response: HttpServletResponse, ex: BadCredentialsException, request: WebRequest) {
+    fun handleBadCredentialsException(
+        response: HttpServletResponse,
+        ex: BadCredentialsException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
@@ -58,7 +76,11 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     @ExceptionHandler(ConflictException::class)
-    fun handleConflict(response: HttpServletResponse, ex: ConflictException, request: WebRequest) {
+    fun handleConflict(
+        response: HttpServletResponse,
+        ex: ConflictException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.CONFLICT.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
@@ -66,7 +88,11 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     }
 
     @ExceptionHandler(ConnectException::class)
-    fun handleConnect(response: HttpServletResponse, ex: ConflictException, request: WebRequest) {
+    fun handleConnect(
+        response: HttpServletResponse,
+        ex: ConflictException,
+        request: WebRequest,
+    ) {
         response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")

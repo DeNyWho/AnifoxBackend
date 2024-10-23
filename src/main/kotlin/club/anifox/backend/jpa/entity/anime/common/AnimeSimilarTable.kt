@@ -14,11 +14,9 @@ import java.util.*
 data class AnimeSimilarTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "similar_anime_id")
     val similarAnime: AnimeTable,

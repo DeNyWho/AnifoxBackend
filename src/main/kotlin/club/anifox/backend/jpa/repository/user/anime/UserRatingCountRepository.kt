@@ -9,7 +9,12 @@ import java.util.*
 
 @Repository
 interface UserRatingCountRepository : JpaRepository<AnimeRatingCountTable, String> {
-    fun findByAnimeAndRating(@Param("anime") anime: AnimeTable, @Param("rating") rating: Int): Optional<AnimeRatingCountTable>
+    fun findByAnimeAndRating(
+        @Param("anime") anime: AnimeTable,
+        @Param("rating") rating: Int,
+    ): Optional<AnimeRatingCountTable>
 
-    fun findByAnime(@Param("anime") anime: AnimeTable): List<AnimeRatingCountTable>
+    fun findByAnime(
+        @Param("anime") anime: AnimeTable,
+    ): List<AnimeRatingCountTable>
 }

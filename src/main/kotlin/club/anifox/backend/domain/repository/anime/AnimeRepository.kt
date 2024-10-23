@@ -21,20 +21,48 @@ import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 
 interface AnimeRepository {
     fun parseTranslations(translationsIDs: List<Int>)
+
     fun parseAnime()
+
     fun getAnimeTranslationsCount(url: String): List<AnimeTranslationCount>
+
     fun getAnimeTranslations(): List<AnimeTranslationTable>
+
     fun getAnimeDetails(url: String): AnimeDetail
+
     fun getAnimeSimilar(url: String): List<AnimeLight>
+
     fun getAnimeRelated(url: String): List<AnimeRelationLight>
+
     fun getAnimeScreenshots(url: String): List<String>
-    fun getAnimeVideos(url: String, type: AnimeVideoType?): List<AnimeVideo>
+
+    fun getAnimeVideos(
+        url: String,
+        type: AnimeVideoType?,
+    ): List<AnimeVideo>
+
     fun getAnimeYears(): List<String>
+
     fun getAnimeStudios(): List<AnimeStudio>
+
     fun getAnimeGenres(): List<AnimeGenre>
-    fun getAnimeEpisodes(token: String?, url: String, page: Int, limit: Int, sort: AnimeEpisodeFilter?): List<AnimeEpisode>
+
+    fun getAnimeEpisodes(
+        token: String?,
+        url: String,
+        page: Int,
+        limit: Int,
+        sort: AnimeEpisodeFilter?,
+        translationId: Int,
+    ): List<AnimeEpisode>
+
     fun updateEpisodes()
-    fun addBlocked(url: String?, shikimoriId: Int?)
+
+    fun addBlocked(
+        url: String?,
+        shikimoriId: Int?,
+    )
+
     fun getAnime(
         page: Int,
         limit: Int,
@@ -53,5 +81,8 @@ interface AnimeRepository {
         episodeCount: Int?,
     ): List<AnimeLight>
 
-    fun getAnimeFranchises(url: String, type: AnimeRelationFranchise?): List<AnimeFranchise>
+    fun getAnimeFranchises(
+        url: String,
+        type: AnimeRelationFranchise?,
+    ): List<AnimeFranchise>
 }

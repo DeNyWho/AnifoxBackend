@@ -11,13 +11,10 @@ import java.util.*
 data class AnimeImagesTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @Column(columnDefinition = "TEXT")
     val large: String = "",
-
     @Column(columnDefinition = "TEXT")
     val medium: String = "",
-
     @Column(columnDefinition = "TEXT", nullable = true)
     val cover: String? = null,
 )

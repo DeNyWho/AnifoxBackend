@@ -8,5 +8,8 @@ import java.util.*
 
 @Repository
 interface AnimeRelatedRepository : JpaRepository<AnimeRelatedTable, String> {
-    fun findByAnimeAndType(animeTable: AnimeTable, type: String): Optional<AnimeRelatedTable>
+    fun findByAnimeAndType(
+        animeTable: AnimeTable,
+        type: String,
+    ): Optional<AnimeRelatedTable>
 }

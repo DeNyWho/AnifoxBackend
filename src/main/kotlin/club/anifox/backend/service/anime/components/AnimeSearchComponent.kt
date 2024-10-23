@@ -28,7 +28,6 @@ import java.util.*
 
 @Component
 class AnimeSearchComponent {
-
     @PersistenceContext
     private lateinit var entityManager: EntityManager
 
@@ -153,36 +152,41 @@ class AnimeSearchComponent {
             }
         }
         if (!searchQuery.isNullOrEmpty()) {
-            val titleExpression: Expression<Boolean> = criteriaBuilder.like(
-                criteriaBuilder.lower(root.get("title")),
-                "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-            )
+            val titleExpression: Expression<Boolean> =
+                criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("title")),
+                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+                )
 
             val exactMatchPredicate: Predicate = criteriaBuilder.equal(root.get<String>("title"), searchQuery)
 
             val otherTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleOther", JoinType.LEFT)
-            val otherTitlesExpression = criteriaBuilder.like(
-                criteriaBuilder.lower(otherTitlesJoin),
-                "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-            )
+            val otherTitlesExpression =
+                criteriaBuilder.like(
+                    criteriaBuilder.lower(otherTitlesJoin),
+                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+                )
 
             val enTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleEn", JoinType.LEFT)
-            val enTitlesExpression = criteriaBuilder.like(
-                criteriaBuilder.lower(enTitlesJoin),
-                "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-            )
+            val enTitlesExpression =
+                criteriaBuilder.like(
+                    criteriaBuilder.lower(enTitlesJoin),
+                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+                )
 
             val japTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleJapan", JoinType.LEFT)
-            val japTitlesExpression = criteriaBuilder.like(
-                criteriaBuilder.lower(japTitlesJoin),
-                "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-            )
+            val japTitlesExpression =
+                criteriaBuilder.like(
+                    criteriaBuilder.lower(japTitlesJoin),
+                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+                )
 
             val synTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("synonyms", JoinType.LEFT)
-            val synTitlesExpression = criteriaBuilder.like(
-                criteriaBuilder.lower(synTitlesJoin),
-                "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-            )
+            val synTitlesExpression =
+                criteriaBuilder.like(
+                    criteriaBuilder.lower(synTitlesJoin),
+                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+                )
 
             predicates.addAll(
                 listOf(
@@ -197,63 +201,67 @@ class AnimeSearchComponent {
         if (!translationIds.isNullOrEmpty()) {
             val translationJoin = root.join<AnimeTable, AnimeTranslationTable>("translations")
 
-            val translationIdsPredicate = criteriaBuilder.isTrue(
-                translationJoin.get<AnimeTranslationTable>("id").`in`(
-                    translationIds.mapNotNull { it.toIntOrNull() }.toList(),
-                ),
-            )
+            val translationIdsPredicate =
+                criteriaBuilder.isTrue(
+                    translationJoin.get<AnimeTranslationTable>("id").`in`(
+                        translationIds.mapNotNull { it.toIntOrNull() }.toList(),
+                    ),
+                )
 
             predicates.add(translationIdsPredicate)
         }
 
-        val sortOrder: List<Order> = when (orderBy) {
-            AnimeSearchFilter.Update -> {
-                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("updatedAt")))
+        val sortOrder: List<Order> =
+            when (orderBy) {
+                AnimeSearchFilter.Update -> {
+                    predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("updatedAt")))
 
-                if (sort == AnimeSortFilter.Asc) {
-                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
-                } else {
-                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
+                    if (sort == AnimeSortFilter.Asc) {
+                        listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
+                    } else {
+                        listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
+                    }
                 }
-            }
-            AnimeSearchFilter.Aired -> {
-                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("airedOn")))
+                AnimeSearchFilter.Aired -> {
+                    predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("airedOn")))
 
-                if (sort == AnimeSortFilter.Asc) {
-                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
-                } else {
-                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
+                    if (sort == AnimeSortFilter.Asc) {
+                        listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
+                    } else {
+                        listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
+                    }
                 }
-            }
-            AnimeSearchFilter.Released -> {
-                predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("releasedOn")))
+                AnimeSearchFilter.Released -> {
+                    predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("releasedOn")))
 
-                if (sort == AnimeSortFilter.Asc) {
-                    listOf(criteriaBuilder.asc(root.get<AnimeTable>("releasedOn")))
-                } else {
-                    listOf(criteriaBuilder.desc(root.get<AnimeTable>("releasedOn")))
+                    if (sort == AnimeSortFilter.Asc) {
+                        listOf(criteriaBuilder.asc(root.get<AnimeTable>("releasedOn")))
+                    } else {
+                        listOf(criteriaBuilder.desc(root.get<AnimeTable>("releasedOn")))
+                    }
                 }
-            }
-            AnimeSearchFilter.Rating -> {
-                val votesOrder = if (sort == AnimeSortFilter.Asc) {
-                    criteriaBuilder.asc(root.get<Double>("shikimoriVotes"))
-                } else {
-                    criteriaBuilder.desc(root.get<Double>("shikimoriVotes"))
-                }
+                AnimeSearchFilter.Rating -> {
+                    val votesOrder =
+                        if (sort == AnimeSortFilter.Asc) {
+                            criteriaBuilder.asc(root.get<Double>("shikimoriVotes"))
+                        } else {
+                            criteriaBuilder.desc(root.get<Double>("shikimoriVotes"))
+                        }
 
-                val ratingOrder = if (sort == AnimeSortFilter.Asc) {
-                    criteriaBuilder.asc(root.get<Double>("shikimoriRating"))
-                } else {
-                    criteriaBuilder.desc(root.get<Double>("shikimoriRating"))
-                }
+                    val ratingOrder =
+                        if (sort == AnimeSortFilter.Asc) {
+                            criteriaBuilder.asc(root.get<Double>("shikimoriRating"))
+                        } else {
+                            criteriaBuilder.desc(root.get<Double>("shikimoriRating"))
+                        }
 
-                listOf(ratingOrder, votesOrder)
+                    listOf(ratingOrder, votesOrder)
+                }
+                AnimeSearchFilter.Random -> {
+                    listOf(criteriaBuilder.asc(criteriaBuilder.function("RANDOM", Double::class.java)))
+                }
+                else -> emptyList()
             }
-            AnimeSearchFilter.Random -> {
-                listOf(criteriaBuilder.asc(criteriaBuilder.function("RANDOM", Double::class.java)))
-            }
-            else -> emptyList()
-        }
 
         if (predicates.isNotEmpty()) {
             if (searchQuery == null) {

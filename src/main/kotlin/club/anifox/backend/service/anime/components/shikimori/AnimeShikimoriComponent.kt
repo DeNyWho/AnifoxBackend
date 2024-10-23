@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class AnimeShikimoriComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class HaglundComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 

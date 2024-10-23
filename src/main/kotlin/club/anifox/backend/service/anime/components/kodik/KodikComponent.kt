@@ -13,18 +13,23 @@ import org.springframework.stereotype.Component
 
 @Component
 class KodikComponent {
-
     @Autowired
     private lateinit var client: HttpClient
 
     @Value("\${anime.ko.token}")
     private lateinit var animeToken: String
 
-    suspend fun checkKodikSingle(shikimoriId: Int, translationID: String): KodikAnimeDto {
+    suspend fun checkKodikSingle(
+        shikimoriId: Int,
+        translationID: String,
+    ): KodikAnimeDto {
         return checkKodik(shikimoriId, translationID).result[0]
     }
 
-    suspend fun checkKodikVariety(shikimoriId: Int, translationID: String): List<KodikAnimeDto> {
+    suspend fun checkKodikVariety(
+        shikimoriId: Int,
+        translationID: String,
+    ): List<KodikAnimeDto> {
         return checkKodik(shikimoriId, translationID).result
     }
 
@@ -61,7 +66,10 @@ class KodikComponent {
         }.body<KodikResponseDto<KodikAnimeDto>>()
     }
 
-    private suspend fun checkKodik(shikimoriId: Int, translationID: String): KodikResponseDto<KodikAnimeDto> {
+    private suspend fun checkKodik(
+        shikimoriId: Int,
+        translationID: String,
+    ): KodikResponseDto<KodikAnimeDto> {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)

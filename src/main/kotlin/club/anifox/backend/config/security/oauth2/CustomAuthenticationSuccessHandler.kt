@@ -12,7 +12,11 @@ import java.io.IOException
 @Component
 class CustomAuthenticationSuccessHandler : SimpleUrlAuthenticationSuccessHandler() {
     @Throws(IOException::class, ServletException::class)
-    override fun onAuthenticationSuccess(request: HttpServletRequest, response: HttpServletResponse?, authentication: Authentication?) {
+    override fun onAuthenticationSuccess(
+        request: HttpServletRequest,
+        response: HttpServletResponse?,
+        authentication: Authentication?,
+    ) {
         val defaultSavedRequest = request.session.getAttribute("SPRING_SECURITY_SAVED_REQUEST") as DefaultSavedRequest
         redirectStrategy.sendRedirect(request, response, defaultSavedRequest.redirectUrl)
     }

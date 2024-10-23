@@ -12,7 +12,10 @@ import java.time.format.DateTimeFormatter
 object LocalDateSerializer : KSerializer<LocalDate> {
     private val dtf: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    override fun serialize(encoder: Encoder, value: LocalDate) {
+    override fun serialize(
+        encoder: Encoder,
+        value: LocalDate,
+    ) {
         encoder.encodeString(value.format(dtf))
     }
 

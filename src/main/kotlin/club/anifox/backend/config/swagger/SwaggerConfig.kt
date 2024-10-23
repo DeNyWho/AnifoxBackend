@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @OpenAPIDefinition(servers = [Server(url = "/")])
 class SwaggerConfig {
-
     @Bean
     fun publicApi(): GroupedOpenApi {
         return GroupedOpenApi.builder()

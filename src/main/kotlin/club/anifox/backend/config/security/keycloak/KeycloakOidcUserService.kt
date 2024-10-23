@@ -11,7 +11,6 @@ import org.springframework.util.StringUtils
 class KeycloakOidcUserService(
     private val keycloakOidcUserGrantedAuthoritiesConverter: KeycloakOidcUserGrantedAuthoritiesConverter,
 ) : OidcUserService() {
-
     override fun loadUser(userRequest: OidcUserRequest): OidcUser {
         val oidcUser = super.loadUser(userRequest)
         val mappedAuthorities = keycloakOidcUserGrantedAuthoritiesConverter.toGrantedAuthorities(userRequest, oidcUser)

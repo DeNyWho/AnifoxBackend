@@ -26,7 +26,9 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig @Autowired constructor(
+class SecurityConfig
+@Autowired
+constructor(
     private val jwtAuthConverter: JwtAuthConverter,
     @Value("\${keycloak.auth-server-url}") private val authUrl: String,
     @Value("\${keycloak.realm}") private val realm: String,
@@ -54,14 +56,16 @@ class SecurityConfig @Autowired constructor(
     }
 
     @Bean
-    fun clientRegistrationRepository() = InMemoryClientRegistrationRepository(
-        keycloakClientRegistration(),
-    )
+    fun clientRegistrationRepository() =
+        InMemoryClientRegistrationRepository(
+            keycloakClientRegistration(),
+        )
 
     @Bean
-    fun authorizedClientService() = InMemoryOAuth2AuthorizedClientService(
-        clientRegistrationRepository(),
-    )
+    fun authorizedClientService() =
+        InMemoryOAuth2AuthorizedClientService(
+            clientRegistrationRepository(),
+        )
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()

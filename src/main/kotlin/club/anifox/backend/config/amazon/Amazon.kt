@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class Amazon {
-
     @Value("\${access_key_s3}")
     lateinit var accessKeyS3: String
 

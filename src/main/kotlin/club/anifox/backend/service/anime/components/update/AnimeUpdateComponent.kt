@@ -25,7 +25,6 @@ import java.time.format.DateTimeFormatter
 
 @Component
 class AnimeUpdateComponent {
-
     @Autowired
     private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
 
@@ -71,9 +70,10 @@ class AnimeUpdateComponent {
 
                 val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
 
-                val shikimori = runBlocking {
-                    shikimoriComponent.fetchAnime(anime.shikimoriId)
-                }
+                val shikimori =
+                    runBlocking {
+                        shikimoriComponent.fetchAnime(anime.shikimoriId)
+                    }
                 val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
                 if (!anime.isLicensed) {
@@ -92,15 +92,17 @@ class AnimeUpdateComponent {
                     anime.addTranslationCount(translationsCountReady)
                 }
 
-                val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                    .withZone(ZoneId.of("Europe/Moscow"))
+                val formatterUpdated =
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+                        .withZone(ZoneId.of("Europe/Moscow"))
 
                 if (shikimori != null) {
-                    anime.nextEpisode = if (shikimori.nextEpisodeAt != null) {
-                        LocalDateTime.parse(shikimori.nextEpisodeAt, formatterUpdated)
-                    } else {
-                        null
-                    }
+                    anime.nextEpisode =
+                        if (shikimori.nextEpisodeAt != null) {
+                            LocalDateTime.parse(shikimori.nextEpisodeAt, formatterUpdated)
+                        } else {
+                            null
+                        }
                     anime.nextEpisode?.let { nextEpisodeDate ->
                         anime.addEpisodeSchedule(nextEpisodeDate)
                     }
@@ -112,25 +114,28 @@ class AnimeUpdateComponent {
                         countVotes += it.value
                     }
                     anime.shikimoriVotes = countVotes
-                    anime.shikimoriRating = try {
-                        shikimori.score.toDouble()
-                    } catch (_: Exception) {
-                        0.0
-                    }
-                    anime.status = when (shikimori.status) {
-                        "released" -> AnimeStatus.Released
-                        "ongoing" -> AnimeStatus.Ongoing
-                        else -> AnimeStatus.Ongoing
-                    }
+                    anime.shikimoriRating =
+                        try {
+                            shikimori.score.toDouble()
+                        } catch (_: Exception) {
+                            0.0
+                        }
+                    anime.status =
+                        when (shikimori.status) {
+                            "released" -> AnimeStatus.Released
+                            "ongoing" -> AnimeStatus.Ongoing
+                            else -> AnimeStatus.Ongoing
+                        }
                     val episodesAiredInBase = anime.episodesAired ?: 0
                     if (episodesAiredInBase < episodesReady.size) {
                         anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
                     }
-                    var episodesCount = when {
-                        shikimori.episodes < episodesReady.size -> episodesReady.size
-                        shikimori.episodes == 0 && anime.status == AnimeStatus.Ongoing -> null
-                        else -> shikimori.episodes
-                    }
+                    var episodesCount =
+                        when {
+                            shikimori.episodes < episodesReady.size -> episodesReady.size
+                            shikimori.episodes == 0 && anime.status == AnimeStatus.Ongoing -> null
+                            else -> shikimori.episodes
+                        }
 
                     if (episodesCount != null && episodesCount < episodesReady.size) {
                         episodesCount = episodesReady.size
