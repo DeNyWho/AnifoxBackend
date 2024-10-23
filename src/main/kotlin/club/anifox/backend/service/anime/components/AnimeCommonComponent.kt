@@ -44,6 +44,7 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.Join
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
@@ -233,9 +234,12 @@ class AnimeCommonComponent {
 
         val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
 
-        val episodesJoin = animeRoot.join<AnimeTable, AnimeEpisodeTable>("episodes", JoinType.LEFT)
+        val episodesJoin: Join<AnimeTable, AnimeEpisodeTable> = animeRoot.join("episodes", JoinType.LEFT)
+
+        criteriaQuery.select(episodesJoin)
 
         val predicates = mutableListOf<Predicate>()
+
         predicates.add(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
 
         if (translationId != null) {
@@ -252,11 +256,11 @@ class AnimeCommonComponent {
         }
 
         val query = entityManager.createQuery(criteriaQuery)
-
         val firstResult = (page - 1) * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
-        val episodes = query.resultList
+
+        val episodes: List<AnimeEpisodeTable> = query.resultList
 
         return if (token != null) {
             val user = userUtils.checkUser(token)
