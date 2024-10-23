@@ -8,6 +8,7 @@ import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
+import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -195,7 +196,7 @@ class AnimeController {
         summary = "anime schedules",
         description = """
             Get anime schedules filtered by date range and/or day of week.
-            Available days of week: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+            Available days of week: monday, tuesday, wednesday, thursday, friday, saturday, sunday
         """,
     )
     fun getAnimeSchedules(
@@ -212,10 +213,17 @@ class AnimeController {
         @Max(500)
         Int,
         @RequestParam(name = "day_of_week", required = false)
-        @Schema(description = "Filter by day of week (MONDAY, TUESDAY, etc.)")
-        dayOfWeek: DayOfWeek?,
-    ): Map<DayOfWeek, List<AnimeLight>> {
-        return animeService.getWeeklySchedule(startDate, endDate, page, limit, dayOfWeek)
+        @Schema(description = "Filter by day of week (monday, tuesday, etc.)")
+        dayOfWeek: String?,
+    ): Map<String, List<AnimeLight>> {
+        val parsedDayOfWeek = dayOfWeek?.uppercase()?.let { rawDay ->
+            try {
+                DayOfWeek.valueOf(rawDay)
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("Invalid day of week. Valid values are: monday, tuesday, wednesday, thursday, friday, saturday, sunday")
+            }
+        }
+        return animeService.getWeeklySchedule(startDate, endDate, page, limit, parsedDayOfWeek)
     }
 
     @GetMapping("/years")

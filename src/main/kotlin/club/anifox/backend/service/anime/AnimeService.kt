@@ -122,7 +122,7 @@ class AnimeService : AnimeRepository {
         page: Int,
         limit: Int,
         dayOfWeek: DayOfWeek?,
-    ): Map<DayOfWeek, List<AnimeLight>> {
+    ): Map<String, List<AnimeLight>> {
         return animeCommonComponent.getWeeklySchedule(startDate, endDate, page, limit, dayOfWeek)
     }
 

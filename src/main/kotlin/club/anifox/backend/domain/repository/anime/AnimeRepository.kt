@@ -49,7 +49,7 @@ interface AnimeRepository {
         page: Int,
         limit: Int,
         dayOfWeek: DayOfWeek?,
-    ): Map<DayOfWeek, List<AnimeLight>>
+    ): Map<String, List<AnimeLight>>
 
     fun getAnimeYears(): List<String>
 

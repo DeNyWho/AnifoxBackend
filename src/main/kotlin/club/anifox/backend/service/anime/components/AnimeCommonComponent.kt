@@ -53,7 +53,6 @@ import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.temporal.TemporalAdjusters
 
 @Component
 class AnimeCommonComponent {
@@ -396,7 +395,7 @@ class AnimeCommonComponent {
         page: Int,
         limit: Int,
         dayOfWeek: DayOfWeek? = null,
-    ): Map<DayOfWeek, List<AnimeLight>> {
+    ): Map<String, List<AnimeLight>> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery: CriteriaQuery<AnimeEpisodeScheduleTable> =
             criteriaBuilder.createQuery(AnimeEpisodeScheduleTable::class.java)
@@ -411,17 +410,6 @@ class AnimeCommonComponent {
                 criteriaBuilder.and(
                     criteriaBuilder.greaterThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), startDate),
                     criteriaBuilder.lessThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), endDate),
-                ),
-            )
-        } else {
-            val now = LocalDateTime.now()
-            val weekStart = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            val weekEnd = weekStart.plusDays(7)
-
-            predicates.add(
-                criteriaBuilder.and(
-                    criteriaBuilder.greaterThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), weekStart),
-                    criteriaBuilder.lessThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), weekEnd),
                 ),
             )
         }
@@ -439,17 +427,28 @@ class AnimeCommonComponent {
 
         val query = entityManager.createQuery(criteriaQuery)
 
-        val firstResult = (page - 1) * limit
-        query.firstResult = if (firstResult >= 0) firstResult else 0
-        query.maxResults = limit
+        if (startDate != null && endDate != null) {
+            val firstResult = (page - 1) * limit
+            query.firstResult = if (firstResult >= 0) firstResult else 0
+            query.maxResults = limit
+        }
 
         val schedules = query.resultList
 
-        return schedules.groupBy { it.dayOfWeek }
-            .mapValues { (_, schedules) ->
-                schedules.map { schedule ->
-                    schedule.anime.toAnimeLight()
-                }
+        val resultMap = if (dayOfWeek != null) {
+            mapOf(
+                dayOfWeek.toString().lowercase() to schedules
+                    .filter { it.dayOfWeek == dayOfWeek }
+                    .map { it.anime.toAnimeLight() },
+            )
+        } else {
+            DayOfWeek.entries.associate { day ->
+                day.toString().lowercase() to schedules
+                    .filter { it.dayOfWeek == day }
+                    .map { it.anime.toAnimeLight() }
             }
+        }
+
+        return resultMap
     }
 }
