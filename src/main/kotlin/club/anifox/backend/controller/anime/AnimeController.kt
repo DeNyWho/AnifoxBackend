@@ -5,7 +5,6 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
-import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.exception.common.BadRequestException
@@ -184,7 +183,7 @@ class AnimeController {
         @Min(1)
         @Max(500)
         Int,
-        sort: AnimeEpisodeFilter?,
+        sort: AnimeSortFilter?,
         @RequestParam(name = "translation_id", required = false)
         translationId: Int?,
     ): List<AnimeEpisode> {

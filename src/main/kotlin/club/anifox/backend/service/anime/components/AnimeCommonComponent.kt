@@ -2,7 +2,7 @@ package club.anifox.backend.service.anime.components
 
 import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
-import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
+import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
@@ -224,7 +224,7 @@ class AnimeCommonComponent {
         url: String,
         page: Int,
         limit: Int,
-        sort: AnimeEpisodeFilter?,
+        sort: AnimeSortFilter?,
         translationId: Int?,
     ): List<AnimeEpisode> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
@@ -250,9 +250,9 @@ class AnimeCommonComponent {
         criteriaQuery.where(*predicates.toTypedArray())
 
         when (sort) {
-            AnimeEpisodeFilter.NumberAsc -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
-            AnimeEpisodeFilter.NumberDesc -> criteriaQuery.orderBy(criteriaBuilder.desc(episodesJoin.get<Int>("number")))
-            else -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
+            AnimeSortFilter.Asc -> criteriaQuery.orderBy(criteriaBuilder.asc(episodesJoin.get<Int>("number")))
+            AnimeSortFilter.Desc -> criteriaQuery.orderBy(criteriaBuilder.desc(episodesJoin.get<Int>("number")))
+            else -> criteriaQuery.orderBy(criteriaBuilder.desc(episodesJoin.get<Int>("number")))
         }
 
         val query = entityManager.createQuery(criteriaQuery)
@@ -409,6 +409,7 @@ class AnimeCommonComponent {
 
         val predicates = mutableListOf<Predicate>()
 
+        // Добавляем фильтр по датам
         if (startDate != null && endDate != null) {
             predicates.add(
                 criteriaBuilder.and(
@@ -418,41 +419,40 @@ class AnimeCommonComponent {
             )
         }
 
+        // Добавляем фильтр по дню недели в сам запрос
         dayOfWeek?.let {
             predicates.add(criteriaBuilder.equal(scheduleRoot.get<DayOfWeek>("dayOfWeek"), it))
         }
 
         criteriaQuery.where(*predicates.toTypedArray())
 
+        // Добавляем сортировку по ID для стабильности результатов
         criteriaQuery.orderBy(
             criteriaBuilder.asc(scheduleRoot.get<DayOfWeek>("dayOfWeek")),
             criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate")),
+            criteriaBuilder.asc(scheduleRoot.get<Long>("id")), // Добавляем сортировку по ID
         )
 
+        // Применяем пагинацию
         val query = entityManager.createQuery(criteriaQuery)
-
-        if (startDate != null && endDate != null) {
-            val firstResult = (page - 1) * limit
-            query.firstResult = if (firstResult >= 0) firstResult else 0
-            query.maxResults = limit
-        }
+        val firstResult = (page - 1) * limit
+        query.firstResult = if (firstResult >= 0) firstResult else 0
+        query.maxResults = limit
 
         val schedules = query.resultList
 
-        val resultMap = if (dayOfWeek != null) {
+        // Формируем результат
+        return if (dayOfWeek != null) {
             mapOf(
-                dayOfWeek.toString().lowercase() to schedules
-                    .filter { it.dayOfWeek == dayOfWeek }
-                    .map { it.anime.toAnimeLight() },
+                dayOfWeek.toString().lowercase() to schedules.map { it.anime.toAnimeLight() },
             )
         } else {
-            DayOfWeek.entries.associate { day ->
-                day.toString().lowercase() to schedules
-                    .filter { it.dayOfWeek == day }
-                    .map { it.anime.toAnimeLight() }
+            // Группируем результаты по дням недели
+            schedules.groupBy {
+                it.dayOfWeek.toString().lowercase()
+            }.mapValues { (_, scheduleList) ->
+                scheduleList.map { it.anime.toAnimeLight() }
             }
         }
-
-        return resultMap
     }
 }

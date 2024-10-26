@@ -5,7 +5,6 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
-import club.anifox.backend.domain.enums.anime.filter.AnimeEpisodeFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.model.anime.AnimeFranchise
@@ -62,7 +61,7 @@ interface AnimeRepository {
         url: String,
         page: Int,
         limit: Int,
-        sort: AnimeEpisodeFilter?,
+        sort: AnimeSortFilter?,
         translationId: Int?,
     ): List<AnimeEpisode>
 
