@@ -572,7 +572,7 @@ class AnimeParseComponent(
                             }
 
                             animeToSave.nextEpisode?.let { nextEpisodeDate ->
-                                animeToSave.addEpisodeSchedule(nextEpisodeDate)
+                                animeToSave.updateEpisodeSchedule(nextEpisodeDate)
                             }
 
                             animeToSave.addAllAnimeGenre(genres)

@@ -19,8 +19,10 @@ class ParserTasks {
         animeService.parseAnime()
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
+    @Scheduled(fixedRate = 0)
     fun updateData() {
-        animeService.updateEpisodes()
+        synchronized(this) {
+            animeService.updateEpisodes()
+        }
     }
 }

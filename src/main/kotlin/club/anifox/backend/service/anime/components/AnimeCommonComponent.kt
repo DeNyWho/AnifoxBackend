@@ -53,7 +53,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Component
 class AnimeCommonComponent {
@@ -417,7 +416,6 @@ class AnimeCommonComponent {
 
         val predicates = mutableListOf<Predicate>()
 
-        // Добавляем фильтр по датам
         if (startDate != null && endDate != null) {
             predicates.add(
                 criteriaBuilder.and(
@@ -427,21 +425,16 @@ class AnimeCommonComponent {
             )
         }
 
-        // Добавляем фильтр по дню недели в сам запрос
         dayOfWeek?.let {
             predicates.add(criteriaBuilder.equal(scheduleRoot.get<DayOfWeek>("dayOfWeek"), it))
         }
 
         criteriaQuery.where(*predicates.toTypedArray())
 
-        // Добавляем сортировку по ID для стабильности результатов
         criteriaQuery.orderBy(
             criteriaBuilder.asc(scheduleRoot.get<DayOfWeek>("dayOfWeek")),
-            criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate")),
-            criteriaBuilder.asc(scheduleRoot.get<Long>("id")), // Добавляем сортировку по ID
         )
 
-        // Применяем пагинацию
         val query = entityManager.createQuery(criteriaQuery)
         val firstResult = (page - 1) * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
@@ -449,18 +442,15 @@ class AnimeCommonComponent {
 
         val schedules = query.resultList
 
-        // Формируем результат
         return if (dayOfWeek != null) {
             mapOf(
                 dayOfWeek.toString().lowercase() to schedules.map { it.anime.toAnimeLight() },
             )
         } else {
-            // Группируем результаты по дням недели
-            schedules.groupBy {
-                it.dayOfWeek.toString().lowercase()
-            }.mapValues { (_, scheduleList) ->
-                scheduleList.map { it.anime.toAnimeLight() }
-            }
+            schedules.groupBy { it.dayOfWeek.toString().lowercase() }
+                .mapValues { (_, scheduleList) ->
+                    scheduleList.map { it.anime.toAnimeLight() }
+                }
         }
     }
 }

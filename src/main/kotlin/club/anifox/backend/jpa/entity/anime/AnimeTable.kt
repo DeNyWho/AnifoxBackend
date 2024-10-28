@@ -104,8 +104,8 @@ data class AnimeTable(
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
-    @OneToMany(mappedBy = "anime", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-    val episodeSchedules: MutableList<AnimeEpisodeScheduleTable> = mutableListOf(),
+    @OneToOne(mappedBy = "anime", cascade = [CascadeType.ALL], fetch = FetchType.LAZY, orphanRemoval = true)
+    var schedule: AnimeEpisodeScheduleTable? = null,
     var episodesCount: Int? = null,
     var episodesAired: Int? = null,
     val shikimoriId: Int = 0,
@@ -221,10 +221,24 @@ data class AnimeTable(
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
-    fun addEpisodeSchedule(nextEpisodeDate: LocalDateTime): AnimeTable {
+    fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime): AnimeTable {
         val dayOfWeek = nextEpisodeDate.dayOfWeek
-        val schedule = AnimeEpisodeScheduleTable(anime = this, nextEpisodeDate = nextEpisodeDate, dayOfWeek = dayOfWeek)
-        episodeSchedules.add(schedule)
+
+        if (this.schedule != null) {
+            if (this.schedule?.nextEpisodeDate != nextEpisodeDate) {
+                this.schedule = null
+            } else {
+                return this
+            }
+        }
+
+        val newSchedule = AnimeEpisodeScheduleTable(
+            anime = this,
+            nextEpisodeDate = nextEpisodeDate,
+            dayOfWeek = dayOfWeek,
+        )
+        this.schedule = newSchedule
+
         return this
     }
 

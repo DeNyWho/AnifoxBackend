@@ -63,7 +63,7 @@ class AnimeUpdateComponent {
                 rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
                 rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
                 rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
-                rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("episodeSchedules", JoinType.LEFT)
+                rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
 
                 criteriaQueryAnime.select(rootAnime)
                     .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))
@@ -104,7 +104,7 @@ class AnimeUpdateComponent {
                             null
                         }
                     anime.nextEpisode?.let { nextEpisodeDate ->
-                        anime.addEpisodeSchedule(nextEpisodeDate)
+                        anime.updateEpisodeSchedule(nextEpisodeDate)
                     }
                     if (anime.description.isEmpty()) {
                         anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
