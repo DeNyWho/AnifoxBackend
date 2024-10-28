@@ -447,7 +447,9 @@ class AnimeCommonComponent {
                 dayOfWeek.toString().lowercase() to schedules.map { it.anime.toAnimeLight() },
             )
         } else {
-            schedules.groupBy { it.dayOfWeek.toString().lowercase() }
+            schedules.groupBy { it.dayOfWeek }
+                .toSortedMap()
+                .mapKeys { it.key.toString().lowercase() }
                 .mapValues { (_, scheduleList) ->
                     scheduleList.map { it.anime.toAnimeLight() }
                 }
