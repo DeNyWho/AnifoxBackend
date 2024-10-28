@@ -63,6 +63,7 @@ interface AnimeRepository {
         limit: Int,
         sort: AnimeSortFilter?,
         translationId: Int?,
+        searchQuery: String?,
     ): List<AnimeEpisode>
 
     fun updateEpisodes()

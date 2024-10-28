@@ -104,8 +104,9 @@ class AnimeService : AnimeRepository {
         limit: Int,
         sort: AnimeSortFilter?,
         translationId: Int?,
+        searchQuery: String?,
     ): List<AnimeEpisode> {
-        return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort, translationId)
+        return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort, translationId, searchQuery)
     }
 
     override fun getAnimeVideos(

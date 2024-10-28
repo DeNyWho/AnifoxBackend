@@ -186,8 +186,10 @@ class AnimeController {
         sort: AnimeSortFilter?,
         @RequestParam(name = "translation_id", required = false)
         translationId: Int?,
+        @RequestParam(name = "search", required = false)
+        searchQuery: String?,
     ): List<AnimeEpisode> {
-        return animeService.getAnimeEpisodes(token, url, page, limit, sort, translationId)
+        return animeService.getAnimeEpisodes(token, url, page, limit, sort, translationId, searchQuery)
     }
 
     @GetMapping("/schedules")

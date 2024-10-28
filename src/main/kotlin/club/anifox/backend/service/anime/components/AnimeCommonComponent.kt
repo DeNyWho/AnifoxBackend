@@ -226,6 +226,7 @@ class AnimeCommonComponent {
         limit: Int,
         sort: AnimeSortFilter?,
         translationId: Int?,
+        searchQuery: String?,
     ): List<AnimeEpisode> {
         val anime: AnimeTable = animeUtils.checkAnime(url)
 
@@ -233,7 +234,6 @@ class AnimeCommonComponent {
         val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
 
         val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
-
         val episodesJoin: Join<AnimeTable, AnimeEpisodeTable> = animeRoot.join("episodes", JoinType.LEFT)
 
         criteriaQuery.select(episodesJoin)
@@ -245,6 +245,14 @@ class AnimeCommonComponent {
         if (translationId != null) {
             val translationsJoin = episodesJoin.join<AnimeEpisodeTable, EpisodeTranslationTable>("translations", JoinType.LEFT)
             predicates.add(criteriaBuilder.equal(translationsJoin.get<AnimeTranslationTable>("translation").get<Int>("id"), translationId))
+        }
+
+        if (!searchQuery.isNullOrEmpty()) {
+            val titlePredicate = criteriaBuilder.like(episodesJoin.get<String>("title"), "%$searchQuery%")
+            val titleEnPredicate = criteriaBuilder.like(episodesJoin.get<String>("titleEn"), "%$searchQuery%")
+            val numberPredicate = criteriaBuilder.equal(episodesJoin.get<Int>("number"), searchQuery.toIntOrNull() ?: -1)
+
+            predicates.add(criteriaBuilder.or(titlePredicate, titleEnPredicate, numberPredicate))
         }
 
         criteriaQuery.where(*predicates.toTypedArray())
