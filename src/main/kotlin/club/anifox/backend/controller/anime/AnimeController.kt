@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -201,10 +202,6 @@ class AnimeController {
         """,
     )
     fun getAnimeSchedules(
-        @RequestParam(name = "start_date", required = false)
-        startDate: LocalDate?,
-        @RequestParam(name = "end_date", required = false)
-        endDate: LocalDate?,
         @RequestParam(defaultValue = "0", name = "page") page:
         @Min(0)
         @Max(500)
@@ -213,6 +210,10 @@ class AnimeController {
         @Min(1)
         @Max(500)
         Int,
+        @RequestParam(name = "date", required = false)
+        @Schema(description = "Format: dd-MM-yyyy")
+        @DateTimeFormat(pattern = "dd-MM-yyyy")
+        date: LocalDate?,
         @RequestParam(name = "day_of_week", required = false)
         @Schema(description = "Filter by day of week (monday, tuesday, etc.)")
         dayOfWeek: String?,
@@ -224,7 +225,7 @@ class AnimeController {
                 throw BadRequestException("Invalid day of week. Valid values are: monday, tuesday, wednesday, thursday, friday, saturday, sunday")
             }
         }
-        return animeService.getWeeklySchedule(startDate, endDate, page, limit, parsedDayOfWeek)
+        return animeService.getWeeklySchedule(page, limit, date, parsedDayOfWeek)
     }
 
     @GetMapping("/years")

@@ -401,11 +401,11 @@ class AnimeCommonComponent {
     }
 
     fun getWeeklySchedule(
-        startDate: LocalDate? = null,
-        endDate: LocalDate? = null,
         page: Int,
         limit: Int,
+        date: LocalDate? = null,
         dayOfWeek: DayOfWeek? = null,
+        maxPerDay: Int = 10,
     ): Map<String, List<AnimeLight>> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery: CriteriaQuery<AnimeEpisodeScheduleTable> =
@@ -416,11 +416,14 @@ class AnimeCommonComponent {
 
         val predicates = mutableListOf<Predicate>()
 
-        if (startDate != null && endDate != null) {
+        date?.let {
+            val startOfDay = it.atStartOfDay()
+            val endOfDay = it.atTime(23, 59, 59)
             predicates.add(
-                criteriaBuilder.and(
-                    criteriaBuilder.greaterThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), startDate),
-                    criteriaBuilder.lessThanOrEqualTo(scheduleRoot.get("nextEpisodeDate"), endDate),
+                criteriaBuilder.between(
+                    scheduleRoot.get("nextEpisodeDate"),
+                    startOfDay,
+                    endOfDay,
                 ),
             )
         }
@@ -433,26 +436,40 @@ class AnimeCommonComponent {
 
         criteriaQuery.orderBy(
             criteriaBuilder.asc(scheduleRoot.get<DayOfWeek>("dayOfWeek")),
+            criteriaBuilder.asc(scheduleRoot.get<LocalDate>("nextEpisodeDate")),
         )
 
-        val query = entityManager.createQuery(criteriaQuery)
-        val firstResult = (page - 1) * limit
-        query.firstResult = if (firstResult >= 0) firstResult else 0
-        query.maxResults = limit
+        if (dayOfWeek != null) {
+            val query = entityManager.createQuery(criteriaQuery)
+            query.maxResults = maxPerDay
 
-        val schedules = query.resultList
-
-        return if (dayOfWeek != null) {
-            mapOf(
-                dayOfWeek.toString().lowercase() to schedules.map { it.anime.toAnimeLight() },
+            return mapOf(
+                dayOfWeek.toString().lowercase() to
+                    query.resultList
+                        .distinctBy { it.anime.id }
+                        .map { it.anime.toAnimeLight() },
             )
-        } else {
-            schedules.groupBy { it.dayOfWeek }
-                .toSortedMap()
-                .mapKeys { it.key.toString().lowercase() }
-                .mapValues { (_, scheduleList) ->
-                    scheduleList.map { it.anime.toAnimeLight() }
-                }
         }
+
+        val allSchedules = entityManager.createQuery(criteriaQuery).resultList
+
+        val groupedSchedules = allSchedules
+            .groupBy { it.dayOfWeek }
+            .mapValues { (_, schedules) ->
+                schedules
+                    .distinctBy { it.anime.id }
+                    .take(maxPerDay)
+            }
+            .toSortedMap()
+
+        val sortedDays = groupedSchedules.keys.toList()
+        val startDayIndex = maxOf(0, page * limit)
+        val endDayIndex = minOf(startDayIndex + limit, sortedDays.size)
+
+        return sortedDays
+            .slice(startDayIndex until endDayIndex)
+            .associate {
+                it.toString().lowercase() to groupedSchedules[it]!!.map { schedule -> schedule.anime.toAnimeLight() }
+            }
     }
 }

@@ -43,10 +43,9 @@ interface AnimeRepository {
     ): List<AnimeVideo>
 
     fun getWeeklySchedule(
-        startDate: LocalDate?,
-        endDate: LocalDate?,
         page: Int,
         limit: Int,
+        date: LocalDate?,
         dayOfWeek: DayOfWeek?,
     ): Map<String, List<AnimeLight>>
 

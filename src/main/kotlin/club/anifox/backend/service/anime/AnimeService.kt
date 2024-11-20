@@ -117,13 +117,12 @@ class AnimeService : AnimeRepository {
     }
 
     override fun getWeeklySchedule(
-        startDate: LocalDate?,
-        endDate: LocalDate?,
         page: Int,
         limit: Int,
+        date: LocalDate?,
         dayOfWeek: DayOfWeek?,
     ): Map<String, List<AnimeLight>> {
-        return animeCommonComponent.getWeeklySchedule(startDate, endDate, page, limit, dayOfWeek)
+        return animeCommonComponent.getWeeklySchedule(page, limit, date, dayOfWeek)
     }
 
     override fun getAnimeFranchises(
