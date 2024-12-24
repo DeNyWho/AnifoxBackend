@@ -19,8 +19,8 @@ class ParserTasks {
         animeService.parseAnime()
     }
 
-//    @Scheduled(fixedDelay = 1000)
-//    fun updateData() {
-//        animeService.updateEpisodes()
-//    }
+    @Scheduled(fixedDelay = 1000)
+    fun updateData() {
+        animeService.updateEpisodes()
+    }
 }

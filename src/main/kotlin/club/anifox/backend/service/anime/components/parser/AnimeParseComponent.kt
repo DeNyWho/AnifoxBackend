@@ -36,6 +36,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeSimilarRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.jpa.repository.anime.AnimeVideoRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.haglund.HaglundComponent
@@ -56,6 +57,7 @@ import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -89,6 +91,7 @@ class AnimeParseComponent(
     private val animeExternalLinksRepository: AnimeExternalLinksRepository,
     private val animeCharacterRoleRepository: AnimeCharacterRoleRepository,
     private val animeCharacterRepository: AnimeCharacterRepository,
+    private val animeTranslationRepository: AnimeTranslationRepository,
     private val jikanComponent: JikanComponent,
     private val translateComponent: TranslateComponent,
     private val imageService: ImageService,
@@ -102,41 +105,38 @@ class AnimeParseComponent(
     private val studioCache = ConcurrentHashMap<String, AnimeStudioTable>()
 
     fun addDataToDB() {
+        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         runBlocking {
+            var ar =
+                runBlocking {
+                    kodikComponent.checkKodikList(translationsIds)
+                }
+            while (ar.nextPage != null) {
+                val jobs =
+                    ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
+                        async {
+                            try {
+                                if (!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
+                                    processData(animeTemp)
+                                }
+                            } catch (e: Exception) {
+                                println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
+                            }
+                        }
+                    }
+                jobs.awaitAll()
+                ar =
+                    runBlocking {
+                        client.get(ar.nextPage!!) {
+                            headers {
+                                contentType(ContentType.Application.Json)
+                            }
+                        }.body()
+                    }
+            }
+            integrateSimilarRelatedFranchise()
             integrateCharacters()
         }
-//        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
-//        runBlocking {
-//            var ar =
-//                runBlocking {
-//                    kodikComponent.checkKodikList(translationsIds)
-//                }
-//            while (ar.nextPage != null) {
-//                val jobs =
-//                    ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
-//                        async {
-//                            try {
-//                                if (!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
-//                                    processData(animeTemp)
-//                                }
-//                            } catch (e: Exception) {
-//                                println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
-//                            }
-//                        }
-//                    }
-//                jobs.awaitAll()
-//                ar =
-//                    runBlocking {
-//                        client.get(ar.nextPage!!) {
-//                            headers {
-//                                contentType(ContentType.Application.Json)
-//                            }
-//                        }.body()
-//                    }
-//            }
-//            integrateSimilarRelatedFranchise()
-//            integrateCharacters()
-//        }
     }
 
     fun integrateSimilarRelatedFranchise() {
