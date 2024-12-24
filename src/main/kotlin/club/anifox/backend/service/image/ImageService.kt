@@ -50,6 +50,7 @@ class ImageService {
                 CompressAnimeImageType.Episodes -> { }
                 CompressAnimeImageType.Screenshot -> { }
                 CompressAnimeImageType.Avatar -> { }
+                CompressAnimeImageType.CharacterImage -> { }
             }
 
             val readyData = if (compress) compressImage(data, type) else data

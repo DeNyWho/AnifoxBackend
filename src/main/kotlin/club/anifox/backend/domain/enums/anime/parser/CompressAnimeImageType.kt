@@ -11,6 +11,7 @@ enum class CompressAnimeImageType(val path: String, val imageType: ImageType, pr
     Screenshot("screenshots", ImageType.JPG, 1920, 1080, 0.9),
     Episodes("episodes", ImageType.JPG, 400, 225, 1.0),
     Avatar("avatar", ImageType.WEBP, 400, 400, 1.0),
+    CharacterImage("character", ImageType.JPG, 400, 400, 1.0),
     ;
 
     fun extractWidthAndHeight(): Pair<Int, Int> {

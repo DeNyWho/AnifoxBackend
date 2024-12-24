@@ -8,7 +8,6 @@ import club.anifox.backend.domain.dto.anime.kodik.KodikEpisodeDto
 import club.anifox.backend.domain.dto.translate.edge.TranslateTextDto
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
-import club.anifox.backend.domain.model.translate.TranslatedText
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
@@ -250,9 +249,9 @@ class EpisodesComponent {
             tempTranslatedDescription.put(episodeKey, TranslateTextDto(description))
         }
 
-        val translateTitle = translateChunks(tempTranslatedTitle.values.toList())
+        val translateTitle = translateComponent.translateChunks(tempTranslatedTitle.values.toList())
 
-        val translateDescription = translateChunks(tempTranslatedDescription.values.toList())
+        val translateDescription = translateComponent.translateChunks(tempTranslatedDescription.values.toList())
 
         translatedTitleMapped.map { (episodeKey, _) ->
             val episodeKeyList = if (translatedTitleMapped["0"] != null) episodeKey.toInt() else episodeKey.toInt() - 1
@@ -409,20 +408,6 @@ class EpisodesComponent {
 
         animeEpisodeTranslationRepository.saveAll(episodeTranslationsToSave)
         return episodes
-    }
-
-    suspend fun translateChunks(
-        texts: List<TranslateTextDto>,
-        chunkSize: Int = 10,
-    ): List<TranslatedText> {
-        val tempList = mutableListOf<TranslatedText>()
-
-        texts.chunked(chunkSize).forEach { chunk ->
-            val translated = translateComponent.translateText(chunk)
-            tempList.addAll(translated)
-        }
-
-        return tempList
     }
 
     private fun findEpisodeByNumber(

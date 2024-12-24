@@ -7,4 +7,6 @@ import kotlinx.serialization.Serializable
 data class JikanAnimeCharactersDto(
     @SerialName("character")
     val character: JikanCharacterIDDto,
+    @SerialName("role")
+    val role: String,
 )

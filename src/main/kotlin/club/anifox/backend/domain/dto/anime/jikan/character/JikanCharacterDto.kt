@@ -11,7 +11,7 @@ data class JikanCharacterDto(
     @SerialName("images")
     val images: JikanImagesDto<JikanJpgCharacterDto>,
     @SerialName("name")
-    val nameEng: String,
+    val name: String,
     @SerialName("name_kanji")
     val nameKanji: String,
     @SerialName("about")

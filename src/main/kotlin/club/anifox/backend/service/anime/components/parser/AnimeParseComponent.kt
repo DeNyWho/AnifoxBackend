@@ -11,6 +11,8 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
+import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
+import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
@@ -24,6 +26,8 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedByStudioRepository
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
+import club.anifox.backend.jpa.repository.anime.AnimeCharacterRepository
+import club.anifox.backend.jpa.repository.anime.AnimeCharacterRoleRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeExternalLinksRepository
 import club.anifox.backend.jpa.repository.anime.AnimeFranchiseRepository
@@ -32,13 +36,15 @@ import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeSimilarRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
-import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.jpa.repository.anime.AnimeVideoRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.haglund.HaglundComponent
 import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
+import club.anifox.backend.service.anime.translate.TranslateComponent
+import club.anifox.backend.service.image.ImageService
+import club.anifox.backend.util.mdFive
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -48,11 +54,13 @@ import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Component
+import java.net.URL
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -72,7 +80,6 @@ class AnimeParseComponent(
     private val animeBlockedByStudioRepository: AnimeBlockedByStudioRepository,
     private val animeGenreRepository: AnimeGenreRepository,
     private val animeStudiosRepository: AnimeStudiosRepository,
-    private val animeTranslationRepository: AnimeTranslationRepository,
     private val animeErrorParserRepository: AnimeErrorParserRepository,
     private val animeRepository: AnimeRepository,
     private val animeVideoRepository: AnimeVideoRepository,
@@ -80,7 +87,11 @@ class AnimeParseComponent(
     private val animeSimilarRepository: AnimeSimilarRepository,
     private val animeFranchiseRepository: AnimeFranchiseRepository,
     private val animeExternalLinksRepository: AnimeExternalLinksRepository,
+    private val animeCharacterRoleRepository: AnimeCharacterRoleRepository,
+    private val animeCharacterRepository: AnimeCharacterRepository,
     private val jikanComponent: JikanComponent,
+    private val translateComponent: TranslateComponent,
+    private val imageService: ImageService,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
 
@@ -91,37 +102,41 @@ class AnimeParseComponent(
     private val studioCache = ConcurrentHashMap<String, AnimeStudioTable>()
 
     fun addDataToDB() {
-        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
         runBlocking {
-            var ar =
-                runBlocking {
-                    kodikComponent.checkKodikList(translationsIds)
-                }
-            while (ar.nextPage != null) {
-                val jobs =
-                    ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
-                        async {
-                            try {
-                                if (!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
-                                    processData(animeTemp)
-                                }
-                            } catch (e: Exception) {
-                                println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
-                            }
-                        }
-                    }
-                jobs.awaitAll()
-                ar =
-                    runBlocking {
-                        client.get(ar.nextPage!!) {
-                            headers {
-                                contentType(ContentType.Application.Json)
-                            }
-                        }.body()
-                    }
-            }
-            integrateSimilarRelatedFranchise()
+            integrateCharacters()
         }
+//        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
+//        runBlocking {
+//            var ar =
+//                runBlocking {
+//                    kodikComponent.checkKodikList(translationsIds)
+//                }
+//            while (ar.nextPage != null) {
+//                val jobs =
+//                    ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
+//                        async {
+//                            try {
+//                                if (!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
+//                                    processData(animeTemp)
+//                                }
+//                            } catch (e: Exception) {
+//                                println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
+//                            }
+//                        }
+//                    }
+//                jobs.awaitAll()
+//                ar =
+//                    runBlocking {
+//                        client.get(ar.nextPage!!) {
+//                            headers {
+//                                contentType(ContentType.Application.Json)
+//                            }
+//                        }.body()
+//                    }
+//            }
+//            integrateSimilarRelatedFranchise()
+//            integrateCharacters()
+//        }
     }
 
     fun integrateSimilarRelatedFranchise() {
@@ -268,9 +283,6 @@ class AnimeParseComponent(
                     animeRepository.saveAndFlush(anime)
                 }
             } catch (e: Exception) {
-                e.stackTrace.forEach {
-                    println(it)
-                }
                 animeErrorParserRepository.save(
                     AnimeErrorParserTable(
                         message = e.message,
@@ -283,7 +295,113 @@ class AnimeParseComponent(
         }
     }
 
-    fun integrateCharacters() {
+    suspend fun integrateCharacters() {
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val shikimoriIds = entityManager.createQuery(
+            criteriaBuilder.createQuery(Int::class.java).apply {
+                val root = from(AnimeTable::class.java)
+                select(root.get("shikimoriId"))
+            },
+        ).resultList
+
+        shikimoriIds.forEach Loop@{ shikimoriId ->
+            try {
+                withContext(Dispatchers.IO) {
+                    val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
+                    val root = criteriaQuery.from(AnimeTable::class.java)
+
+                    root.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
+                        .fetch<AnimeCharacterTable, Any>("character", JoinType.LEFT)
+
+                    criteriaQuery.select(root)
+                        .where(criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
+
+                    val anime = entityManager.createQuery(criteriaQuery).resultList.first()
+
+                    val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
+
+                    animeCharactersIdsDeferred.data.forEach { characterData ->
+                        val characterId = characterData.character.malId
+
+                        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = criteriaBuilder.createQuery(AnimeCharacterTable::class.java)
+                        val rootCharacter = criteriaQueryCharacter.from(AnimeCharacterTable::class.java)
+
+                        rootCharacter.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
+
+                        criteriaQueryCharacter.select(rootCharacter)
+                        criteriaQueryCharacter.where(criteriaBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
+
+                        val resultList = entityManager.createQuery(criteriaQueryCharacter).resultList
+                        val existingCharacter = resultList.firstOrNull()
+
+                        if (existingCharacter != null) {
+                            val characterRole = AnimeCharacterRoleTable(
+                                anime = anime,
+                                character = existingCharacter,
+                                role = translateComponent.translateSingleText(characterData.role),
+                                roleEn = characterData.role,
+                            )
+
+                            animeCharacterRoleRepository.save(characterRole)
+                            anime.characterRoles.add(characterRole)
+                            animeRepository.saveAndFlush(anime)
+                        } else {
+                            val character = jikanComponent.fetchJikanCharacter(characterId)
+
+                            val characterPictures = jikanComponent.fetchJikanCharacterPictures(characterId)
+
+                            val picturesReady = characterPictures.data.map { image ->
+                                imageService.saveFileInSThird(
+                                    filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/pictures/${mdFive(image.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
+                                    data = URL(image.jikanJpg.imageUrl).readBytes(),
+                                    compress = false,
+                                    newImage = true,
+                                    type = CompressAnimeImageType.CharacterImage,
+                                )
+                            }
+
+                            val newCharacter = AnimeCharacterTable(
+                                malId = characterId,
+                                name = character.data.name,
+                                nameKanji = character.data.nameKanji,
+                                image = imageService.saveFileInSThird(
+                                    filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(character.data.images.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
+                                    data = URL(character.data.images.jikanJpg.imageUrl).readBytes(),
+                                    compress = false,
+                                    newImage = true,
+                                    type = CompressAnimeImageType.CharacterImage,
+                                ),
+                                aboutEn = character.data.about,
+                                aboutRu = translateComponent.translateSingleText(character.data.about),
+                                pictures = picturesReady.toMutableList(),
+                            )
+                            animeCharacterRepository.save(newCharacter)
+
+                            val characterRole = AnimeCharacterRoleTable(
+                                anime = anime,
+                                character = newCharacter,
+                                role = translateComponent.translateSingleText(characterData.role),
+                                roleEn = characterData.role,
+                            )
+
+                            animeCharacterRoleRepository.save(characterRole)
+                            anime.characterRoles.add(characterRole)
+                            newCharacter.characterRoles.add(characterRole)
+                            animeRepository.saveAndFlush(anime)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                animeErrorParserRepository.save(
+                    AnimeErrorParserTable(
+                        message = e.message,
+                        cause = "INTEGRATE CHARACTER",
+                        shikimoriId = shikimoriId,
+                    ),
+                )
+                return@Loop
+            }
+        }
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
@@ -549,8 +667,7 @@ class AnimeParseComponent(
                                     status = status,
                                     description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
                                     franchise = shikimori.franchise,
-                                    images =
-                                    AnimeImagesTable(
+                                    images = AnimeImagesTable(
                                         large = images.large,
                                         medium = images.medium,
                                         cover = images.cover ?: "",

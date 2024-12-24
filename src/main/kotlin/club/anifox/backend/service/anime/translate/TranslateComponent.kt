@@ -17,11 +17,39 @@ class TranslateComponent {
     @Autowired
     private lateinit var client: HttpClient
 
+    suspend fun translateChunks(
+        texts: List<TranslateTextDto>,
+        chunkSize: Int = 10,
+    ): List<TranslatedText> {
+        val tempList = mutableListOf<TranslatedText>()
+
+        texts.chunked(chunkSize).forEach { chunk ->
+            val translated = translateText(chunk)
+            tempList.addAll(translated)
+        }
+
+        return tempList
+    }
+
     suspend fun translateText(text: List<TranslateTextDto>): List<TranslatedText> {
         if (text.isEmpty()) return emptyList()
         return translateWithRetry(text)
             .map { it.translations.map { t -> TranslatedText(t.text) } }
             .flatten()
+    }
+
+    suspend fun translateSingleText(text: String): String {
+        var result: String? = null
+
+        while (result == null || result == "null") {
+            result = translateWithRetry(listOf(TranslateTextDto(text)))
+                .map { it.translations.map { t -> TranslatedText(t.text) } }
+                .flatten()
+                .firstOrNull()
+                ?.text
+        }
+
+        return result
     }
 
     private suspend fun translateWithRetry(text: List<TranslateTextDto>): List<TranslatedTextDto> {

@@ -79,7 +79,6 @@ class JikanComponent {
 
     suspend fun fetchJikanCharacterPictures(characterId: Int): JikanResponseDefaultDto<JikanImagesDto<JikanJpgCharacterDto>> {
         return client.get {
-
             headers {
                 contentType(ContentType.Application.Json)
             }

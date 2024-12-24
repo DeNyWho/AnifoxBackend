@@ -17,16 +17,18 @@ import java.util.UUID
 data class AnimeCharacterTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
+    val malId: Int = 0,
     @Column(columnDefinition = "TEXT")
     val name: String = "",
     @Column(columnDefinition = "TEXT")
     val nameKanji: String = "",
+    val image: String = "",
     @Column(columnDefinition = "TEXT")
     val aboutEn: String = "",
     @Column(columnDefinition = "TEXT")
     val aboutRu: String = "",
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "pictures", schema = "anime")
+    @CollectionTable(name = "character_pictures", schema = "anime")
     @Column(columnDefinition = "text")
     @BatchSize(size = 10)
     val pictures: MutableList<String> = mutableListOf(),
