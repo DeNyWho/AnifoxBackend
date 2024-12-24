@@ -1,0 +1,40 @@
+package club.anifox.backend.jpa.entity.anime
+
+import jakarta.persistence.CascadeType
+import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.Id
+import jakarta.persistence.OneToMany
+import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
+import java.util.UUID
+
+@Entity
+@Table(name = "character", schema = "anime")
+data class AnimeCharacterTable(
+    @Id
+    val id: String = UUID.randomUUID().toString(),
+    @Column(columnDefinition = "TEXT")
+    val name: String = "",
+    @Column(columnDefinition = "TEXT")
+    val nameKanji: String = "",
+    @Column(columnDefinition = "TEXT")
+    val aboutEn: String = "",
+    @Column(columnDefinition = "TEXT")
+    val aboutRu: String = "",
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "pictures", schema = "anime")
+    @Column(columnDefinition = "text")
+    @BatchSize(size = 10)
+    val pictures: MutableList<String> = mutableListOf(),
+    @OneToMany(
+        mappedBy = "character",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    val characterRoles: MutableSet<AnimeCharacterRoleTable> = mutableSetOf(),
+)

@@ -28,6 +28,9 @@ object Constants {
     const val JIKAN_VERSION = "/v4"
     const val JIKAN_ANIME = "/anime"
     const val JIKAN_EPISODES = "/episodes"
+    const val JIKAN_CHARACTERS = "/characters"
+    const val JIKAN_PICTURES = "/pictures"
+    const val JIKAN_FULL = "/full"
 
     const val HAGLUND = "arm.haglund.dev"
     const val HAGLUND_API = "/api"

@@ -283,6 +283,9 @@ class AnimeParseComponent(
         }
     }
 
+    fun integrateCharacters() {
+    }
+
     private suspend fun processData(animeKodik: KodikAnimeDto) {
         coroutineScope {
             try {

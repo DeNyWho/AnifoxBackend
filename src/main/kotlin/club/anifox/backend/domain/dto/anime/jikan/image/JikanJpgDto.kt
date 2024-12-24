@@ -1,4 +1,4 @@
-package club.anifox.backend.domain.dto.anime.jikan
+package club.anifox.backend.domain.dto.anime.jikan.image
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -158,6 +158,14 @@ data class AnimeTable(
         schema = "anime",
     )
     var genres: MutableSet<AnimeGenreTable> = mutableSetOf(),
+    @OneToMany(
+        mappedBy = "anime",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    @BatchSize(size = 10)
+    val characterRoles: MutableSet<AnimeCharacterRoleTable> = mutableSetOf(),
     @ManyToMany(
         fetch = FetchType.LAZY,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
