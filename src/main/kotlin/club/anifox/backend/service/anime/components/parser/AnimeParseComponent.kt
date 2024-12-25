@@ -338,7 +338,7 @@ class AnimeParseComponent(
                             val characterRole = AnimeCharacterRoleTable(
                                 anime = anime,
                                 character = existingCharacter,
-                                role = translateComponent.translateSingleText(characterData.role),
+                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль","").replace("роли", "").replace("ролей", "").replace("ролям", ""),
                                 roleEn = characterData.role,
                             )
 
@@ -380,7 +380,7 @@ class AnimeParseComponent(
                             val characterRole = AnimeCharacterRoleTable(
                                 anime = anime,
                                 character = newCharacter,
-                                role = translateComponent.translateSingleText(characterData.role),
+                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль","").replace("роли", "").replace("ролей", "").replace("ролям", ""),
                                 roleEn = characterData.role,
                             )
 
