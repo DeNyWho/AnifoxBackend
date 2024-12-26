@@ -106,13 +106,18 @@ class AnimeParseComponent(
 
     fun addDataToDB() = runBlocking {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }
-        val animeMap = animeRepository.findByShikimoriIds(translationsIds).associateBy { it.shikimoriId }
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
+        val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
+        criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
+        val query = entityManager.createQuery(criteriaQueryShikimori)
+        val shikimoriIds = query.resultList
 
         var ar = kodikComponent.checkKodikList(translationsIds.joinToString(", "))
         while (ar.nextPage != null) {
             val jobs = ar.result
                 .distinctBy { it.shikimoriId }
-                .filter { !animeMap.containsKey(it.shikimoriId) }
+                .filter { !shikimoriIds.contains(it.shikimoriId) }
                 .map { animeTemp ->
                     async { processData(animeTemp) }
                 }

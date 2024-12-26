@@ -13,9 +13,6 @@ interface AnimeRepository : JpaRepository<AnimeTable, String> {
         @Param("shikimoriId") shikimoriId: Int,
     ): Optional<AnimeTable>
 
-    @Query("SELECT a FROM AnimeTable a WHERE a.shikimoriId IN :ids")
-    fun findByShikimoriIds(@Param("ids") ids: List<Int>): List<AnimeTable>
-
     @Query("Select distinct a.year from AnimeTable a order by a.year desc")
     fun findDistinctByYear(): List<String>
 
