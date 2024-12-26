@@ -104,39 +104,25 @@ class AnimeParseComponent(
     private val genreCache = ConcurrentHashMap<String, AnimeGenreTable>()
     private val studioCache = ConcurrentHashMap<String, AnimeStudioTable>()
 
-    fun addDataToDB() {
-        val translationsIds = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
-        runBlocking {
-            var ar =
-                runBlocking {
-                    kodikComponent.checkKodikList(translationsIds)
+    fun addDataToDB() = runBlocking {
+        val translationsIds = animeTranslationRepository.findAll().map { it.id }
+        val animeMap = animeRepository.findByShikimoriIds(translationsIds).associateBy { it.shikimoriId }
+
+        var ar = kodikComponent.checkKodikList(translationsIds.joinToString(", "))
+        while (ar.nextPage != null) {
+            val jobs = ar.result
+                .distinctBy { it.shikimoriId }
+                .filter { !animeMap.containsKey(it.shikimoriId) }
+                .map { animeTemp ->
+                    async { processData(animeTemp) }
                 }
-            while (ar.nextPage != null) {
-                val jobs =
-                    ar.result.distinctBy { it.shikimoriId }.map { animeTemp ->
-                        async {
-                            try {
-                                if (!animeRepository.findByShikimoriId(animeTemp.shikimoriId).isPresent) {
-                                    processData(animeTemp)
-                                }
-                            } catch (e: Exception) {
-                                println("Error processing animeTemp with shikimoriId ${animeTemp.shikimoriId}: ${e.message}")
-                            }
-                        }
-                    }
-                jobs.awaitAll()
-                ar =
-                    runBlocking {
-                        client.get(ar.nextPage!!) {
-                            headers {
-                                contentType(ContentType.Application.Json)
-                            }
-                        }.body()
-                    }
-            }
-            integrateSimilarRelatedFranchise()
-            integrateCharacters()
+            jobs.awaitAll()
+            ar = client.get(ar.nextPage!!) {
+                headers { contentType(ContentType.Application.Json) }
+            }.body()
         }
+        integrateSimilarRelatedFranchise()
+        integrateCharacters()
     }
 
     fun integrateSimilarRelatedFranchise() {
@@ -362,7 +348,8 @@ class AnimeParseComponent(
 
                             val newCharacter = AnimeCharacterTable(
                                 malId = characterId,
-                                name = character.data.name,
+                                name = translateComponent.translateSingleText(character.data.name),
+                                nameEn = character.data.name,
                                 nameKanji = character.data.nameKanji,
                                 image = imageService.saveFileInSThird(
                                     filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(character.data.images.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
