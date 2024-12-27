@@ -29,14 +29,14 @@ data class AnimeCharacterTable(
     val aboutEn: String = "",
     @Column(columnDefinition = "TEXT")
     val aboutRu: String = "",
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "character_pictures", schema = "anime")
     @Column(columnDefinition = "text")
     @BatchSize(size = 10)
     val pictures: MutableList<String> = mutableListOf(),
     @OneToMany(
         mappedBy = "character",
-        fetch = FetchType.LAZY,
+        fetch = FetchType.EAGER,
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )

@@ -31,7 +31,6 @@ dependencies {
     implementation(libs.jackson)
 
     implementation(libs.jakarta.api)
-    implementation(libs.jakarta.persistence)
     implementation(libs.jakarta.xml.bind.api)
 
     implementation(libs.javax.xml.bind.api)

@@ -61,7 +61,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import org.springframework.web.servlet.function.ServerResponse.async
 import java.net.URL
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -104,6 +106,7 @@ class AnimeParseComponent(
     private val genreCache = ConcurrentHashMap<String, AnimeGenreTable>()
     private val studioCache = ConcurrentHashMap<String, AnimeStudioTable>()
 
+    @Async
     fun addDataToDB() = runBlocking {
         val translationsIds = animeTranslationRepository.findAll().map { it.id }
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -126,11 +129,20 @@ class AnimeParseComponent(
                 headers { contentType(ContentType.Application.Json) }
             }.body()
         }
-        integrateSimilarRelatedFranchise()
-        integrateCharacters()
     }
 
-    fun integrateSimilarRelatedFranchise() {
+    @Async
+    fun integrations() {
+        runBlocking {
+            val integrationJobs = listOf(
+                async { integrateSimilarRelatedFranchise() },
+                async { integrateCharacters() },
+            )
+            integrationJobs.awaitAll()
+        }
+    }
+
+    private fun integrateSimilarRelatedFranchise() {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
@@ -286,41 +298,45 @@ class AnimeParseComponent(
         }
     }
 
-    suspend fun integrateCharacters() {
+    private suspend fun integrateCharacters() {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val shikimoriIds = entityManager.createQuery(
-            criteriaBuilder.createQuery(Int::class.java).apply {
-                val root = from(AnimeTable::class.java)
-                select(root.get("shikimoriId"))
-            },
-        ).resultList
+        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
+        val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
+        criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
+
+        val query = entityManager.createQuery(criteriaQueryShikimori)
+        val shikimoriIds = query.resultList
 
         shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
                 withContext(Dispatchers.IO) {
-                    val criteriaQuery: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
+                    val newBuilder = entityManager.criteriaBuilder
+                    val criteriaQuery: CriteriaQuery<AnimeTable> = newBuilder.createQuery(AnimeTable::class.java)
                     val root = criteriaQuery.from(AnimeTable::class.java)
 
                     root.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
-                        .fetch<AnimeCharacterTable, Any>("character", JoinType.LEFT)
 
                     criteriaQuery.select(root)
-                        .where(criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
+                        .where(newBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
 
-                    val anime = entityManager.createQuery(criteriaQuery).resultList.first()
+                    val queryTest = entityManager.createQuery(criteriaQuery)
+                    val listAnime = queryTest.resultList
+                    val anime = listAnime.first()
+
+                    println("TEST = ${anime.url}")
 
                     val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
                     animeCharactersIdsDeferred.data.forEach { characterData ->
                         val characterId = characterData.character.malId
 
-                        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = criteriaBuilder.createQuery(AnimeCharacterTable::class.java)
+                        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = newBuilder.createQuery(AnimeCharacterTable::class.java)
                         val rootCharacter = criteriaQueryCharacter.from(AnimeCharacterTable::class.java)
 
                         rootCharacter.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
 
                         criteriaQueryCharacter.select(rootCharacter)
-                        criteriaQueryCharacter.where(criteriaBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
+                        criteriaQueryCharacter.where(newBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
 
                         val resultList = entityManager.createQuery(criteriaQueryCharacter).resultList
                         val existingCharacter = resultList.firstOrNull()

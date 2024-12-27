@@ -14,13 +14,18 @@ class ParserTasks {
     private lateinit var animeService: AnimeService
 
     @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
-    fun parseData() {
+    fun parseAnime() {
         animeService.parseTranslations(listOf(610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002, 1978, 1291, 1272, 1946))
         animeService.parseAnime()
     }
 
-//    @Scheduled(fixedDelay = 1000)
-//    fun updateData() {
-//        animeService.updateEpisodes()
-//    }
+    @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
+    fun parseAnimeIntegrations() {
+        animeService.parseAnimeIntegrations()
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    fun updateData() {
+        animeService.updateEpisodes()
+    }
 }

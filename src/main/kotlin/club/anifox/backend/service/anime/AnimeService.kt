@@ -160,6 +160,10 @@ class AnimeService : AnimeRepository {
         animeParseComponent.addDataToDB()
     }
 
+    override fun parseAnimeIntegrations() {
+        animeParseComponent.integrations()
+    }
+
     override fun updateEpisodes() {
         animeUpdateComponent.update()
     }

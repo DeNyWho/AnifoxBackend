@@ -94,4 +94,6 @@ interface AnimeRepository {
         url: String,
         type: AnimeRelationFranchise?,
     ): List<AnimeFranchise>
+
+    fun parseAnimeIntegrations()
 }
