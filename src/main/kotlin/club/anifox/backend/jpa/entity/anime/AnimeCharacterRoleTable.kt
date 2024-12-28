@@ -30,4 +30,12 @@ data class AnimeCharacterRoleTable(
 
     @Column(nullable = false)
     val roleEn: String = "",
-)
+) {
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AnimeCharacterRoleTable) return false
+        return id == other.id
+    }
+}

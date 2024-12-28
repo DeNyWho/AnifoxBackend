@@ -41,4 +41,12 @@ data class AnimeCharacterTable(
         orphanRemoval = true,
     )
     val characterRoles: MutableSet<AnimeCharacterRoleTable> = mutableSetOf(),
-)
+) {
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AnimeCharacterTable) return false
+        return id == other.id
+    }
+}
