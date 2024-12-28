@@ -284,7 +284,7 @@ class AnimeParseComponent(
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList.asReversed()
+        val shikimoriIds = query.resultList
 
         shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
