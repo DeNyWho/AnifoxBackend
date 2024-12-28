@@ -20,9 +20,12 @@ import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
+import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
+import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
@@ -88,6 +91,47 @@ class AnimeCommonComponent {
         return anime.toAnimeDetail()
     }
 
+    fun getAnimeCharacters(url: String): List<AnimeCharacterLight> {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeTable, Any>("related", JoinType.LEFT)
+
+        criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
+
+        val anime = entityManager.createQuery(criteriaQuery).resultList
+        if (anime.isEmpty()) {
+            throw NotFoundException("Anime not found")
+        } else {
+            val characterQuery: CriteriaQuery<AnimeCharacterLight> = criteriaBuilder.createQuery(AnimeCharacterLight::class.java)
+
+            val rootCharacter: Root<AnimeCharacterRoleTable> = characterQuery.from(AnimeCharacterRoleTable::class.java)
+
+            val characterJoin: Join<AnimeCharacterRoleTable, AnimeCharacterTable> = rootCharacter.join("character")
+
+            // Выбираем необходимые поля
+            characterQuery.select(
+                criteriaBuilder.construct(
+                    AnimeCharacterLight::class.java,
+                    characterJoin.get<String>("id"),
+                    rootCharacter.get<String>("role"),
+                    characterJoin.get<String>("image"),
+                    characterJoin.get<String>("name"),
+                ),
+            )
+
+            // Условие для фильтрации по animeId
+            characterQuery.where(
+                criteriaBuilder.equal(rootCharacter.get<AnimeTable>("anime").get<String>("id"), anime.first().id),
+            )
+
+            // Выполняем запрос
+            return entityManager.createQuery(characterQuery).resultList
+        }
+    }
+
     fun getAnimeSimilar(url: String): List<AnimeLight> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
@@ -129,7 +173,7 @@ class AnimeCommonComponent {
         val anime = entityManager.createQuery(criteriaQuery).resultList
 
         if (anime.isEmpty()) {
-            throw NotFoundException("Anime with url = $url not found")
+            throw NotFoundException("Anime not found")
         } else {
             val relatedAnimeList =
                 anime[0].related.map { relation ->

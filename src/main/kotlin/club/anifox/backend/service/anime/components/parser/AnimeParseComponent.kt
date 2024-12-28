@@ -284,7 +284,7 @@ class AnimeParseComponent(
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList
+        val shikimoriIds = query.resultList.asReversed()
 
         shikimoriIds.forEach Loop@{ shikimoriId ->
             try {
@@ -301,8 +301,6 @@ class AnimeParseComponent(
                     val queryTest = entityManager.createQuery(criteriaQuery)
                     val listAnime = queryTest.resultList
                     val anime = listAnime.first()
-
-                    println("TEST = ${anime.url}")
 
                     val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
@@ -324,9 +322,17 @@ class AnimeParseComponent(
                             val characterRole = AnimeCharacterRoleTable(
                                 anime = anime,
                                 character = existingCharacter,
-                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", ""),
+                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", "").dropLast(1),
                                 roleEn = characterData.role,
                             )
+
+                            val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(
+                                anime.id,
+                                existingCharacter.id,
+                            )
+                            if (existingRole != null) {
+                                return@forEach
+                            }
 
                             animeCharacterRoleRepository.save(characterRole)
                             anime.characterRoles.add(characterRole)
@@ -359,7 +365,7 @@ class AnimeParseComponent(
                                     type = CompressAnimeImageType.CharacterImage,
                                 ),
                                 aboutEn = character.data.about,
-                                aboutRu = translateComponent.translateSingleText(character.data.about),
+                                aboutRu = character.data.about?.let { translateComponent.translateSingleText(it) },
                                 pictures = picturesReady.toMutableList(),
                             )
                             animeCharacterRepository.save(newCharacter)
@@ -367,9 +373,17 @@ class AnimeParseComponent(
                             val characterRole = AnimeCharacterRoleTable(
                                 anime = anime,
                                 character = newCharacter,
-                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", ""),
+                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", "").dropLast(1),
                                 roleEn = characterData.role,
                             )
+
+                            val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(
+                                anime.id,
+                                newCharacter.id,
+                            )
+                            if (existingRole != null) {
+                                return@forEach
+                            }
 
                             animeCharacterRoleRepository.save(characterRole)
                             anime.characterRoles.add(characterRole)

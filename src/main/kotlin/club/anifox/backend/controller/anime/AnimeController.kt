@@ -14,6 +14,7 @@ import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
@@ -160,6 +161,14 @@ class AnimeController {
         type: AnimeVideoType?,
     ): List<AnimeVideo> {
         return animeService.getAnimeVideos(url, type)
+    }
+
+    @GetMapping("/{url}/characters")
+    @Operation(summary = "anime characters")
+    fun getAnimeCharacters(
+        @PathVariable url: String,
+    ): List<AnimeCharacterLight> {
+        return animeService.getAnimeCharacters(url)
     }
 
     @GetMapping("/{url}/franchise")

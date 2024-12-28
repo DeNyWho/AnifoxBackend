@@ -148,9 +148,6 @@ class AnimeUpdateComponent {
 
                 animeRepository.saveAndFlush(anime)
             } catch (e: Exception) {
-                e.stackTrace.forEach {
-                    println(it)
-                }
                 animeErrorParserRepository.save(
                     AnimeErrorParserTable(
                         message = e.message,

@@ -9,9 +9,14 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 
 @Entity
-@Table(name = "anime_character_role", schema = "anime")
+@Table(
+    name = "anime_character_role",
+    schema = "anime",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["anime_id", "character_id"])],
+)
 data class AnimeCharacterRoleTable(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

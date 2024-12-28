@@ -13,6 +13,7 @@ import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
@@ -83,6 +84,10 @@ class AnimeService : AnimeRepository {
 
     override fun getAnimeDetails(url: String): AnimeDetail {
         return animeCommonComponent.getAnimeByUrl(url)
+    }
+
+    override fun getAnimeCharacters(url: String): List<AnimeCharacterLight> {
+        return animeCommonComponent.getAnimeCharacters(url)
     }
 
     override fun getAnimeSimilar(url: String): List<AnimeLight> {

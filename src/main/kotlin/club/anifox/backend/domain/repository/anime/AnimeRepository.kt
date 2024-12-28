@@ -13,6 +13,7 @@ import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
@@ -96,4 +97,5 @@ interface AnimeRepository {
     ): List<AnimeFranchise>
 
     fun parseAnimeIntegrations()
+    fun getAnimeCharacters(url: String): List<AnimeCharacterLight>
 }

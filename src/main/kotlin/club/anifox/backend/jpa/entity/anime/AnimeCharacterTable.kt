@@ -25,10 +25,10 @@ data class AnimeCharacterTable(
     @Column(columnDefinition = "TEXT")
     val nameKanji: String = "",
     val image: String = "",
-    @Column(columnDefinition = "TEXT")
-    val aboutEn: String = "",
-    @Column(columnDefinition = "TEXT")
-    val aboutRu: String = "",
+    @Column(columnDefinition = "TEXT", nullable = true)
+    val aboutEn: String? = null,
+    @Column(columnDefinition = "TEXT", nullable = true)
+    val aboutRu: String? = null,
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "character_pictures", schema = "anime")
     @Column(columnDefinition = "text")
