@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.translate
+package club.anifox.backend.service.anime.components.translate
 
 import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.translate.edge.TranslateTextDto

@@ -107,6 +107,7 @@ constructor(
                 ).hasRole(RoleName.ADMIN.name)
                 auth.requestMatchers(
                     AntPathRequestMatcher("/api/anime/**"),
+                    AntPathRequestMatcher("/api/characters/**"),
                     AntPathRequestMatcher("/api/test/**"),
                     AntPathRequestMatcher("/api/shikimori/**"),
                     AntPathRequestMatcher("/images/**"),

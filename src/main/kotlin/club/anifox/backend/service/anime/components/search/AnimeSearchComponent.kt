@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.components
+package club.anifox.backend.service.anime.components.search
 
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus

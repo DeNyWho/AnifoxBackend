@@ -17,7 +17,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
 import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kitsu.KitsuComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
-import club.anifox.backend.service.anime.translate.TranslateComponent
+import club.anifox.backend.service.anime.components.translate.TranslateComponent
 import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.mdFive
 import kotlinx.coroutines.CoroutineScope

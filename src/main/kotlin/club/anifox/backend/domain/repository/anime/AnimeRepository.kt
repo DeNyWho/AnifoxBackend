@@ -11,9 +11,9 @@ import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
-import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount

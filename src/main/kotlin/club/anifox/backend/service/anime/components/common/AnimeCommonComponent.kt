@@ -1,4 +1,4 @@
-package club.anifox.backend.service.anime.components
+package club.anifox.backend.service.anime.components.common
 
 import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
@@ -6,6 +6,7 @@ import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
+import club.anifox.backend.domain.mappers.anime.character.toCharacterFull
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
@@ -18,9 +19,10 @@ import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterFull
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
-import club.anifox.backend.domain.model.anime.light.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
@@ -41,7 +43,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
 import club.anifox.backend.service.image.ImageService
-import club.anifox.backend.util.AnimeUtils
+import club.anifox.backend.util.anime.AnimeUtils
 import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
@@ -127,9 +129,24 @@ class AnimeCommonComponent {
                 criteriaBuilder.equal(rootCharacter.get<AnimeTable>("anime").get<String>("id"), anime.first().id),
             )
 
-            // Выполняем запрос
             return entityManager.createQuery(characterQuery).resultList
         }
+    }
+
+    fun getCharacterFullResponse(characterId: String): AnimeCharacterFull? {
+        val cb = entityManager.criteriaBuilder
+        val query = cb.createQuery(AnimeCharacterTable::class.java)
+        val root = query.from(AnimeCharacterTable::class.java)
+
+        val roles = root.join<AnimeCharacterTable, AnimeCharacterRoleTable>("characterRoles", JoinType.LEFT)
+
+        val anime = roles.join<AnimeCharacterRoleTable, AnimeTable>("anime", JoinType.LEFT)
+
+        query.select(root).distinct(true).where(cb.equal(root.get<String>("id"), characterId))
+
+        val characterTable = entityManager.createQuery(query).resultList.firstOrNull() ?: throw NotFoundException("Character not found")
+
+        return characterTable.toCharacterFull()
     }
 
     fun getAnimeSimilar(url: String): List<AnimeLight> {

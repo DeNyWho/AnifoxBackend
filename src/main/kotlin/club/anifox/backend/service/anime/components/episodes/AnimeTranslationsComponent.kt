@@ -8,7 +8,7 @@ import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
-import club.anifox.backend.util.AnimeUtils
+import club.anifox.backend.util.anime.AnimeUtils
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*

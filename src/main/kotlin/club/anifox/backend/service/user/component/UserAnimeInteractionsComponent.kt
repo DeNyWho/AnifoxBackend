@@ -21,7 +21,7 @@ import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRatingCountRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRatingRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRecentlyRepository
-import club.anifox.backend.util.AnimeUtils
+import club.anifox.backend.util.anime.AnimeUtils
 import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
 import jakarta.persistence.criteria.CriteriaBuilder

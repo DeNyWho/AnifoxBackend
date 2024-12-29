@@ -1,4 +1,4 @@
-package club.anifox.backend.domain.model.anime.light
+package club.anifox.backend.domain.model.anime.character
 
 import kotlinx.serialization.Serializable
 

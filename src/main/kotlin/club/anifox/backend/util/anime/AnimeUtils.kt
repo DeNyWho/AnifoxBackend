@@ -1,4 +1,4 @@
-package club.anifox.backend.util
+package club.anifox.backend.util.anime
 
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.jpa.entity.anime.AnimeTable
