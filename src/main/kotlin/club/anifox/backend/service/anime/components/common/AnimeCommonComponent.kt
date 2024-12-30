@@ -93,7 +93,7 @@ class AnimeCommonComponent {
         return anime.toAnimeDetail()
     }
 
-    fun getAnimeCharacters(url: String): List<AnimeCharacterLight> {
+    fun getAnimeCharacters(page: Int, limit: Int, url: String): List<AnimeCharacterLight> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
@@ -129,7 +129,11 @@ class AnimeCommonComponent {
                 criteriaBuilder.equal(rootCharacter.get<AnimeTable>("anime").get<String>("id"), anime.first().id),
             )
 
-            return entityManager.createQuery(characterQuery).resultList
+            val query = entityManager.createQuery(characterQuery)
+            query.firstResult = page * limit
+            query.maxResults = limit
+
+            return query.resultList
         }
     }
 

@@ -166,9 +166,21 @@ class AnimeController {
     @GetMapping("/{url}/characters")
     @Operation(summary = "anime characters")
     fun getAnimeCharacters(
+        @RequestParam(required = true)
+        @Schema(defaultValue = "0", name = "page")
+        page:
+        @Min(0)
+        @Max(500)
+        Int,
+        @RequestParam(required = true)
+        @Schema(defaultValue = "48", name = "limit")
+        limit:
+        @Min(1)
+        @Max(500)
+        Int,
         @PathVariable url: String,
     ): List<AnimeCharacterLight> {
-        return animeService.getAnimeCharacters(url)
+        return animeService.getAnimeCharacters(page, limit, url)
     }
 
     @GetMapping("/{url}/franchise")

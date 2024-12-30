@@ -97,5 +97,9 @@ interface AnimeRepository {
     ): List<AnimeFranchise>
 
     fun parseAnimeIntegrations()
-    fun getAnimeCharacters(url: String): List<AnimeCharacterLight>
+    fun getAnimeCharacters(
+        page: Int,
+        limit: Int,
+        url: String,
+    ): List<AnimeCharacterLight>
 }

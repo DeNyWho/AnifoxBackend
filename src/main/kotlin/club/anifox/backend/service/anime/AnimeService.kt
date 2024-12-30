@@ -86,8 +86,12 @@ class AnimeService : AnimeRepository {
         return animeCommonComponent.getAnimeByUrl(url)
     }
 
-    override fun getAnimeCharacters(url: String): List<AnimeCharacterLight> {
-        return animeCommonComponent.getAnimeCharacters(url)
+    override fun getAnimeCharacters(
+        page: Int,
+        limit: Int,
+        url: String,
+    ): List<AnimeCharacterLight> {
+        return animeCommonComponent.getAnimeCharacters(page, limit, url)
     }
 
     override fun getAnimeSimilar(url: String): List<AnimeLight> {
