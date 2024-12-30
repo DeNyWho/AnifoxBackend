@@ -22,8 +22,8 @@ data class AnimeCharacterTable(
     val name: String = "",
     @Column(columnDefinition = "TEXT")
     val nameEn: String = "",
-    @Column(columnDefinition = "TEXT")
-    val nameKanji: String = "",
+    @Column(columnDefinition = "TEXT", nullable = true)
+    val nameKanji: String? = null,
     val image: String = "",
     @Column(columnDefinition = "TEXT", nullable = true)
     val aboutEn: String? = null,

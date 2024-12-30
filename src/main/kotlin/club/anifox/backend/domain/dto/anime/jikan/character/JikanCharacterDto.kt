@@ -13,7 +13,7 @@ data class JikanCharacterDto(
     @SerialName("name")
     val name: String,
     @SerialName("name_kanji")
-    val nameKanji: String,
+    val nameKanji: String?,
     @SerialName("about")
     val about: String?,
     @SerialName("anime")
