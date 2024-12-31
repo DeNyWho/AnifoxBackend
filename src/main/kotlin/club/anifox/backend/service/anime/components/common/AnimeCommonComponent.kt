@@ -177,7 +177,7 @@ class AnimeCommonComponent {
                 return similarAnimeList
             }
 
-            throw NoContentException("There are no similar anime")
+            throw NoContentException("Similar anime not found")
         }
     }
 
@@ -210,7 +210,7 @@ class AnimeCommonComponent {
                 return relatedAnimeList
             }
 
-            throw NoContentException("There are no related anime")
+            throw NoContentException("Related anime not found")
         }
     }
 
@@ -228,13 +228,13 @@ class AnimeCommonComponent {
             entityManager
                 .createQuery(criteriaQuery)
                 .resultList
-                .firstOrNull() ?: throw NotFoundException("Anime with url = $url not found")
+                .firstOrNull() ?: throw NotFoundException("Anime not found")
 
         if (anime.screenshots.isNotEmpty()) {
             return anime.screenshots
         }
 
-        throw NoContentException("There are no screenshots")
+        throw NoContentException("Screenshots not found")
     }
 
     fun getAnimeVideos(
@@ -250,10 +250,10 @@ class AnimeCommonComponent {
 
         val videosJoin = animeRoot.join<AnimeTable, AnimeVideoTable>("videos", JoinType.LEFT)
 
-        val predicates =
-            mutableListOf(
-                criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
-            )
+        val predicates = mutableListOf(
+            criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
+            criteriaBuilder.notEqual(videosJoin.get<AnimeVideoType>("type"), AnimeVideoType.MainTrailer),
+        )
 
         if (type != null) {
             predicates.add(criteriaBuilder.equal(videosJoin.get<AnimeVideoType>("type"), type))
@@ -268,7 +268,7 @@ class AnimeCommonComponent {
             return videos.map { it.toAnimeVideo() }
         }
 
-        throw NoContentException("There are no videos")
+        throw NoContentException("Videos not found")
     }
 
     fun getAnimeYears(): List<String> {
@@ -312,8 +312,8 @@ class AnimeCommonComponent {
         }
 
         if (!searchQuery.isNullOrEmpty()) {
-            val titlePredicate = criteriaBuilder.like(episodesJoin.get<String>("title"), "%$searchQuery%")
-            val titleEnPredicate = criteriaBuilder.like(episodesJoin.get<String>("titleEn"), "%$searchQuery%")
+            val titlePredicate = criteriaBuilder.like(episodesJoin.get("title"), "%$searchQuery%")
+            val titleEnPredicate = criteriaBuilder.like(episodesJoin.get("titleEn"), "%$searchQuery%")
             val numberPredicate = criteriaBuilder.equal(episodesJoin.get<Int>("number"), searchQuery.toIntOrNull() ?: -1)
 
             predicates.add(criteriaBuilder.or(titlePredicate, titleEnPredicate, numberPredicate))
@@ -453,7 +453,7 @@ class AnimeCommonComponent {
         val results = entityManager.createQuery(criteriaQuery).resultList
 
         if (results.isEmpty()) {
-            throw NoContentException("There are no franchise relations for this anime")
+            throw NoContentException("Franchise relations for this anime not found")
         }
 
         return results.map { franchise ->
