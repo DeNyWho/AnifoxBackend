@@ -1,5 +1,6 @@
 package club.anifox.backend.domain.model.anime.character
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,7 +11,7 @@ data class AnimeCharacterFull(
     @SerialName("name_en")
     val nameEn: String,
     @SerialName("name_kanji")
-    val nameKanji: String? = null,
+    val nameKanji: String?,
     val image: String,
     @SerialName("about")
     val aboutRu: String?,
