@@ -10,7 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import org.hibernate.annotations.BatchSize
-import java.util.UUID
+import java.util.*
 
 @Entity
 @Table(name = "character", schema = "anime")

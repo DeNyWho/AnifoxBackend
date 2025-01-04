@@ -12,7 +12,7 @@ import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.DayOfWeek
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Entity
 @Table(name = "anime_episode_schedule", schema = "anime")
