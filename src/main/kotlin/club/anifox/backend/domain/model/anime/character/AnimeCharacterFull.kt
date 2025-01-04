@@ -1,6 +1,5 @@
 package club.anifox.backend.domain.model.anime.character
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

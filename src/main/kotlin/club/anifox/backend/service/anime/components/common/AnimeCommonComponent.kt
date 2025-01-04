@@ -6,7 +6,6 @@ import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
-import club.anifox.backend.domain.mappers.anime.character.toCharacterFull
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
@@ -19,8 +18,8 @@ import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
-import club.anifox.backend.domain.model.anime.character.AnimeCharacterFull
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -93,7 +92,12 @@ class AnimeCommonComponent {
         return anime.toAnimeDetail()
     }
 
-    fun getAnimeCharacters(page: Int, limit: Int, url: String): List<AnimeCharacterLight> {
+    fun getAnimeCharactersWithRoles(
+        page: Int,
+        limit: Int,
+        url: String,
+        role: String?,
+    ): AnimeCharacterResponse {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
@@ -107,13 +111,19 @@ class AnimeCommonComponent {
         if (anime.isEmpty()) {
             throw NotFoundException("Anime not found")
         } else {
+            // Получаем доступные роли
+            val availableRolesQuery = criteriaBuilder.createQuery(String::class.java)
+            val rootRole = availableRolesQuery.from(AnimeCharacterRoleTable::class.java)
+            availableRolesQuery.select(rootRole.get("role"))
+                .where(criteriaBuilder.equal(rootRole.get<AnimeTable>("anime").get<String>("id"), anime.first().id))
+                .distinct(true)
+            val availableRoles = entityManager.createQuery(availableRolesQuery).resultList
+
+            // Получаем персонажей
             val characterQuery: CriteriaQuery<AnimeCharacterLight> = criteriaBuilder.createQuery(AnimeCharacterLight::class.java)
-
             val rootCharacter: Root<AnimeCharacterRoleTable> = characterQuery.from(AnimeCharacterRoleTable::class.java)
-
             val characterJoin: Join<AnimeCharacterRoleTable, AnimeCharacterTable> = rootCharacter.join("character")
 
-            // Выбираем необходимые поля
             characterQuery.select(
                 criteriaBuilder.construct(
                     AnimeCharacterLight::class.java,
@@ -124,33 +134,25 @@ class AnimeCommonComponent {
                 ),
             )
 
-            // Условие для фильтрации по animeId
-            characterQuery.where(
+            val predicates = mutableListOf<Predicate>()
+            predicates.add(
                 criteriaBuilder.equal(rootCharacter.get<AnimeTable>("anime").get<String>("id"), anime.first().id),
             )
+            role?.let {
+                predicates.add(criteriaBuilder.equal(rootCharacter.get<String>("role"), it))
+            }
+
+            characterQuery.where(criteriaBuilder.and(*predicates.toTypedArray()))
 
             val query = entityManager.createQuery(characterQuery)
             query.firstResult = page * limit
             query.maxResults = limit
 
-            return query.resultList
+            return AnimeCharacterResponse(
+                characters = query.resultList,
+                availableRoles = availableRoles,
+            )
         }
-    }
-
-    fun getCharacterFullResponse(characterId: String): AnimeCharacterFull? {
-        val cb = entityManager.criteriaBuilder
-        val query = cb.createQuery(AnimeCharacterTable::class.java)
-        val root = query.from(AnimeCharacterTable::class.java)
-
-        val roles = root.join<AnimeCharacterTable, AnimeCharacterRoleTable>("characterRoles", JoinType.LEFT)
-
-        val anime = roles.join<AnimeCharacterRoleTable, AnimeTable>("anime", JoinType.LEFT)
-
-        query.select(root).distinct(true).where(cb.equal(root.get<String>("id"), characterId))
-
-        val characterTable = entityManager.createQuery(query).resultList.firstOrNull() ?: throw NotFoundException("Character not found")
-
-        return characterTable.toCharacterFull()
     }
 
     fun getAnimeSimilar(url: String): List<AnimeLight> {

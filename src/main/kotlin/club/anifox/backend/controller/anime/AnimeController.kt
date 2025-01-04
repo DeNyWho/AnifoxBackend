@@ -12,7 +12,7 @@ import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
-import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -179,8 +179,10 @@ class AnimeController {
         @Max(500)
         Int,
         @PathVariable url: String,
-    ): List<AnimeCharacterLight> {
-        return animeService.getAnimeCharacters(page, limit, url)
+        @RequestParam(name = "role", required = false)
+        role: String?,
+    ): AnimeCharacterResponse {
+        return animeService.getAnimeCharacters(page, limit, url, role)
     }
 
     @GetMapping("/{url}/franchise")

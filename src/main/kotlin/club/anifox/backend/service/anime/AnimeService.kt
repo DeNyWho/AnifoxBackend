@@ -11,7 +11,7 @@ import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
-import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
@@ -90,8 +90,9 @@ class AnimeService : AnimeRepository {
         page: Int,
         limit: Int,
         url: String,
-    ): List<AnimeCharacterLight> {
-        return animeCommonComponent.getAnimeCharacters(page, limit, url)
+        role: String?,
+    ): AnimeCharacterResponse {
+        return animeCommonComponent.getAnimeCharactersWithRoles(page, limit, url, role)
     }
 
     override fun getAnimeSimilar(url: String): List<AnimeLight> {
