@@ -1,5 +1,6 @@
 package club.anifox.backend.service.anime.components.parser
 
+import club.anifox.backend.domain.dto.anime.jikan.character.JikanAnimeCharactersDto
 import club.anifox.backend.domain.dto.anime.kodik.KodikAnimeDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
@@ -11,6 +12,7 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
+import club.anifox.backend.domain.model.anime.character.ProcessedCharacterData
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
@@ -134,7 +136,7 @@ class AnimeParseComponent(
     fun integrations() {
         runBlocking {
             val integrationJobs = listOf(
-                async { integrateSimilarRelatedFranchise() },
+//                async { integrateSimilarRelatedFranchise() },
                 async { integrateCharacters() },
             )
             integrationJobs.awaitAll()
@@ -276,132 +278,151 @@ class AnimeParseComponent(
         }
     }
 
-    private suspend fun integrateCharacters() {
+    private suspend fun integrateCharacters() = coroutineScope {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList
+        val shikimoriIds = query.resultList.shuffled()
 
-        shikimoriIds.forEach Loop@{ shikimoriId ->
-            try {
-                withContext(Dispatchers.IO) {
-                    val newBuilder = entityManager.criteriaBuilder
-                    val criteriaQuery: CriteriaQuery<AnimeTable> = newBuilder.createQuery(AnimeTable::class.java)
-                    val root = criteriaQuery.from(AnimeTable::class.java)
-
-                    root.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
-
-                    criteriaQuery.select(root)
-                        .where(newBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
-
-                    val queryTest = entityManager.createQuery(criteriaQuery)
-                    val listAnime = queryTest.resultList
-                    val anime = listAnime.first()
-
-                    val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
-
-                    animeCharactersIdsDeferred.data.forEach { characterData ->
-                        val characterId = characterData.character.malId
-
-                        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = newBuilder.createQuery(AnimeCharacterTable::class.java)
-                        val rootCharacter = criteriaQueryCharacter.from(AnimeCharacterTable::class.java)
-
-                        rootCharacter.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
-
-                        criteriaQueryCharacter.select(rootCharacter)
-                        criteriaQueryCharacter.where(newBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
-
-                        val resultList = entityManager.createQuery(criteriaQueryCharacter).resultList
-                        val existingCharacter = resultList.firstOrNull()
-
-                        if (existingCharacter != null) {
-                            val characterRole = AnimeCharacterRoleTable(
-                                anime = anime,
-                                character = existingCharacter,
-                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", "").dropLast(1),
-                                roleEn = characterData.role,
-                            )
-
-                            val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(
-                                anime.id,
-                                existingCharacter.id,
-                            )
-                            if (existingRole != null) {
-                                return@forEach
-                            }
-
-                            animeCharacterRoleRepository.save(characterRole)
-                            anime.characterRoles.add(characterRole)
-                            animeRepository.saveAndFlush(anime)
-                        } else {
-                            val character = jikanComponent.fetchJikanCharacter(characterId)
-
-                            val characterPictures = jikanComponent.fetchJikanCharacterPictures(characterId)
-
-                            val picturesReady = characterPictures.data.map { image ->
-                                imageService.saveFileInSThird(
-                                    filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/pictures/${mdFive(image.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
-                                    data = URL(image.jikanJpg.imageUrl).readBytes(),
-                                    compress = false,
-                                    newImage = true,
-                                    type = CompressAnimeImageType.CharacterImage,
-                                )
-                            }
-
-                            val newCharacter = AnimeCharacterTable(
-                                malId = characterId,
-                                name = translateComponent.translateSingleText(character.data.name),
-                                nameEn = character.data.name,
-                                nameKanji = character.data.nameKanji,
-                                image = imageService.saveFileInSThird(
-                                    filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(character.data.images.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
-                                    data = URL(character.data.images.jikanJpg.imageUrl).readBytes(),
-                                    compress = false,
-                                    newImage = true,
-                                    type = CompressAnimeImageType.CharacterImage,
-                                ),
-                                aboutEn = character.data.about,
-                                aboutRu = character.data.about?.let { translateComponent.translateSingleText(it) },
-                                pictures = picturesReady.toMutableList(),
-                            )
-                            animeCharacterRepository.save(newCharacter)
-
-                            val characterRole = AnimeCharacterRoleTable(
-                                anime = anime,
-                                character = newCharacter,
-                                role = translateComponent.translateSingleText("${characterData.role} role").replace("роль", "").replace("роли", "").replace("ролей", "").replace("ролям", "").dropLast(1),
-                                roleEn = characterData.role,
-                            )
-
-                            val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(
-                                anime.id,
-                                newCharacter.id,
-                            )
-                            if (existingRole != null) {
-                                return@forEach
-                            }
-
-                            animeCharacterRoleRepository.save(characterRole)
-                            anime.characterRoles.add(characterRole)
-                            newCharacter.characterRoles.add(characterRole)
-                            animeRepository.saveAndFlush(anime)
-                        }
+        // Разбиваем на чанки и выполняем асинхронно
+        shikimoriIds.chunked(10).map { chunk ->
+            async(Dispatchers.IO) {
+                chunk.forEach { shikimoriId ->
+                    try {
+                        processShikimoriIdForCharacter(shikimoriId)
+                    } catch (e: Exception) {
+                        animeErrorParserRepository.save(
+                            AnimeErrorParserTable(
+                                message = e.message,
+                                cause = "INTEGRATE CHARACTER",
+                                shikimoriId = shikimoriId,
+                            ),
+                        )
                     }
                 }
-            } catch (e: Exception) {
-                animeErrorParserRepository.save(
-                    AnimeErrorParserTable(
-                        message = e.message,
-                        cause = "INTEGRATE CHARACTER",
-                        shikimoriId = shikimoriId,
-                    ),
-                )
-                return@Loop
+            }
+        }.awaitAll()
+    }
+
+    private suspend fun processShikimoriIdForCharacter(shikimoriId: Int) = coroutineScope {
+        val newBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeTable> = newBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
+
+        criteriaQuery.select(root)
+            .where(newBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
+
+        val queryTest = entityManager.createQuery(criteriaQuery)
+        val listAnime = queryTest.resultList
+        val anime = listAnime.first()
+
+        val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
+
+        // Собираем данные о персонажах параллельно
+        val charactersData = animeCharactersIdsDeferred.data.map { characterData ->
+            async(Dispatchers.IO) { processCharacterData(anime, characterData) }
+        }.awaitAll()
+
+        // Пакетное сохранение данных
+        animeCharacterRoleRepository.saveAll(charactersData.flatMap { it.roles })
+        animeCharacterRepository.saveAll(charactersData.mapNotNull { it.character })
+        animeRepository.saveAndFlush(anime)
+    }
+
+    private suspend fun processCharacterData(
+        anime: AnimeTable,
+        characterData: JikanAnimeCharactersDto,
+    ): ProcessedCharacterData {
+        val characterId = characterData.character.malId
+        val existingCharacter = findExistingCharacter(characterId)
+
+        return if (existingCharacter != null) {
+            createRoleForCharacter(anime, existingCharacter, characterData.role)
+        } else {
+            val newCharacter = createNewCharacter(characterId, anime)
+            createRoleForCharacter(anime, newCharacter, characterData.role)
+        }
+    }
+
+    private suspend fun findExistingCharacter(characterId: Int): AnimeCharacterTable? {
+        val newBuilder = entityManager.criteriaBuilder
+        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = newBuilder.createQuery(AnimeCharacterTable::class.java)
+        val rootCharacter = criteriaQueryCharacter.from(AnimeCharacterTable::class.java)
+
+        rootCharacter.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
+        criteriaQueryCharacter.select(rootCharacter)
+            .where(newBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
+
+        return entityManager.createQuery(criteriaQueryCharacter).resultList.firstOrNull()
+    }
+
+    private suspend fun createRoleForCharacter(
+        anime: AnimeTable,
+        character: AnimeCharacterTable,
+        role: String,
+    ): ProcessedCharacterData {
+        val roleText = translateComponent.translateSingleText("$role role")
+            .replace("роль", "")
+            .replace("роли", "")
+            .replace("ролей", "")
+            .replace("ролям", "")
+            .dropLast(1)
+
+        val characterRole = AnimeCharacterRoleTable(
+            anime = anime,
+            character = character,
+            role = roleText,
+            roleEn = role,
+        )
+
+        val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(anime.id, character.id)
+        if (existingRole == null) {
+            anime.characterRoles.add(characterRole)
+            character.characterRoles.add(characterRole)
+        }
+
+        return ProcessedCharacterData(character, listOf(characterRole))
+    }
+
+    private suspend fun createNewCharacter(characterId: Int, anime: AnimeTable): AnimeCharacterTable {
+        val character = jikanComponent.fetchJikanCharacter(characterId)
+        val characterPictures = jikanComponent.fetchJikanCharacterPictures(characterId)
+
+        val picturesReady = withContext(Dispatchers.IO) {
+            characterPictures.data.chunked(10).flatMap { chunk ->
+                chunk.map { image ->
+                    imageService.saveFileInSThird(
+                        filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/pictures/${mdFive(image.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
+                        data = URL(image.jikanJpg.imageUrl).readBytes(),
+                        compress = false,
+                        newImage = true,
+                        type = CompressAnimeImageType.CharacterImage,
+                    )
+                }
             }
         }
+
+        return AnimeCharacterTable(
+            malId = characterId,
+            name = translateComponent.translateSingleText(character.data.name),
+            nameEn = character.data.name,
+            nameKanji = character.data.nameKanji,
+            image = imageService.saveFileInSThird(
+                filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(character.data.images.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
+                data = URL(character.data.images.jikanJpg.imageUrl).readBytes(),
+                compress = false,
+                newImage = true,
+                type = CompressAnimeImageType.CharacterImage,
+            ),
+            aboutEn = character.data.about,
+            aboutRu = character.data.about?.let { translateComponent.translateSingleText(it) },
+            pictures = picturesReady.toMutableList(),
+        )
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
