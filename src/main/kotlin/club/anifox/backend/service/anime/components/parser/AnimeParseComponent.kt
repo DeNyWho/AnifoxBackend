@@ -324,8 +324,16 @@ class AnimeParseComponent(
         }.awaitAll()
 
         // Пакетное сохранение данных
-        animeCharacterRoleRepository.saveAll(charactersData.flatMap { it.roles })
-        animeCharacterRepository.saveAll(charactersData.mapNotNull { it.character })
+        val rolesToSave = charactersData.flatMap { it.roles }
+        if (rolesToSave.isNotEmpty()) {
+            animeCharacterRoleRepository.saveAll(rolesToSave)
+        }
+
+        val charactersToSave = charactersData.mapNotNull { it.character }
+        if (charactersToSave.isNotEmpty()) {
+            animeCharacterRepository.saveAll(charactersToSave)
+        }
+
         animeRepository.saveAndFlush(anime)
     }
 
@@ -337,9 +345,11 @@ class AnimeParseComponent(
         val existingCharacter = findExistingCharacter(characterId)
 
         return if (existingCharacter != null) {
+            // Роль для существующего персонажа
             createRoleForCharacter(anime, existingCharacter, characterData.role)
         } else {
             val newCharacter = createNewCharacter(characterId, anime)
+            // Роль для нового персонажа
             createRoleForCharacter(anime, newCharacter, characterData.role)
         }
     }
@@ -368,6 +378,13 @@ class AnimeParseComponent(
             .replace("ролям", "")
             .dropLast(1)
 
+        // Проверка существующей роли в базе данных
+        val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(anime.id, character.id)
+        if (existingRole != null) {
+            // Если роль уже существует, пропускаем добавление
+            return ProcessedCharacterData(character, emptyList())
+        }
+
         val characterRole = AnimeCharacterRoleTable(
             anime = anime,
             character = character,
@@ -375,11 +392,9 @@ class AnimeParseComponent(
             roleEn = role,
         )
 
-        val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(anime.id, character.id)
-        if (existingRole == null) {
-            anime.characterRoles.add(characterRole)
-            character.characterRoles.add(characterRole)
-        }
+        // Добавляем роль, если она не существует
+        anime.characterRoles.add(characterRole)
+        character.characterRoles.add(characterRole)
 
         return ProcessedCharacterData(character, listOf(characterRole))
     }
