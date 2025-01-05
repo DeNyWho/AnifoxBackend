@@ -285,26 +285,21 @@ class AnimeParseComponent(
         criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
 
         val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList.shuffled()
+        val shikimoriIds = query.resultList
 
-        // Разбиваем на чанки и выполняем асинхронно
-        shikimoriIds.chunked(10).map { chunk ->
-            async(Dispatchers.IO) {
-                chunk.forEach { shikimoriId ->
-                    try {
-                        processShikimoriIdForCharacter(shikimoriId)
-                    } catch (e: Exception) {
-                        animeErrorParserRepository.save(
-                            AnimeErrorParserTable(
-                                message = e.message,
-                                cause = "INTEGRATE CHARACTER",
-                                shikimoriId = shikimoriId,
-                            ),
-                        )
-                    }
-                }
+        shikimoriIds.forEach { shikimoriId ->
+            try {
+                processShikimoriIdForCharacter(shikimoriId)
+            } catch (e: Exception) {
+                animeErrorParserRepository.save(
+                    AnimeErrorParserTable(
+                        message = e.message,
+                        cause = "INTEGRATE CHARACTER",
+                        shikimoriId = shikimoriId,
+                    ),
+                )
             }
-        }.awaitAll()
+        }
     }
 
     private suspend fun processShikimoriIdForCharacter(shikimoriId: Int) = coroutineScope {
