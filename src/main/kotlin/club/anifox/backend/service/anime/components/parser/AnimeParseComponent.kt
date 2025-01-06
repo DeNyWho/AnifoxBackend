@@ -62,7 +62,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.net.URL
@@ -279,77 +278,101 @@ class AnimeParseComponent(
     }
 
     private suspend fun integrateCharacters() = coroutineScope {
-        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
-        val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
-        criteriaQueryShikimori.select(shikimoriRoot.get("shikimoriId"))
+        val shikimoriIds = entityManager.createQuery(
+            "SELECT a.shikimoriId FROM AnimeTable a WHERE a.shikimoriId IS NOT NULL",
+            Int::class.java,
+        ).resultList
 
-        val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList
-
-        shikimoriIds.forEach { shikimoriId ->
-            try {
-                processShikimoriIdForCharacter(shikimoriId)
-            } catch (e: Exception) {
-                animeErrorParserRepository.save(
-                    AnimeErrorParserTable(
-                        message = e.message,
-                        cause = "INTEGRATE CHARACTER",
-                        shikimoriId = shikimoriId,
-                    ),
-                )
-            }
+        // Обработка пачками по 10 аниме параллельно
+        shikimoriIds.chunked(10).forEach { batch ->
+            batch.map { shikimoriId ->
+                async(Dispatchers.IO) {
+                    try {
+                        processShikimoriIdForCharacter(shikimoriId)
+                    } catch (e: Exception) {
+                        animeErrorParserRepository.save(
+                            AnimeErrorParserTable(
+                                message = e.message,
+                                cause = "INTEGRATE CHARACTER",
+                                shikimoriId = shikimoriId,
+                            ),
+                        )
+                    }
+                }
+            }.awaitAll()
         }
     }
 
     private suspend fun processShikimoriIdForCharacter(shikimoriId: Int) = coroutineScope {
-        val newBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeTable> = newBuilder.createQuery(AnimeTable::class.java)
-        val root = criteriaQuery.from(AnimeTable::class.java)
+        val anime = entityManager.createQuery(
+            """
+        SELECT DISTINCT a FROM AnimeTable a
+        LEFT JOIN FETCH a.characterRoles
+        WHERE a.shikimoriId = :shikimoriId
+    """,
+            AnimeTable::class.java,
+        )
+            .setParameter("shikimoriId", shikimoriId)
+            .singleResult
 
-        root.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
+        val animeCharactersData = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
-        criteriaQuery.select(root)
-            .where(newBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
-
-        val queryTest = entityManager.createQuery(criteriaQuery)
-        val listAnime = queryTest.resultList
-        val anime = listAnime.first()
-
-        val animeCharactersIdsDeferred = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
-
-        // Собираем данные о персонажах параллельно
-        val charactersData = animeCharactersIdsDeferred.data.map { characterData ->
-            async(Dispatchers.IO) { processCharacterData(anime, characterData) }
-        }.awaitAll()
-
-        // Пакетное сохранение данных
-        val rolesToSave = charactersData.flatMap { it.roles }
-        if (rolesToSave.isNotEmpty()) {
-            animeCharacterRoleRepository.saveAll(rolesToSave)
+        // Предварительно загрузим существующих персонажей
+        val existingCharacterIds = animeCharactersData.data.map { it.character.malId }
+        val existingCharacters = if (existingCharacterIds.isNotEmpty()) {
+            entityManager.createQuery(
+                """
+            SELECT DISTINCT c FROM AnimeCharacterTable c
+            LEFT JOIN FETCH c.characterRoles
+            WHERE c.malId IN :ids
+        """,
+                AnimeCharacterTable::class.java,
+            )
+                .setParameter("ids", existingCharacterIds)
+                .resultList
+                .associateBy { it.malId }
+        } else {
+            emptyMap()
         }
 
-        val charactersToSave = charactersData.mapNotNull { it.character }
-        if (charactersToSave.isNotEmpty()) {
-            animeCharacterRepository.saveAll(charactersToSave)
+        // Обработка персонажей пачками
+        val processedData = animeCharactersData.data.chunked(5).flatMap { batch ->
+            batch.map { characterData ->
+                async(Dispatchers.IO) {
+                    processCharacterData(
+                        anime,
+                        characterData,
+                        existingCharacters[characterData.character.malId],
+                    )
+                }
+            }.awaitAll()
         }
 
+        // Групповое сохранение новых персонажей
+        val newCharacters = processedData.mapNotNull { it.character }
+        if (newCharacters.isNotEmpty()) {
+            animeCharacterRepository.saveAll(newCharacters)
+        }
+
+        // Групповое сохранение ролей
+        val newRoles = processedData.flatMap { it.roles }
+        if (newRoles.isNotEmpty()) {
+            animeCharacterRoleRepository.saveAll(newRoles)
+        }
+
+        // Сохраняем аниме одной операцией
         animeRepository.saveAndFlush(anime)
     }
 
     private suspend fun processCharacterData(
         anime: AnimeTable,
         characterData: JikanAnimeCharactersDto,
+        existingCharacter: AnimeCharacterTable?,
     ): ProcessedCharacterData {
-        val characterId = characterData.character.malId
-        val existingCharacter = findExistingCharacter(characterId)
-
         return if (existingCharacter != null) {
-            // Роль для существующего персонажа
             createRoleForCharacter(anime, existingCharacter, characterData.role)
         } else {
-            val newCharacter = createNewCharacter(characterId, anime)
-            // Роль для нового персонажа
+            val newCharacter = createNewCharacter(characterData.character.malId, anime)
             createRoleForCharacter(anime, newCharacter, characterData.role)
         }
     }
@@ -378,10 +401,8 @@ class AnimeParseComponent(
             .replace("ролям", "")
             .dropLast(1)
 
-        // Проверка существующей роли в базе данных
         val existingRole = animeCharacterRoleRepository.findByAnimeIdAndCharacterId(anime.id, character.id)
         if (existingRole != null) {
-            // Если роль уже существует, пропускаем добавление
             return ProcessedCharacterData(character, emptyList())
         }
 
@@ -392,20 +413,33 @@ class AnimeParseComponent(
             roleEn = role,
         )
 
-        // Добавляем роль, если она не существует
-        anime.characterRoles.add(characterRole)
-        character.characterRoles.add(characterRole)
-
         return ProcessedCharacterData(character, listOf(characterRole))
     }
 
     private suspend fun createNewCharacter(characterId: Int, anime: AnimeTable): AnimeCharacterTable {
-        val character = jikanComponent.fetchJikanCharacter(characterId)
-        val characterPictures = jikanComponent.fetchJikanCharacterPictures(characterId)
+        val (character, pictures) = coroutineScope {
+            val characterDeferred = async { jikanComponent.fetchJikanCharacter(characterId) }
+            val picturesDeferred = async { jikanComponent.fetchJikanCharacterPictures(characterId) }
+            Pair(characterDeferred.await(), picturesDeferred.await())
+        }
 
-        val picturesReady = withContext(Dispatchers.IO) {
-            characterPictures.data.chunked(10).flatMap { chunk ->
-                chunk.map { image ->
+        val mainImageUrl = character.data.images.jikanJpg.imageUrl
+        val mainImagePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(mainImageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}"
+
+        // Параллельная загрузка и сохранение изображений
+        val (mainImage, additionalImages) = coroutineScope {
+            val mainImageDeferred = async(Dispatchers.IO) {
+                imageService.saveFileInSThird(
+                    filePath = mainImagePath,
+                    data = URL(mainImageUrl).readBytes(),
+                    compress = false,
+                    newImage = true,
+                    type = CompressAnimeImageType.CharacterImage,
+                )
+            }
+
+            val additionalImagesDeferred = pictures.data.map { image ->
+                async(Dispatchers.IO) {
                     imageService.saveFileInSThird(
                         filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/pictures/${mdFive(image.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
                         data = URL(image.jikanJpg.imageUrl).readBytes(),
@@ -415,6 +449,8 @@ class AnimeParseComponent(
                     )
                 }
             }
+
+            Pair(mainImageDeferred.await(), additionalImagesDeferred.awaitAll())
         }
 
         return AnimeCharacterTable(
@@ -422,16 +458,10 @@ class AnimeParseComponent(
             name = translateComponent.translateSingleText(character.data.name),
             nameEn = character.data.name,
             nameKanji = character.data.nameKanji,
-            image = imageService.saveFileInSThird(
-                filePath = "images/anime/${CompressAnimeImageType.CharacterImage.path}/${anime.url}/${mdFive(character.data.images.jikanJpg.imageUrl)}.${CompressAnimeImageType.CharacterImage.imageType.textFormat()}",
-                data = URL(character.data.images.jikanJpg.imageUrl).readBytes(),
-                compress = false,
-                newImage = true,
-                type = CompressAnimeImageType.CharacterImage,
-            ),
+            image = mainImage,
             aboutEn = character.data.about,
             aboutRu = character.data.about?.let { translateComponent.translateSingleText(it) },
-            pictures = picturesReady.toMutableList(),
+            pictures = additionalImages.toMutableList(),
         )
     }
 
