@@ -53,6 +53,7 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import jakarta.persistence.EntityManager
+import jakarta.persistence.NoResultException
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
@@ -283,84 +284,53 @@ class AnimeParseComponent(
             Int::class.java,
         ).resultList
 
-        // Обработка пачками по 10 аниме параллельно
-        shikimoriIds.chunked(10).forEach { batch ->
+        // Обработка партиями по 2 аниме
+        shikimoriIds.chunked(2).forEach { batch ->
             batch.map { shikimoriId ->
                 async(Dispatchers.IO) {
-                    try {
-                        processShikimoriIdForCharacter(shikimoriId)
-                    } catch (e: Exception) {
-                        animeErrorParserRepository.save(
-                            AnimeErrorParserTable(
-                                message = e.message,
-                                cause = "INTEGRATE CHARACTER",
-                                shikimoriId = shikimoriId,
-                            ),
-                        )
-                    }
+                    processShikimoriIdForCharacter(shikimoriId)
                 }
             }.awaitAll()
+            entityManager.clear() // Очистка контекста для снижения нагрузки на память
         }
     }
 
     private suspend fun processShikimoriIdForCharacter(shikimoriId: Int) = coroutineScope {
-        val anime = entityManager.createQuery(
-            """
-        SELECT DISTINCT a FROM AnimeTable a
-        LEFT JOIN FETCH a.characterRoles
-        WHERE a.shikimoriId = :shikimoriId
-    """,
-            AnimeTable::class.java,
-        )
-            .setParameter("shikimoriId", shikimoriId)
-            .singleResult
+        val anime = try {
+            entityManager.createQuery(
+                """
+            SELECT a FROM AnimeTable a
+            LEFT JOIN FETCH a.characterRoles
+            WHERE a.shikimoriId = :shikimoriId
+            """,
+                AnimeTable::class.java,
+            ).setParameter("shikimoriId", shikimoriId)
+                .singleResult
+        } catch (e: NoResultException) {
+            return@coroutineScope // Пропустить, если аниме не найдено
+        }
 
         val animeCharactersData = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
-        // Предварительно загрузим существующих персонажей
-        val existingCharacterIds = animeCharactersData.data.map { it.character.malId }
-        val existingCharacters = if (existingCharacterIds.isNotEmpty()) {
-            entityManager.createQuery(
-                """
-            SELECT DISTINCT c FROM AnimeCharacterTable c
-            LEFT JOIN FETCH c.characterRoles
-            WHERE c.malId IN :ids
-        """,
-                AnimeCharacterTable::class.java,
-            )
-                .setParameter("ids", existingCharacterIds)
-                .resultList
-                .associateBy { it.malId }
-        } else {
-            emptyMap()
-        }
-
-        // Обработка персонажей пачками
-        val processedData = animeCharactersData.data.chunked(5).flatMap { batch ->
-            batch.map { characterData ->
+        animeCharactersData.data.chunked(2).forEach { batch -> // Обработка малыми партиями
+            val processedData = batch.map { characterData ->
                 async(Dispatchers.IO) {
-                    processCharacterData(
-                        anime,
-                        characterData,
-                        existingCharacters[characterData.character.malId],
-                    )
+                    val existingCharacter = entityManager.createQuery(
+                        """
+                    SELECT c FROM AnimeCharacterTable c
+                    WHERE c.malId = :malId
+                """,
+                        AnimeCharacterTable::class.java,
+                    ).setParameter("malId", characterData.character.malId)
+                        .resultList.firstOrNull()
+
+                    processCharacterData(anime, characterData, existingCharacter)
                 }
             }.awaitAll()
-        }
 
-        // Групповое сохранение новых персонажей
-        val newCharacters = processedData.mapNotNull { it.character }
-        if (newCharacters.isNotEmpty()) {
-            animeCharacterRepository.saveAll(newCharacters)
+            // Сохранение новых данных в базе
+            saveProcessedData(processedData)
         }
-
-        // Групповое сохранение ролей
-        val newRoles = processedData.flatMap { it.roles }
-        if (newRoles.isNotEmpty()) {
-            animeCharacterRoleRepository.saveAll(newRoles)
-        }
-
-        // Сохраняем аниме одной операцией
         animeRepository.saveAndFlush(anime)
     }
 
@@ -377,16 +347,12 @@ class AnimeParseComponent(
         }
     }
 
-    private suspend fun findExistingCharacter(characterId: Int): AnimeCharacterTable? {
-        val newBuilder = entityManager.criteriaBuilder
-        val criteriaQueryCharacter: CriteriaQuery<AnimeCharacterTable> = newBuilder.createQuery(AnimeCharacterTable::class.java)
-        val rootCharacter = criteriaQueryCharacter.from(AnimeCharacterTable::class.java)
+    private suspend fun saveProcessedData(processedData: List<ProcessedCharacterData>) {
+        val newCharacters = processedData.mapNotNull { it.character }
+        val newRoles = processedData.flatMap { it.roles }
 
-        rootCharacter.fetch<AnimeCharacterRoleTable, Any>("characterRoles", JoinType.LEFT)
-        criteriaQueryCharacter.select(rootCharacter)
-            .where(newBuilder.equal(rootCharacter.get<Int>("malId"), characterId))
-
-        return entityManager.createQuery(criteriaQueryCharacter).resultList.firstOrNull()
+        if (newCharacters.isNotEmpty()) animeCharacterRepository.saveAll(newCharacters)
+        if (newRoles.isNotEmpty()) animeCharacterRoleRepository.saveAll(newRoles)
     }
 
     private suspend fun createRoleForCharacter(
