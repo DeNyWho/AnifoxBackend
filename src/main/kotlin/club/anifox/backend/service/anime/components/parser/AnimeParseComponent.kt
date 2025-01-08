@@ -65,6 +65,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.net.URL
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -278,6 +279,7 @@ class AnimeParseComponent(
         }
     }
 
+    @Transactional
     private suspend fun integrateCharacters() = coroutineScope {
         val shikimoriIds = entityManager.createQuery(
             "SELECT a.shikimoriId FROM AnimeTable a WHERE a.shikimoriId IS NOT NULL",
@@ -312,26 +314,97 @@ class AnimeParseComponent(
 
         val animeCharactersData = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
-        animeCharactersData.data.chunked(2).forEach { batch -> // Обработка малыми партиями
-            val processedData = batch.map { characterData ->
-                async(Dispatchers.IO) {
-                    val existingCharacter = entityManager.createQuery(
-                        """
-                    SELECT c FROM AnimeCharacterTable c
-                    WHERE c.malId = :malId
-                """,
-                        AnimeCharacterTable::class.java,
-                    ).setParameter("malId", characterData.character.malId)
-                        .resultList.firstOrNull()
-
-                    processCharacterData(anime, characterData, existingCharacter)
-                }
-            }.awaitAll()
-
-            // Сохранение новых данных в базе
-            saveProcessedData(processedData)
+        val existingCharacters = if (animeCharactersData.data.isNotEmpty()) {
+            val malIds = animeCharactersData.data.map { it.character.malId }
+            entityManager.createQuery(
+                """
+            SELECT c FROM AnimeCharacterTable c
+            WHERE c.malId IN :malIds
+            """,
+                AnimeCharacterTable::class.java,
+            ).setParameter("malIds", malIds)
+                .resultList
+                .associateBy { it.malId }
+        } else {
+            emptyMap()
         }
-        animeRepository.saveAndFlush(anime)
+
+        val processedData = animeCharactersData.data.map { characterData ->
+            val existingCharacter = existingCharacters[characterData.character.malId]
+            processCharacterData(anime, characterData, existingCharacter)
+        }
+
+        saveProcessedDataBatch(processedData, anime)
+    }
+
+    @Transactional
+    private suspend fun saveProcessedDataBatch(processedData: List<ProcessedCharacterData>, anime: AnimeTable) {
+        // Сначала сохраняем новых персонажей
+        val newCharacters = processedData.mapNotNull { it.character }
+        if (newCharacters.isNotEmpty()) {
+            val existingMalIds = animeCharacterRepository
+                .findAllByMalIdIn(newCharacters.map { it.malId })
+                .map { it.malId }
+                .toSet()
+
+            val charactersToSave = newCharacters.filterNot {
+                it.malId in existingMalIds
+            }.map { character ->
+                AnimeCharacterTable(
+                    malId = character.malId,
+                    name = character.name,
+                    nameEn = character.nameEn,
+                    nameKanji = character.nameKanji,
+                    image = character.image,
+                    aboutEn = character.aboutEn,
+                    aboutRu = character.aboutRu,
+                    pictures = character.pictures,
+                )
+            }
+
+            if (charactersToSave.isNotEmpty()) {
+                animeCharacterRepository.saveAllAndFlush(charactersToSave)
+            }
+        }
+
+        // Затем сохраняем новые роли
+        val newRoles = processedData.flatMap { it.roles }
+        if (newRoles.isNotEmpty()) {
+            // Получаем актуальные ссылки на персонажей из БД
+            val characters = animeCharacterRepository
+                .findAllByMalIdIn(newRoles.map { it.character.malId })
+                .associateBy { it.malId }
+
+            // Проверяем существующие роли
+            val existingRoles = animeCharacterRoleRepository
+                .findAllByAnimeIdAndCharacterIdIn(
+                    newRoles.first().anime.id,
+                    characters.values.map { it.id },
+                )
+                .map { "${it.anime.id}:${it.character.id}" }
+                .toSet()
+
+            val rolesToSave = newRoles
+                .mapNotNull { role ->
+                    val character = characters[role.character.malId] ?: return@mapNotNull null
+                    val roleKey = "${role.anime.id}:${character.id}"
+
+                    if (roleKey in existingRoles) {
+                        null
+                    } else {
+                        AnimeCharacterRoleTable(
+                            anime = role.anime,
+                            character = character, // Используем актуальную ссылку на персонажа
+                            role = role.role,
+                            roleEn = role.roleEn,
+                        )
+                    }
+                }
+
+            if (rolesToSave.isNotEmpty()) {
+                animeCharacterRoleRepository.saveAllAndFlush(rolesToSave)
+            }
+        }
     }
 
     private suspend fun processCharacterData(
@@ -345,14 +418,6 @@ class AnimeParseComponent(
             val newCharacter = createNewCharacter(characterData.character.malId, anime)
             createRoleForCharacter(anime, newCharacter, characterData.role)
         }
-    }
-
-    private suspend fun saveProcessedData(processedData: List<ProcessedCharacterData>) {
-        val newCharacters = processedData.mapNotNull { it.character }
-        val newRoles = processedData.flatMap { it.roles }
-
-        if (newCharacters.isNotEmpty()) animeCharacterRepository.saveAll(newCharacters)
-        if (newRoles.isNotEmpty()) animeCharacterRoleRepository.saveAll(newRoles)
     }
 
     private suspend fun createRoleForCharacter(
@@ -419,9 +484,17 @@ class AnimeParseComponent(
             Pair(mainImageDeferred.await(), additionalImagesDeferred.awaitAll())
         }
 
+        val name = translateComponent.translateSingleText("The character of anime is ${character.data.name}")
+            .replace("Персонаж аниме - ", "")
+            .replace("персонаж аниме - ", "")
+            .replace("Персонаж аниме — ", "")
+            .replace("персонаж аниме —", "")
+            .replace("Персонажем аниме является ", "")
+            .replace("персонажем аниме является ", "")
+
         return AnimeCharacterTable(
             malId = characterId,
-            name = translateComponent.translateSingleText(character.data.name),
+            name = name,
             nameEn = character.data.name,
             nameKanji = character.data.nameKanji,
             image = mainImage,

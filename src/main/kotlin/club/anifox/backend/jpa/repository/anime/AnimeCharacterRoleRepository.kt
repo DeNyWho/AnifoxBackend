@@ -7,4 +7,8 @@ import org.springframework.stereotype.Repository
 @Repository
 interface AnimeCharacterRoleRepository : JpaRepository<AnimeCharacterRoleTable, Long> {
     fun findByAnimeIdAndCharacterId(animeId: String, characterId: String): AnimeCharacterRoleTable?
+    fun findAllByAnimeIdAndCharacterIdIn(
+        animeId: String,
+        characterIds: List<String>,
+    ): List<AnimeCharacterRoleTable>
 }

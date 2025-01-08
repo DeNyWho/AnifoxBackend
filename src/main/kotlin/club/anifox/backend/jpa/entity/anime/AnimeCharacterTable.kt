@@ -1,5 +1,6 @@
 package club.anifox.backend.jpa.entity.anime
 
+import jakarta.persistence.Basic
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.Column
@@ -17,29 +18,35 @@ import java.util.*
 data class AnimeCharacterTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
+
+    @Column(unique = true)
     val malId: Int = 0,
     @Column(columnDefinition = "TEXT")
     val name: String = "",
     @Column(columnDefinition = "TEXT")
     val nameEn: String = "",
+    @Basic(fetch = FetchType.LAZY)
     @Column(columnDefinition = "TEXT", nullable = true)
     val nameKanji: String? = null,
     val image: String = "",
+    @Basic(fetch = FetchType.LAZY)
     @Column(columnDefinition = "TEXT", nullable = true)
     val aboutEn: String? = null,
+    @Basic(fetch = FetchType.LAZY)
     @Column(columnDefinition = "TEXT", nullable = true)
     val aboutRu: String? = null,
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "character_pictures", schema = "anime")
     @Column(columnDefinition = "text")
-    @BatchSize(size = 10)
+    @BatchSize(size = 20)
     val pictures: MutableList<String> = mutableListOf(),
     @OneToMany(
         mappedBy = "character",
-        fetch = FetchType.EAGER,
+        fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
+    @BatchSize(size = 20)
     val characterRoles: MutableSet<AnimeCharacterRoleTable> = mutableSetOf(),
 ) {
     override fun hashCode(): Int = id.hashCode()

@@ -3,7 +3,10 @@ package club.anifox.backend.service.anime.components.update
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
@@ -64,6 +67,9 @@ class AnimeUpdateComponent {
                 rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
                 rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
                 rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
+                rootAnime.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
+                rootAnime.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+                rootAnime.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
 
                 criteriaQueryAnime.select(rootAnime)
                     .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))

@@ -136,7 +136,7 @@ data class AnimeTable(
     @Column(columnDefinition = "TEXT", nullable = true)
     var franchise: String? = null,
     @OneToOne(
-        fetch = FetchType.EAGER,
+        fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
@@ -144,10 +144,10 @@ data class AnimeTable(
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "anime_screenshots", schema = "anime")
     @Column(columnDefinition = "text")
-    @BatchSize(size = 10)
+    @BatchSize(size = 20)
     val screenshots: MutableList<String> = mutableListOf(),
     @ManyToMany(
-        fetch = FetchType.EAGER,
+        fetch = FetchType.LAZY,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
     @BatchSize(size = 10)
@@ -179,7 +179,7 @@ data class AnimeTable(
     )
     var videos: MutableSet<AnimeVideoTable> = mutableSetOf(),
     @ManyToMany(
-        fetch = FetchType.EAGER,
+        fetch = FetchType.LAZY,
         cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
     )
     @BatchSize(size = 10)

@@ -9,6 +9,7 @@ import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
@@ -94,6 +95,10 @@ class AnimeSearchComponent {
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
         criteriaQuery.select(root)
+
+        root.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
+        root.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+        root.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
 
         val predicates: MutableList<Predicate> = mutableListOf()
 

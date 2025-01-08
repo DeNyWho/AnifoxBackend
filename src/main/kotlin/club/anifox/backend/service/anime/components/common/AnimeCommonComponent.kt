@@ -29,8 +29,10 @@ import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
@@ -88,8 +90,23 @@ class AnimeCommonComponent {
     private lateinit var imageService: ImageService
 
     fun getAnimeByUrl(url: String): AnimeDetail {
-        val anime = animeUtils.checkAnime(url)
-        return anime.toAnimeDetail()
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
+        root.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+        root.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
+
+        criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
+
+        val anime = entityManager.createQuery(criteriaQuery).resultList
+        if (anime.isEmpty()) {
+            throw NotFoundException("Anime not found")
+        } else {
+            return anime.first().toAnimeDetail()
+        }
     }
 
     fun getAnimeCharactersWithRoles(
@@ -101,8 +118,6 @@ class AnimeCommonComponent {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
-
-        root.fetch<AnimeTable, Any>("related", JoinType.LEFT)
 
         criteriaQuery.select(root)
             .where(criteriaBuilder.equal(root.get<String>("url"), url))
@@ -160,6 +175,9 @@ class AnimeCommonComponent {
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
 
+        root.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
+        root.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+        root.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
         root.fetch<AnimeTable, Any>("similar", JoinType.LEFT)
 
         criteriaQuery.select(root)
@@ -188,6 +206,9 @@ class AnimeCommonComponent {
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
 
+        root.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
+        root.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+        root.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
         root.fetch<AnimeTable, Any>("related", JoinType.LEFT)
 
         criteriaQuery.select(root)
@@ -438,7 +459,12 @@ class AnimeCommonComponent {
         val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
 
         val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchiseMultiple", JoinType.LEFT)
-        val targetJoin = franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
+        franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
+        val targetAnime = franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
+
+        targetAnime.join<AnimeTable, AnimeGenreTable>("genres", JoinType.LEFT)
+        targetAnime.join<AnimeTable, AnimeImagesTable>("images", JoinType.LEFT)
+        targetAnime.join<AnimeTable, AnimeStudioTable>("studios", JoinType.LEFT)
 
         val predicates =
             mutableListOf(
@@ -480,6 +506,9 @@ class AnimeCommonComponent {
 
         val scheduleRoot: Root<AnimeEpisodeScheduleTable> = criteriaQuery.from(AnimeEpisodeScheduleTable::class.java)
         val animeJoin = scheduleRoot.join<AnimeEpisodeScheduleTable, AnimeTable>("anime", JoinType.INNER)
+        animeJoin.join<AnimeTable, AnimeGenreTable>("genres", JoinType.LEFT)
+        animeJoin.join<AnimeTable, AnimeImagesTable>("images", JoinType.LEFT)
+        animeJoin.join<AnimeTable, AnimeStudioTable>("studios", JoinType.LEFT)
 
         val predicates = mutableListOf<Predicate>()
 
