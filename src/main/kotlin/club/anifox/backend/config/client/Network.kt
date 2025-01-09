@@ -68,9 +68,15 @@ class Network {
                 logger = Logger.DEFAULT
                 level = LogLevel.ALL
             }
+
             install(HttpRequestRetry) {
-                retryOnServerErrors(maxRetries = 5)
-                exponentialDelay()
+                maxRetries = 5
+                retryIf { request, response ->
+                    request.url.host == Constants.JIKAN && response.status == HttpStatusCode.InternalServerError
+                }
+                delayMillis { retry ->
+                    retry * 30000L
+                } // retries in 3, 6, 9, etc. seconds
             }
         }
     }
