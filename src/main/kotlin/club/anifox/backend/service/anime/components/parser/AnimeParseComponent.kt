@@ -298,43 +298,53 @@ class AnimeParseComponent(
     }
 
     private suspend fun processShikimoriIdForCharacter(shikimoriId: Int) = coroutineScope {
-        val anime = try {
-            entityManager.createQuery(
-                """
+        try {
+            val anime = try {
+                entityManager.createQuery(
+                    """
             SELECT a FROM AnimeTable a
             LEFT JOIN FETCH a.characterRoles
             WHERE a.shikimoriId = :shikimoriId
             """,
-                AnimeTable::class.java,
-            ).setParameter("shikimoriId", shikimoriId)
-                .singleResult
-        } catch (e: NoResultException) {
-            return@coroutineScope // Пропустить, если аниме не найдено
-        }
+                    AnimeTable::class.java,
+                ).setParameter("shikimoriId", shikimoriId)
+                    .singleResult
+            } catch (e: NoResultException) {
+                return@coroutineScope // Пропустить, если аниме не найдено
+            }
 
-        val animeCharactersData = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
+            val animeCharactersData = jikanComponent.fetchJikanAnimeCharacters(shikimoriId)
 
-        val existingCharacters = if (animeCharactersData.data.isNotEmpty()) {
-            val malIds = animeCharactersData.data.map { it.character.malId }
-            entityManager.createQuery(
-                """
+            val existingCharacters = if (animeCharactersData.data.isNotEmpty()) {
+                val malIds = animeCharactersData.data.map { it.character.malId }
+                entityManager.createQuery(
+                    """
             SELECT c FROM AnimeCharacterTable c
             WHERE c.malId IN :malIds
             """,
-                AnimeCharacterTable::class.java,
-            ).setParameter("malIds", malIds)
-                .resultList
-                .associateBy { it.malId }
-        } else {
-            emptyMap()
-        }
+                    AnimeCharacterTable::class.java,
+                ).setParameter("malIds", malIds)
+                    .resultList
+                    .associateBy { it.malId }
+            } else {
+                emptyMap()
+            }
 
-        val processedData = animeCharactersData.data.map { characterData ->
-            val existingCharacter = existingCharacters[characterData.character.malId]
-            processCharacterData(anime, characterData, existingCharacter)
-        }
+            val processedData = animeCharactersData.data.map { characterData ->
+                val existingCharacter = existingCharacters[characterData.character.malId]
+                processCharacterData(anime, characterData, existingCharacter)
+            }
 
-        saveProcessedDataBatch(processedData, anime)
+            saveProcessedDataBatch(processedData, anime)
+        } catch (e: Exception) {
+            animeErrorParserRepository.save(
+                AnimeErrorParserTable(
+                    message = e.message,
+                    cause = "INTEGRATE CHARACTER",
+                    shikimoriId = shikimoriId,
+                ),
+            )
+        }
     }
 
     @Transactional
