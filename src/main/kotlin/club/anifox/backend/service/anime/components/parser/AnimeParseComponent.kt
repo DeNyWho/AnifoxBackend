@@ -284,7 +284,7 @@ class AnimeParseComponent(
         val shikimoriIds = entityManager.createQuery(
             "SELECT a.shikimoriId FROM AnimeTable a WHERE a.shikimoriId IS NOT NULL",
             Int::class.java,
-        ).resultList
+        ).resultList.shuffled()
 
         // Обработка партиями по 2 аниме
         shikimoriIds.chunked(2).forEach { batch ->
@@ -488,7 +488,13 @@ class AnimeParseComponent(
             .replace("Персонаж аниме - ", "")
             .replace("персонаж аниме - ", "")
             .replace("Персонаж аниме — ", "")
-            .replace("персонаж аниме —", "")
+            .replace("персонаж аниме — ", "")
+            .replace("Персонаж аниме – ", "")
+            .replace("персонаж аниме – ", "")
+            .replace("Персонаж аниме ", "")
+            .replace("персонаж аниме ", "")
+            .replace("Персонаж аниме является ", "")
+            .replace("персонаж аниме является ", "")
             .replace("Персонажем аниме является ", "")
             .replace("персонажем аниме является ", "")
 
