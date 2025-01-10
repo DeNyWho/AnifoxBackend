@@ -1,12 +1,11 @@
 package club.anifox.backend.service.anime.components.update
 
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
@@ -17,11 +16,13 @@ import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
-import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -43,126 +44,143 @@ class AnimeUpdateComponent {
     @Autowired
     private lateinit var shikimoriComponent: AnimeShikimoriComponent
 
+    @Transactional
     fun update() {
         val criteriaBuilder = entityManager.criteriaBuilder
-
         val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
-        val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
+
+        // Get all ongoing anime IDs in one query
+        val criteriaQueryShikimori = criteriaBuilder.createQuery(Int::class.java)
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
         criteriaQueryShikimori
             .select(shikimoriRoot.get("shikimoriId"))
-            .where(criteriaBuilder.equal(shikimoriRoot.get<String>("status"), AnimeStatus.Ongoing))
-            .where(criteriaBuilder.between(shikimoriRoot.get("year"), currentYear - 1, currentYear))
+            .where(
+                criteriaBuilder.and(
+//                    criteriaBuilder.equal(shikimoriRoot.get<String>("status"), AnimeStatus.Ongoing),
+                    criteriaBuilder.between(shikimoriRoot.get("year"), currentYear - 1, currentYear),
+                ),
+            )
 
-        val query = entityManager.createQuery(criteriaQueryShikimori)
-        val shikimoriIds = query.resultList
+        val shikimoriIds = entityManager.createQuery(criteriaQueryShikimori).resultList
 
-        shikimoriIds.forEach Loop@{ shikimoriId ->
+        // Process in batches to reduce memory usage
+        shikimoriIds.chunked(4).forEach { batchIds ->
+            processAnimeBatch(batchIds)
+        }
+    }
+
+    @Transactional
+    fun processAnimeBatch(batchIds: List<Int>) {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        // Fetch all anime for current batch in a single query with necessary joins
+        val criteriaQueryAnime = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val rootAnime = criteriaQueryAnime.from(AnimeTable::class.java)
+
+        // Optimize fetches by only including necessary relationships
+        rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
+        rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.LEFT)
+        rootAnime.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+        rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
+        rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
+        rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
+
+        criteriaQueryAnime.select(rootAnime)
+            .where(rootAnime.get<Int>("shikimoriId").`in`(batchIds))
+
+        val animeList = entityManager.createQuery(criteriaQueryAnime).resultList
+
+        // Fetch Shikimori data in parallel
+        val shikimoriData = runBlocking {
+            batchIds.map { shikimoriId ->
+                async { shikimoriComponent.fetchAnime(shikimoriId) }
+            }.awaitAll()
+        }
+
+        // Process each anime in the batch
+        animeList.forEach { anime ->
             try {
-                val criteriaQueryAnime: CriteriaQuery<AnimeTable> = criteriaBuilder.createQuery(AnimeTable::class.java)
-                val rootAnime = criteriaQueryAnime.from(AnimeTable::class.java)
-
-                rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
-                rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
-                rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.RIGHT)
-                rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
-                rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
-                rootAnime.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
-                rootAnime.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
-                rootAnime.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
-
-                criteriaQueryAnime.select(rootAnime)
-                    .where(criteriaBuilder.equal(rootAnime.get<Int>("shikimoriId"), shikimoriId))
-
-                val anime = entityManager.createQuery(criteriaQueryAnime).resultList[0]
-
-                val shikimori =
-                    runBlocking {
-                        shikimoriComponent.fetchAnime(anime.shikimoriId)
-                    }
-                val episodesReady = mutableListOf<AnimeEpisodeTable>()
+                val shikimori = shikimoriData.find { it?.id == anime.shikimoriId } ?: return@forEach
 
                 if (!anime.isLicensed) {
-                    episodesReady.addAll(
-                        runBlocking {
-                            episodesComponent.fetchEpisodes(shikimoriId = anime.shikimoriId, kitsuId = anime.ids.kitsu.toString(), type = anime.type, urlLinkPath = anime.url, defaultImage = anime.images.medium)
-                        },
-                    )
+                    val episodesReady = runBlocking {
+                        episodesComponent.fetchEpisodes(
+                            shikimoriId = anime.shikimoriId,
+                            kitsuId = anime.ids.kitsu.toString(),
+                            type = anime.type,
+                            urlLinkPath = anime.url,
+                            defaultImage = anime.images.medium,
+                        )
+                    }
 
+                    // Batch process translations
                     val translationsCountReady = episodesComponent.translationsCount(episodesReady)
-
                     val translations = translationsCountReady.map { it.translation }
 
-                    anime.addEpisodesAll(episodesReady)
-                    anime.addTranslation(translations)
-                    anime.addTranslationCount(translationsCountReady)
+                    // Update collections efficiently
+                    anime.episodes.clear()
+                    anime.episodes.addAll(episodesReady)
+                    anime.translations.clear()
+                    anime.translations.addAll(translations.toSet())
+                    anime.translationsCountEpisodes.clear()
+                    anime.translationsCountEpisodes.addAll(translationsCountReady)
                 }
 
-                val formatterUpdated =
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                        .withZone(ZoneId.of("Europe/Moscow"))
-
-                if (shikimori != null) {
-                    anime.nextEpisode =
-                        if (shikimori.nextEpisodeAt != null) {
-                            LocalDateTime.parse(shikimori.nextEpisodeAt, formatterUpdated)
-                        } else {
-                            null
-                        }
-                    anime.nextEpisode?.let { nextEpisodeDate ->
-                        anime.updateEpisodeSchedule(nextEpisodeDate)
-                    }
-                    if (anime.description.isEmpty()) {
-                        anime.description = shikimori.description.ifEmpty { anime.description }.replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
-                    }
-                    var countVotes = 0
-                    shikimori.usersRatesStats.forEach {
-                        countVotes += it.value
-                    }
-                    anime.shikimoriVotes = countVotes
-                    anime.shikimoriRating =
-                        try {
-                            shikimori.score.toDouble()
-                        } catch (_: Exception) {
-                            0.0
-                        }
-                    anime.status =
-                        when (shikimori.status) {
-                            "released" -> AnimeStatus.Released
-                            "ongoing" -> AnimeStatus.Ongoing
-                            else -> AnimeStatus.Ongoing
-                        }
-                    val episodesAiredInBase = anime.episodesAired ?: 0
-                    if (episodesAiredInBase < episodesReady.size) {
-                        anime.updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
-                    }
-                    var episodesCount =
-                        when {
-                            shikimori.episodes < episodesReady.size -> episodesReady.size
-                            shikimori.episodes == 0 && anime.status == AnimeStatus.Ongoing -> null
-                            else -> shikimori.episodes
-                        }
-
-                    if (episodesCount != null && episodesCount < episodesReady.size) {
-                        episodesCount = episodesReady.size
-                    }
-                    anime.episodesCount = episodesCount
-                    anime.episodesAired = episodesReady.size
-                } else {
-                    anime.episodesAired = episodesReady.size
-                }
-
-                animeRepository.saveAndFlush(anime)
+                updateAnimeFromShikimori(anime, shikimori)
+                entityManager.merge(anime)
             } catch (e: Exception) {
                 animeErrorParserRepository.save(
                     AnimeErrorParserTable(
                         message = e.message,
                         cause = "UPDATE",
-                        shikimoriId = shikimoriId,
+                        shikimoriId = anime.shikimoriId,
                     ),
                 )
-                return@Loop
             }
+        }
+
+        entityManager.flush()
+        entityManager.clear()
+    }
+
+    private fun updateAnimeFromShikimori(anime: AnimeTable, shikimori: ShikimoriDto) {
+        val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+            .withZone(ZoneId.of("Europe/Moscow"))
+
+        anime.apply {
+            nextEpisode = shikimori.nextEpisodeAt?.let {
+                LocalDateTime.parse(it, formatterUpdated)
+            }
+            nextEpisode?.let { updateEpisodeSchedule(it) }
+
+            if (description.isEmpty()) {
+                description = shikimori.description.ifEmpty { description }
+                    .replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
+            }
+
+            anime.shikimoriVotes = shikimori.usersRatesStats.sumOf { it.value }
+            shikimoriRating = try {
+                shikimori.score.toDouble()
+            } catch (_: Exception) {
+                0.0
+            }
+
+            status = when (shikimori.status) {
+                "released" -> AnimeStatus.Released
+                else -> AnimeStatus.Ongoing
+            }
+
+            val currentEpisodesSize = episodes.size
+            if ((episodesAired ?: 0) < currentEpisodesSize) {
+                updatedAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
+            }
+
+            episodesCount = when {
+                shikimori.episodes < currentEpisodesSize -> currentEpisodesSize
+                shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
+                else -> maxOf(shikimori.episodes, currentEpisodesSize)
+            }
+
+            episodesAired = currentEpisodesSize
         }
     }
 }
