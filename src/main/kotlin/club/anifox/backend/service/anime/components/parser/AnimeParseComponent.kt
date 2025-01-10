@@ -137,7 +137,7 @@ class AnimeParseComponent(
     fun integrations() {
         runBlocking {
             val integrationJobs = listOf(
-//                async { integrateSimilarRelatedFranchise() },
+                async { integrateSimilarRelatedFranchise() },
                 async { integrateCharacters() },
             )
             integrationJobs.awaitAll()
@@ -284,7 +284,7 @@ class AnimeParseComponent(
         val shikimoriIds = entityManager.createQuery(
             "SELECT a.shikimoriId FROM AnimeTable a WHERE a.shikimoriId IS NOT NULL",
             Int::class.java,
-        ).resultList.shuffled()
+        ).resultList
 
         // Обработка партиями по 2 аниме
         shikimoriIds.chunked(2).forEach { batch ->
