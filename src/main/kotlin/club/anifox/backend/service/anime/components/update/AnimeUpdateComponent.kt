@@ -60,7 +60,7 @@ class AnimeUpdateComponent {
                 ),
             )
 
-        val shikimoriIds = entityManager.createQuery(criteriaQueryShikimori).resultList.shuffled()
+        val shikimoriIds = entityManager.createQuery(criteriaQueryShikimori).resultList
 
         // Process in batches to reduce memory usage
         shikimoriIds.chunked(4).forEach { batchIds ->
@@ -146,11 +146,6 @@ class AnimeUpdateComponent {
             .withZone(ZoneId.of("Europe/Moscow"))
 
         anime.apply {
-            nextEpisode = shikimori.nextEpisodeAt?.let {
-                LocalDateTime.parse(it, formatterUpdated)
-            }
-            nextEpisode?.let { updateEpisodeSchedule(it) }
-
             if (description.isEmpty()) {
                 description = shikimori.description.ifEmpty { description }
                     .replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")
@@ -166,6 +161,19 @@ class AnimeUpdateComponent {
             status = when (shikimori.status) {
                 "released" -> AnimeStatus.Released
                 else -> AnimeStatus.Ongoing
+            }
+
+            nextEpisode = shikimori.nextEpisodeAt?.let {
+                LocalDateTime.parse(it, formatterUpdated)
+            }
+
+            when {
+                anime.status == AnimeStatus.Ongoing && nextEpisode != null -> {
+                    nextEpisode?.let { updateEpisodeSchedule(it) }
+                }
+                anime.status == AnimeStatus.Released && anime.schedule != null -> {
+                    anime.updateEpisodeSchedule(null)
+                }
             }
 
             val currentEpisodesSize = episodes.size
