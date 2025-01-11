@@ -102,5 +102,6 @@ interface AnimeRepository {
         limit: Int,
         url: String,
         role: String?,
+        search: String?,
     ): AnimeCharacterResponse
 }

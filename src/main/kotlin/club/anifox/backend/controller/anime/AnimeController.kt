@@ -181,8 +181,10 @@ class AnimeController {
         @PathVariable url: String,
         @RequestParam(name = "role", required = false)
         role: String?,
+        @RequestParam(name = "search", required = false)
+        search: String?,
     ): AnimeCharacterResponse {
-        return animeService.getAnimeCharacters(page, limit, url, role)
+        return animeService.getAnimeCharacters(page, limit, url, role, search)
     }
 
     @GetMapping("/{url}/franchise")

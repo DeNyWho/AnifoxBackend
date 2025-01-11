@@ -114,6 +114,7 @@ class AnimeCommonComponent {
         limit: Int,
         url: String,
         role: String?,
+        search: String?,
     ): AnimeCharacterResponse {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
@@ -155,6 +156,9 @@ class AnimeCommonComponent {
             )
             role?.let {
                 predicates.add(criteriaBuilder.equal(rootCharacter.get<String>("role"), it))
+            }
+            search?.let {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(characterJoin.get("name")), "%" + it.lowercase() + "%"))
             }
 
             characterQuery.where(criteriaBuilder.and(*predicates.toTypedArray()))

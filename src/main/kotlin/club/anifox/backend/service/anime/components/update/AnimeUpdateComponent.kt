@@ -56,12 +56,11 @@ class AnimeUpdateComponent {
             .select(shikimoriRoot.get("shikimoriId"))
             .where(
                 criteriaBuilder.and(
-//                    criteriaBuilder.equal(shikimoriRoot.get<String>("status"), AnimeStatus.Ongoing),
                     criteriaBuilder.between(shikimoriRoot.get("year"), currentYear - 1, currentYear),
                 ),
             )
 
-        val shikimoriIds = entityManager.createQuery(criteriaQueryShikimori).resultList
+        val shikimoriIds = entityManager.createQuery(criteriaQueryShikimori).resultList.shuffled()
 
         // Process in batches to reduce memory usage
         shikimoriIds.chunked(4).forEach { batchIds ->
