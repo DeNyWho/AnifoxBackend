@@ -235,7 +235,7 @@ data class AnimeTable(
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
     fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime?): AnimeTable {
-        if(nextEpisodeDate != null) {
+        if (nextEpisodeDate != null) {
             val dayOfWeek = nextEpisodeDate.dayOfWeek
 
             if (this.schedule != null) {
