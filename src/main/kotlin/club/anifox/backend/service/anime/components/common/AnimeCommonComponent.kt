@@ -62,7 +62,6 @@ import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.temporal.TemporalAdjusters
 
 @Component
 class AnimeCommonComponent {
@@ -539,7 +538,7 @@ class AnimeCommonComponent {
     fun getWeeklySchedule(
         page: Int,
         limit: Int,
-        date: LocalDate? = null,
+        date: LocalDate,
         maxPerDay: Int = 10,
     ): Map<String, List<AnimeLight>> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -554,20 +553,24 @@ class AnimeCommonComponent {
 
         val predicates = mutableListOf<Predicate>()
 
-        date?.let { inputDate ->
+        val allDates = date.let { inputDate ->
             val currentDayOfWeek = inputDate.dayOfWeek
 
-            // Начало недели (понедельник текущей недели)
-            val startOfWeek = inputDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            // Создаем даты в фиксированном порядке дней недели
+            (1..7).map { dayNumber ->
+                val targetDate = when {
+                    dayNumber < currentDayOfWeek.value ->
+                        inputDate.plusWeeks(1).with(DayOfWeek.of(dayNumber))
 
-            // Генерация дней недели
-            val allDays = (0..6).map { i -> startOfWeek.plusDays(i.toLong()) }
+                    else ->
+                        inputDate.with(DayOfWeek.of(dayNumber))
+                }
+                targetDate
+            }
+        }
 
-            // Перестановка: дни после текущего сначала, затем предыдущие
-            val reorderedDays = allDays.filter { it >= inputDate } + allDays.filter { it < inputDate }
-
-            // Создаем предикаты для каждого дня
-            val weekPredicates = reorderedDays.map { targetDate ->
+        if (allDates.isNotEmpty()) {
+            val weekPredicates = allDates.map { targetDate ->
                 val startOfDay = targetDate.atStartOfDay()
                 val endOfDay = targetDate.atTime(23, 59, 59)
 
@@ -578,7 +581,6 @@ class AnimeCommonComponent {
                 )
             }
 
-            // Объединяем через OR
             predicates.add(criteriaBuilder.or(*weekPredicates.toTypedArray()))
         }
 
@@ -597,16 +599,31 @@ class AnimeCommonComponent {
                     .distinctBy { it.anime.id }
                     .take(maxPerDay)
             }
-            .toSortedMap()
 
-        val sortedDays = groupedSchedules.keys.toList()
+        val daysOrder = listOf(
+            "monday" to DayOfWeek.MONDAY,
+            "tuesday" to DayOfWeek.TUESDAY,
+            "wednesday" to DayOfWeek.WEDNESDAY,
+            "thursday" to DayOfWeek.THURSDAY,
+            "friday" to DayOfWeek.FRIDAY,
+            "saturday" to DayOfWeek.SATURDAY,
+            "sunday" to DayOfWeek.SUNDAY,
+        )
+
         val startDayIndex = maxOf(0, page * limit)
-        val endDayIndex = minOf(startDayIndex + limit, sortedDays.size)
+        val endDayIndex = minOf(startDayIndex + limit, daysOrder.size)
 
-        return sortedDays
+        return daysOrder
             .slice(startDayIndex until endDayIndex)
-            .associate {
-                it.toString().lowercase() to groupedSchedules[it]!!.map { schedule -> schedule.anime.toAnimeLight() }
+            .associate { (dayName, dayOfWeek) ->
+                val dateOfWeek = allDates.find { it.dayOfWeek == dayOfWeek }
+                dayName to (
+                    dateOfWeek?.let {
+                        groupedSchedules[it]?.map { schedule ->
+                            schedule.anime.toAnimeLight()
+                        }
+                    } ?: emptyList()
+                    )
             }
     }
 }

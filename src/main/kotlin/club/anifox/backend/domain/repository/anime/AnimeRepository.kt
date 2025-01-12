@@ -19,7 +19,6 @@ import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
-import java.time.DayOfWeek
 import java.time.LocalDate
 
 interface AnimeRepository {
@@ -47,8 +46,7 @@ interface AnimeRepository {
     fun getWeeklySchedule(
         page: Int,
         limit: Int,
-        date: LocalDate?,
-        dayOfWeek: DayOfWeek?,
+        date: LocalDate,
     ): Map<String, List<AnimeLight>>
 
     fun getAnimeYears(): List<String>

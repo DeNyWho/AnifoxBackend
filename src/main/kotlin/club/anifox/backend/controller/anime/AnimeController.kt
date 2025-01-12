@@ -7,7 +7,6 @@ import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -36,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.time.DayOfWeek
 import java.time.LocalDate
 
 @RestController
@@ -247,22 +245,12 @@ class AnimeController {
         @Min(1)
         @Max(500)
         Int,
-        @RequestParam(name = "date", required = false)
+        @RequestParam(name = "date", required = true)
         @Schema(description = "Format: dd-MM-yyyy")
         @DateTimeFormat(pattern = "dd-MM-yyyy")
-        date: LocalDate?,
-        @RequestParam(name = "day_of_week", required = false)
-        @Schema(description = "Filter by day of week (monday, tuesday, etc.)")
-        dayOfWeek: String?,
+        date: LocalDate,
     ): Map<String, List<AnimeLight>> {
-        val parsedDayOfWeek = dayOfWeek?.uppercase()?.let { rawDay ->
-            try {
-                DayOfWeek.valueOf(rawDay)
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("Invalid day of week. Valid values are: monday, tuesday, wednesday, thursday, friday, saturday, sunday")
-            }
-        }
-        return animeService.getWeeklySchedule(page, limit, date, parsedDayOfWeek)
+        return animeService.getWeeklySchedule(page, limit, date)
     }
 
     @GetMapping("/years")

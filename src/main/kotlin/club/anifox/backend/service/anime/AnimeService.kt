@@ -27,7 +27,6 @@ import club.anifox.backend.service.anime.components.search.AnimeSearchComponent
 import club.anifox.backend.service.anime.components.update.AnimeUpdateComponent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.DayOfWeek
 import java.time.LocalDate
 
 @Service
@@ -135,8 +134,7 @@ class AnimeService : AnimeRepository {
     override fun getWeeklySchedule(
         page: Int,
         limit: Int,
-        date: LocalDate?,
-        dayOfWeek: DayOfWeek?,
+        date: LocalDate,
     ): Map<String, List<AnimeLight>> {
         return animeCommonComponent.getWeeklySchedule(page, limit, date)
     }
