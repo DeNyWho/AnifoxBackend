@@ -1,6 +1,6 @@
 package club.anifox.backend.domain.enums.anime.filter
 
-enum class AnimeSortFilter {
+enum class AnimeDefaultFilter {
     Desc,
     Asc,
 }

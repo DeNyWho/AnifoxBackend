@@ -3,8 +3,8 @@ package club.anifox.backend.service.anime.components.search
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
+import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeTable
@@ -44,7 +44,7 @@ class AnimeSearchComponent {
         genres: List<String>?,
         status: AnimeStatus?,
         orderBy: AnimeSearchFilter?,
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -88,7 +88,7 @@ class AnimeSearchComponent {
         studios: List<String>?,
         translationIds: List<String>?,
         orderBy: AnimeSearchFilter?,
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         episodeCount: Int?,
     ): List<AnimeTable> {
         val criteriaBuilder = entityManager.criteriaBuilder
@@ -221,7 +221,7 @@ class AnimeSearchComponent {
                 AnimeSearchFilter.Update -> {
                     predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("updatedAt")))
 
-                    if (sort == AnimeSortFilter.Asc) {
+                    if (sort == AnimeDefaultFilter.Asc) {
                         listOf(criteriaBuilder.asc(root.get<AnimeTable>("updatedAt")))
                     } else {
                         listOf(criteriaBuilder.desc(root.get<AnimeTable>("updatedAt")))
@@ -230,7 +230,7 @@ class AnimeSearchComponent {
                 AnimeSearchFilter.Aired -> {
                     predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("airedOn")))
 
-                    if (sort == AnimeSortFilter.Asc) {
+                    if (sort == AnimeDefaultFilter.Asc) {
                         listOf(criteriaBuilder.asc(root.get<AnimeTable>("airedOn")))
                     } else {
                         listOf(criteriaBuilder.desc(root.get<AnimeTable>("airedOn")))
@@ -239,7 +239,7 @@ class AnimeSearchComponent {
                 AnimeSearchFilter.Released -> {
                     predicates.add(criteriaBuilder.isNotNull(root.get<AnimeTable>("releasedOn")))
 
-                    if (sort == AnimeSortFilter.Asc) {
+                    if (sort == AnimeDefaultFilter.Asc) {
                         listOf(criteriaBuilder.asc(root.get<AnimeTable>("releasedOn")))
                     } else {
                         listOf(criteriaBuilder.desc(root.get<AnimeTable>("releasedOn")))
@@ -247,14 +247,14 @@ class AnimeSearchComponent {
                 }
                 AnimeSearchFilter.Rating -> {
                     val votesOrder =
-                        if (sort == AnimeSortFilter.Asc) {
+                        if (sort == AnimeDefaultFilter.Asc) {
                             criteriaBuilder.asc(root.get<Double>("shikimoriVotes"))
                         } else {
                             criteriaBuilder.desc(root.get<Double>("shikimoriVotes"))
                         }
 
                     val ratingOrder =
-                        if (sort == AnimeSortFilter.Asc) {
+                        if (sort == AnimeDefaultFilter.Asc) {
                             criteriaBuilder.asc(root.get<Double>("shikimoriRating"))
                         } else {
                             criteriaBuilder.desc(root.get<Double>("shikimoriRating"))

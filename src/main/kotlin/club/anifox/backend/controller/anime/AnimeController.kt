@@ -5,8 +5,8 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
+import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.exception.common.BadRequestException
 import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
@@ -67,7 +67,7 @@ class AnimeController {
         @RequestParam(required = false)
         order: AnimeSearchFilter?,
         @RequestParam(required = false)
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         @Schema(name = "search", required = false, nullable = true) search: String?,
         season: AnimeSeason?,
         @RequestParam(required = false)
@@ -215,7 +215,7 @@ class AnimeController {
         @Min(1)
         @Max(500)
         Int,
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         @RequestParam(name = "translation_id", required = false)
         translationId: Int?,
         @RequestParam(name = "search", required = false)

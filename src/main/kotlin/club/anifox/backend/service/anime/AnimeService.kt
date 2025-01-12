@@ -5,8 +5,8 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
+import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.enums.anime.filter.AnimeSortFilter
 import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -53,7 +53,7 @@ class AnimeService : AnimeRepository {
         genres: List<String>?,
         status: AnimeStatus?,
         orderBy: AnimeSearchFilter?,
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         searchQuery: String?,
         season: AnimeSeason?,
         ratingMpa: String?,
@@ -118,7 +118,7 @@ class AnimeService : AnimeRepository {
         url: String,
         page: Int,
         limit: Int,
-        sort: AnimeSortFilter?,
+        sort: AnimeDefaultFilter?,
         translationId: Int?,
         searchQuery: String?,
     ): List<AnimeEpisode> {
