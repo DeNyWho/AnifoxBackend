@@ -61,6 +61,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.TemporalAdjusters
 
 @Component
 class AnimeCommonComponent {
@@ -538,7 +540,6 @@ class AnimeCommonComponent {
         page: Int,
         limit: Int,
         date: LocalDate? = null,
-        dayOfWeek: DayOfWeek? = null,
         maxPerDay: Int = 10,
     ): Map<String, List<AnimeLight>> {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
@@ -553,45 +554,44 @@ class AnimeCommonComponent {
 
         val predicates = mutableListOf<Predicate>()
 
-        date?.let {
-            val startOfDay = it.atStartOfDay()
-            val endOfDay = it.atTime(23, 59, 59)
-            predicates.add(
-                criteriaBuilder.between(
-                    scheduleRoot.get("nextEpisodeDate"),
-                    startOfDay,
-                    endOfDay,
-                ),
-            )
-        }
+        date?.let { inputDate ->
+            val currentDayOfWeek = inputDate.dayOfWeek
 
-        dayOfWeek?.let {
-            predicates.add(criteriaBuilder.equal(scheduleRoot.get<DayOfWeek>("dayOfWeek"), it))
+            // Начало недели (понедельник текущей недели)
+            val startOfWeek = inputDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+            // Генерация дней недели
+            val allDays = (0..6).map { i -> startOfWeek.plusDays(i.toLong()) }
+
+            // Перестановка: дни после текущего сначала, затем предыдущие
+            val reorderedDays = allDays.filter { it >= inputDate } + allDays.filter { it < inputDate }
+
+            // Создаем предикаты для каждого дня
+            val weekPredicates = reorderedDays.map { targetDate ->
+                val startOfDay = targetDate.atStartOfDay()
+                val endOfDay = targetDate.atTime(23, 59, 59)
+
+                criteriaBuilder.between(
+                    scheduleRoot.get<LocalDateTime>("nextEpisodeDate"),
+                    criteriaBuilder.literal(startOfDay),
+                    criteriaBuilder.literal(endOfDay),
+                )
+            }
+
+            // Объединяем через OR
+            predicates.add(criteriaBuilder.or(*weekPredicates.toTypedArray()))
         }
 
         criteriaQuery.where(*predicates.toTypedArray())
 
         criteriaQuery.orderBy(
-            criteriaBuilder.asc(scheduleRoot.get<DayOfWeek>("dayOfWeek")),
             criteriaBuilder.asc(scheduleRoot.get<LocalDate>("nextEpisodeDate")),
         )
-
-        if (dayOfWeek != null) {
-            val query = entityManager.createQuery(criteriaQuery)
-            query.maxResults = maxPerDay
-
-            return mapOf(
-                dayOfWeek.toString().lowercase() to
-                    query.resultList
-                        .distinctBy { it.anime.id }
-                        .map { it.anime.toAnimeLight() },
-            )
-        }
 
         val allSchedules = entityManager.createQuery(criteriaQuery).resultList
 
         val groupedSchedules = allSchedules
-            .groupBy { it.dayOfWeek }
+            .groupBy { it.nextEpisodeDate.toLocalDate() }
             .mapValues { (_, schedules) ->
                 schedules
                     .distinctBy { it.anime.id }
