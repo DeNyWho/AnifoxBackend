@@ -2,6 +2,7 @@ package club.anifox.backend.service.anime.components.update
 
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.enums.anime.AnimeStatus
+import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
@@ -11,8 +12,8 @@ import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
-import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
+import club.anifox.backend.service.anime.components.parser.FetchImageComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
@@ -20,6 +21,7 @@ import jakarta.persistence.criteria.JoinType
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -33,7 +35,7 @@ class AnimeUpdateComponent {
     private lateinit var animeErrorParserRepository: AnimeErrorParserRepository
 
     @Autowired
-    private lateinit var animeRepository: AnimeRepository
+    private lateinit var fetchImageComponent: FetchImageComponent
 
     @PersistenceContext
     private lateinit var entityManager: EntityManager
@@ -64,81 +66,97 @@ class AnimeUpdateComponent {
 
         // Process in batches to reduce memory usage
         shikimoriIds.chunked(4).forEach { batchIds ->
-            processAnimeBatch(batchIds)
+            runBlocking {
+                processAnimeBatch(batchIds)
+            }
         }
     }
 
     @Transactional
-    fun processAnimeBatch(batchIds: List<Int>) {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        // Fetch all anime for current batch in a single query with necessary joins
-        val criteriaQueryAnime = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val rootAnime = criteriaQueryAnime.from(AnimeTable::class.java)
+    suspend fun processAnimeBatch(batchIds: List<Int>) {
+        supervisorScope {
+            val criteriaBuilder = entityManager.criteriaBuilder
+            // Fetch all anime for current batch in a single query with necessary joins
+            val criteriaQueryAnime = criteriaBuilder.createQuery(AnimeTable::class.java)
+            val rootAnime = criteriaQueryAnime.from(AnimeTable::class.java)
 
-        // Optimize fetches by only including necessary relationships
-        rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
-        rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.LEFT)
-        rootAnime.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
-        rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
-        rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
-        rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
+            // Optimize fetches by only including necessary relationships
+            rootAnime.fetch<AnimeEpisodeTable, Any>("episodes", JoinType.LEFT)
+            rootAnime.fetch<String, Any>("screenshots", JoinType.LEFT)
+            rootAnime.fetch<AnimeIdsTable, Any>("ids", JoinType.LEFT)
+            rootAnime.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
+            rootAnime.fetch<AnimeTranslationTable, Any>("translations", JoinType.LEFT)
+            rootAnime.fetch<AnimeEpisodeScheduleTable, Any>("schedule", JoinType.LEFT)
+            rootAnime.fetch<AnimeEpisodeTranslationCountTable, Any>("translationsCountEpisodes", JoinType.LEFT)
 
-        criteriaQueryAnime.select(rootAnime)
-            .where(rootAnime.get<Int>("shikimoriId").`in`(batchIds))
+            criteriaQueryAnime.select(rootAnime)
+                .where(rootAnime.get<Int>("shikimoriId").`in`(batchIds))
 
-        val animeList = entityManager.createQuery(criteriaQueryAnime).resultList
+            val animeList = entityManager.createQuery(criteriaQueryAnime).resultList
 
-        // Fetch Shikimori data in parallel
-        val shikimoriData = runBlocking {
-            batchIds.map { shikimoriId ->
+            // Fetch Shikimori data in parallel
+            val shikimoriData = batchIds.map { shikimoriId ->
                 async { shikimoriComponent.fetchAnime(shikimoriId) }
             }.awaitAll()
-        }
 
-        // Process each anime in the batch
-        animeList.forEach { anime ->
-            try {
-                val shikimori = shikimoriData.find { it?.id == anime.shikimoriId } ?: return@forEach
+            // Process each anime in the batch
+            animeList.forEach { anime ->
+                try {
+                    val shikimori = shikimoriData.find { it?.id == anime.shikimoriId } ?: return@forEach
 
-                if (!anime.isLicensed) {
-                    val episodesReady = runBlocking {
-                        episodesComponent.fetchEpisodes(
-                            shikimoriId = anime.shikimoriId,
-                            kitsuId = anime.ids.kitsu.toString(),
-                            type = anime.type,
-                            urlLinkPath = anime.url,
-                            defaultImage = anime.images.medium,
-                        )
+                    if (anime.screenshots.isEmpty()) {
+                        val screenshots = fetchAndSaveScreenshots(shikimori, anime)
+                        anime.screenshots.addAll(screenshots)
                     }
 
-                    // Batch process translations
-                    val translationsCountReady = episodesComponent.translationsCount(episodesReady)
-                    val translations = translationsCountReady.map { it.translation }
+                    if (!anime.isLicensed) {
+                        val episodesReady = runBlocking {
+                            episodesComponent.fetchEpisodes(
+                                shikimoriId = anime.shikimoriId,
+                                kitsuId = anime.ids.kitsu.toString(),
+                                type = anime.type,
+                                urlLinkPath = anime.url,
+                                defaultImage = anime.images.medium,
+                            )
+                        }
 
-                    // Update collections efficiently
-                    anime.episodes.clear()
-                    anime.episodes.addAll(episodesReady)
-                    anime.translations.clear()
-                    anime.translations.addAll(translations.toSet())
-                    anime.translationsCountEpisodes.clear()
-                    anime.translationsCountEpisodes.addAll(translationsCountReady)
+                        // Batch process translations
+                        val translationsCountReady = episodesComponent.translationsCount(episodesReady)
+                        val translations = translationsCountReady.map { it.translation }
+
+                        // Update collections efficiently
+                        anime.episodes.apply {
+                            clear()
+                            addAll(episodesReady)
+                        }
+
+                        anime.translations.apply {
+                            clear()
+                            addAll(translations.toSet())
+                        }
+
+                        anime.translationsCountEpisodes.apply {
+                            clear()
+                            addAll(translationsCountReady)
+                        }
+                    }
+
+                    updateAnimeFromShikimori(anime, shikimori)
+                    entityManager.merge(anime)
+                } catch (e: Exception) {
+                    animeErrorParserRepository.save(
+                        AnimeErrorParserTable(
+                            message = e.message,
+                            cause = "UPDATE",
+                            shikimoriId = anime.shikimoriId,
+                        ),
+                    )
                 }
-
-                updateAnimeFromShikimori(anime, shikimori)
-                entityManager.merge(anime)
-            } catch (e: Exception) {
-                animeErrorParserRepository.save(
-                    AnimeErrorParserTable(
-                        message = e.message,
-                        cause = "UPDATE",
-                        shikimoriId = anime.shikimoriId,
-                    ),
-                )
             }
-        }
 
-        entityManager.flush()
-        entityManager.clear()
+            entityManager.flush()
+            entityManager.clear()
+        }
     }
 
     private fun updateAnimeFromShikimori(anime: AnimeTable, shikimori: ShikimoriDto) {
@@ -188,6 +206,23 @@ class AnimeUpdateComponent {
             }
 
             episodesAired = currentEpisodesSize
+        }
+    }
+
+    private suspend fun fetchAndSaveScreenshots(shikimori: ShikimoriDto, anime: AnimeTable): List<String> {
+        return try {
+            val screenshots = shikimoriComponent.fetchScreenshots(shikimori.id)
+            screenshots.map { screenshot ->
+                fetchImageComponent.saveImage(
+                    screenshot,
+                    CompressAnimeImageType.Screenshot,
+                    anime.url,
+                    true,
+                )
+            }.toMutableList()
+        } catch (e: Exception) {
+            println("❌ Ошибка при загрузке скриншотов: ${e.message}")
+            emptyList()
         }
     }
 }
