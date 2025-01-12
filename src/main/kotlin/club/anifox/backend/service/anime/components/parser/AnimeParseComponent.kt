@@ -58,11 +58,14 @@ import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.JoinType
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -119,17 +122,38 @@ class AnimeParseComponent(
         val shikimoriIds = query.resultList
 
         var ar = kodikComponent.checkKodikList(translationsIds.joinToString(", "))
-        while (ar.nextPage != null) {
+        var firstPage = true
+
+        suspend fun processJob(animeTemp: KodikAnimeDto) {
+            try {
+                processData(animeTemp)
+            } catch (e: Exception) {
+                animeErrorParserRepository.save(
+                    AnimeErrorParserTable(
+                        message = e.message,
+                        cause = "INTEGRATE SIMILAR, RELATED",
+                        shikimoriId = animeTemp.shikimoriId,
+                    ),
+                )
+            }
+        }
+
+        val supervisor = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+        while (ar.nextPage != null || firstPage) {
             val jobs = ar.result
                 .distinctBy { it.shikimoriId }
                 .filter { !shikimoriIds.contains(it.shikimoriId) }
                 .map { animeTemp ->
-                    async { processData(animeTemp) }
+                    supervisor.async { processJob(animeTemp) }
                 }
             jobs.awaitAll()
-            ar = client.get(ar.nextPage!!) {
-                headers { contentType(ContentType.Application.Json) }
-            }.body()
+            firstPage = false
+            if (ar.nextPage != null) {
+                ar = client.get(ar.nextPage!!) {
+                    headers { contentType(ContentType.Application.Json) }
+                }.body()
+            }
         }
     }
 
@@ -521,321 +545,369 @@ class AnimeParseComponent(
     }
 
     private suspend fun processData(animeKodik: KodikAnimeDto) {
-        coroutineScope {
+        supervisorScope {
             try {
-                val shikimori = shikimoriComponent.fetchAnime(animeKodik.shikimoriId)
-                val jikan = jikanComponent.fetchJikan(animeKodik.shikimoriId)
+                val shikimori = try {
+                    shikimoriComponent.fetchAnime(animeKodik.shikimoriId)
+                } catch (e: Exception) {
+                    println("❌ Failed to fetch shikimori data: ${e.message}")
+                    return@supervisorScope
+                }
+
+                val jikan = try {
+                    jikanComponent.fetchJikan(animeKodik.shikimoriId)
+                } catch (e: Exception) {
+                    println("❌ Failed to fetch jikan data: ${e.message}")
+                    return@supervisorScope
+                }
 
                 if (shikimori != null) {
                     val shikimoriRating = shikimori.score.toDoubleOrNull() ?: 0.0
                     val userRatesStats = shikimori.usersRatesStats.sumOf { it.value }
 
-                    runBlocking {
-                        if (!animeBlockedRepository.findById(shikimori.id).isPresent &&
-                            (userRatesStats > 4000 || (userRatesStats > 1000 && shikimori.status == "ongoing")) &&
-                            shikimori.studios.none { studio ->
-                                animeBlockedByStudioRepository.findById(studio.id).isPresent
-                            } &&
-                            !animeRepository.findByShikimoriId(shikimori.id).isPresent
-                        ) {
-                            val (genres, studios) = processGenresAndStudios(shikimori)
+                    val studioBlocked = shikimori.studios.any { studio ->
+                        animeBlockedByStudioRepository.findById(studio.id).isPresent
+                    }
 
-                            val type =
-                                when (shikimori.kind) {
-                                    "movie" -> AnimeType.Movie
-                                    "tv" -> AnimeType.Tv
-                                    "ova" -> AnimeType.Ova
-                                    "ona" -> AnimeType.Ona
-                                    "special" -> AnimeType.Special
-                                    "music" -> AnimeType.Music
-                                    else -> AnimeType.Tv
-                                }
+                    if (!animeBlockedRepository.findById(shikimori.id).isPresent &&
+                        (userRatesStats > 4000 || (userRatesStats > 500 && shikimori.status == "ongoing")) &&
+                        !studioBlocked &&
+                        !animeRepository.findByShikimoriId(shikimori.id).isPresent
+                    ) {
+                        val (genres, studios) = processGenresAndStudios(shikimori)
 
-                            val airedOn = LocalDate.parse(shikimori.airedOn)
-                            val releasedOn =
-                                when {
-                                    shikimori.releasedOn != null -> {
-                                        LocalDate.parse(shikimori.releasedOn)
-                                    }
-
-                                    type == AnimeType.Movie -> {
-                                        LocalDate.parse(shikimori.airedOn)
-                                    }
-
-                                    else -> null
-                                }
-
-                            val animeIdsDeferred =
-                                async {
-                                    haglundComponent.fetchHaglundIds(shikimori.id)
-                                }
-
-                            var urlLinkPath = commonParserComponent.translit(if (!shikimori.russianLic.isNullOrEmpty() && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
-
-                            if (animeRepository.findByUrl(urlLinkPath).isPresent) {
-                                urlLinkPath = "${commonParserComponent.translit(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)}-${airedOn.year}"
+                        val type =
+                            when (shikimori.kind) {
+                                "movie" -> AnimeType.Movie
+                                "tv" -> AnimeType.Tv
+                                "ova" -> AnimeType.Ova
+                                "ona" -> AnimeType.Ona
+                                "special" -> AnimeType.Special
+                                "music" -> AnimeType.Music
+                                else -> AnimeType.Tv
                             }
 
-                            val videosShikimoriDeferred =
-                                async {
-                                    shikimoriComponent.fetchVideos(shikimori.id)
+                        val airedOn = LocalDate.parse(shikimori.airedOn)
+                        val releasedOn =
+                            when {
+                                shikimori.releasedOn != null -> {
+                                    LocalDate.parse(shikimori.releasedOn)
                                 }
 
-                            val shikimoriScreenshotsDeferred =
-                                async {
-                                    shikimoriComponent.fetchScreenshots(shikimori.id)
+                                type == AnimeType.Movie -> {
+                                    LocalDate.parse(shikimori.airedOn)
                                 }
 
-                            val shikimoriExternalLinksDeferred =
-                                async {
-                                    shikimoriComponent.fetchExternalLinks(shikimori.id)
-                                }
-
-                            val status =
-                                when (shikimori.status) {
-                                    "released" -> AnimeStatus.Released
-                                    "ongoing" -> AnimeStatus.Ongoing
-                                    else -> AnimeStatus.Ongoing
-                                }
-
-                            val season =
-                                when (airedOn.month.value) {
-                                    12, 1, 2 -> AnimeSeason.Winter
-                                    3, 4, 5 -> AnimeSeason.Spring
-                                    6, 7, 8 -> AnimeSeason.Summer
-                                    else -> AnimeSeason.Fall
-                                }
-
-                            val ratingMpa =
-                                when (shikimori.rating) {
-                                    "g" -> "G"
-                                    "pg" -> "PG"
-                                    "pg_13" -> "PG-13"
-                                    "r" -> "R"
-                                    "r_plus" -> "R+"
-                                    else -> ""
-                                }
-
-                            val minimalAge =
-                                when (shikimori.rating) {
-                                    "g" -> 0
-                                    "pg" -> 12
-                                    "pg_13" -> 16
-                                    "r" -> 18
-                                    "r_plus" -> 18
-                                    else -> 0
-                                }
-
-                            val formatter =
-                                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                                    .withZone(ZoneId.of("Europe/Moscow"))
-
-                            val nextEpisode = if (shikimori.nextEpisodeAt != null) LocalDateTime.parse(shikimori.nextEpisodeAt, formatter) else null
-
-                            val otherTitles = animeKodik.materialData.otherTitles.toMutableList()
-                            otherTitles.add(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
-
-                            val animeIds = animeIdsDeferred.await()
-
-                            val imagesDeferred =
-                                async {
-                                    fetchImageComponent.fetchAndSaveAnimeImages(shikimori.id, animeIds.kitsu, urlLinkPath)
-                                }
-
-                            val (images, bufferedLargeImage) = imagesDeferred.await() ?: return@runBlocking
-
-                            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
-                            val isLicensed = licensors.isNotEmpty()
-
-                            val episodesReady =
-                                if (!isLicensed) {
-                                    episodesComponent.fetchEpisodes(
-                                        shikimoriId = shikimori.id,
-                                        kitsuId = animeIds.kitsu.toString(),
-                                        type = type,
-                                        urlLinkPath = urlLinkPath,
-                                        defaultImage = images.medium,
-                                    )
-                                } else {
-                                    null
-                                }
-
-                            val translationsCountReady =
-                                if (episodesReady != null) {
-                                    episodesComponent.translationsCount(episodesReady)
-                                } else {
-                                    null
-                                }
-
-                            val translations = translationsCountReady?.map { it.translation }
-
-                            val videos =
-                                videosShikimoriDeferred.await().let { videosList ->
-                                    animeVideoRepository.saveAll(
-                                        videosList
-                                            .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
-                                            .map { video ->
-                                                AnimeVideoTable(
-                                                    url = video.url,
-                                                    imageUrl = video.imageUrl,
-                                                    playerUrl = video.playerUrl,
-                                                    name = video.name,
-                                                    type =
-                                                    when (video.kind) {
-                                                        "ed" -> AnimeVideoType.Ending
-                                                        "op" -> AnimeVideoType.Opening
-                                                        "pv" -> AnimeVideoType.Trailer
-                                                        else -> AnimeVideoType.Other
-                                                    },
-                                                )
-                                            },
-                                    )
-                                }
-
-                            jikan.data.trailer?.let { trailer ->
-                                if (trailer.url != null && trailer.embedUrl != null && trailer.images?.maximumImageUrl != null) {
-                                    videos.add(
-                                        AnimeVideoTable(
-                                            url = trailer.url,
-                                            imageUrl = trailer.images.maximumImageUrl,
-                                            playerUrl = trailer.embedUrl.replace("?enablejsapi=1&wmode=opaque&autoplay=1", ""),
-                                            name = null,
-                                            type = AnimeVideoType.MainTrailer,
-                                        ),
-                                    )
-                                }
+                                else -> null
                             }
 
-                            val screenshots =
-                                shikimoriScreenshotsDeferred.await().map { screenshot ->
-                                    fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)
-                                }.toMutableList()
+                        val asyncSupervisor = CoroutineScope(coroutineContext + SupervisorJob())
 
-                            val externalLinks =
-                                shikimoriExternalLinksDeferred.await().let { externalList ->
-                                    animeExternalLinksRepository.saveAll(
-                                        externalList
-                                            .filter { it.kind == "official_site" || it.kind == "wikipedia" || it.kind == "kinopoisk" || it.kind == "ivi" || it.kind == "wink" || it.kind == "okko" }
-                                            .map { external ->
-                                                AnimeExternalLinksTable(
-                                                    kind =
-                                                    when (external.kind) {
-                                                        "official_site" -> AnimeExternalLinksType.OfficialSite
-                                                        "wikipedia" -> AnimeExternalLinksType.Wikipedia
-                                                        "kinopoisk" -> AnimeExternalLinksType.Kinopoisk
-                                                        "ivi" -> AnimeExternalLinksType.Ivi
-                                                        "wink" -> AnimeExternalLinksType.Wink
-                                                        "okko" -> AnimeExternalLinksType.Okko
-                                                        else -> AnimeExternalLinksType.Okko
-                                                    },
-                                                    url = external.url,
-                                                )
-                                            },
-                                    )
-                                }
+                        val animeIdsDeferred = asyncSupervisor.async {
+                            try {
+                                haglundComponent.fetchHaglundIds(shikimori.id)
+                            } catch (e: Exception) {
+                                println("❌ Failed to fetch haglund ids: ${e.message}")
+                                throw e
+                            }
+                        }
 
-                            var episodesCount =
-                                when {
-                                    episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
-                                    shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
-                                    else -> shikimori.episodes
-                                }
+                        var urlLinkPath = commonParserComponent.translit(if (!shikimori.russianLic.isNullOrEmpty() && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
 
-                            if (episodesCount != null) {
-                                if (episodesReady != null && episodesCount < episodesReady.size) {
-                                    episodesCount = episodesReady.size
-                                }
+                        if (animeRepository.findByUrl(urlLinkPath).isPresent) {
+                            urlLinkPath = "${commonParserComponent.translit(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)}-${airedOn.year}"
+                        }
+
+                        val videosShikimoriDeferred = asyncSupervisor.async {
+                            try {
+                                shikimoriComponent.fetchVideos(shikimori.id)
+                            } catch (e: Exception) {
+                                println("❌ Failed to fetch videos: ${e.message}")
+                                throw e
+                            }
+                        }
+
+                        val shikimoriScreenshotsDeferred = asyncSupervisor.async {
+                            try {
+                                shikimoriComponent.fetchScreenshots(shikimori.id)
+                            } catch (e: Exception) {
+                                println("❌ Failed to fetch screenshots: ${e.message}")
+                                throw e
+                            }
+                        }
+
+                        val shikimoriExternalLinksDeferred = asyncSupervisor.async {
+                            try {
+                                shikimoriComponent.fetchExternalLinks(shikimori.id)
+                            } catch (e: Exception) {
+                                println("❌ Failed to fetch external links: ${e.message}")
+                                throw e
+                            }
+                        }
+
+                        val status =
+                            when (shikimori.status) {
+                                "released" -> AnimeStatus.Released
+                                "ongoing" -> AnimeStatus.Ongoing
+                                else -> AnimeStatus.Ongoing
                             }
 
-                            val animeToSave =
-                                AnimeTable(
-                                    type = type,
-                                    url = urlLinkPath,
-                                    playerLink = if (licensors.isEmpty()) animeKodik.link else null,
-                                    title = if (!shikimori.russianLic.isNullOrEmpty() && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian,
-                                    titleEn = shikimori.english.map { it.toString() }.toMutableList(),
-                                    titleJapan = shikimori.japanese.toMutableList(),
-                                    synonyms = shikimori.synonyms.toMutableList(),
-                                    titleOther = otherTitles,
-                                    ids =
-                                    AnimeIdsTable(
-                                        aniDb = animeIds.aniDb,
-                                        aniList = animeIds.aniList,
-                                        animePlanet = animeIds.animePlanet,
-                                        aniSearch = animeIds.aniSearch,
-                                        imdb = animeIds.imdb,
-                                        kitsu = animeIds.kitsu,
-                                        liveChart = animeIds.liveChart,
-                                        notifyMoe = animeIds.notifyMoe,
-                                        thetvdb = animeIds.theMovieDb,
-                                        myAnimeList = animeIds.myAnimeList,
-                                    ),
-                                    isLicensed = isLicensed,
-                                    year = airedOn.year,
-                                    nextEpisode = nextEpisode,
-                                    episodesCount = episodesCount,
-                                    episodesAired = episodesReady?.size,
+                        val season =
+                            when (airedOn.month.value) {
+                                12, 1, 2 -> AnimeSeason.Winter
+                                3, 4, 5 -> AnimeSeason.Spring
+                                6, 7, 8 -> AnimeSeason.Summer
+                                else -> AnimeSeason.Fall
+                            }
+
+                        val ratingMpa =
+                            when (shikimori.rating) {
+                                "g" -> "G"
+                                "pg" -> "PG"
+                                "pg_13" -> "PG-13"
+                                "r" -> "R"
+                                "r_plus" -> "R+"
+                                else -> ""
+                            }
+
+                        val minimalAge =
+                            when (shikimori.rating) {
+                                "g" -> 0
+                                "pg" -> 12
+                                "pg_13" -> 16
+                                "r" -> 18
+                                "r_plus" -> 18
+                                else -> 0
+                            }
+
+                        val formatter =
+                            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+                                .withZone(ZoneId.of("Europe/Moscow"))
+
+                        val nextEpisode = if (shikimori.nextEpisodeAt != null) LocalDateTime.parse(shikimori.nextEpisodeAt, formatter) else null
+
+                        val otherTitles = animeKodik.materialData.otherTitles.toMutableList()
+                        otherTitles.add(if (shikimori.russianLic != null && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian)
+
+                        val animeIds = try {
+                            animeIdsDeferred.await()
+                        } catch (e: Exception) {
+                            println("❌ Failed to get anime ids: ${e.message}")
+                            return@supervisorScope
+                        }
+
+                        val imagesDeferred = asyncSupervisor.async {
+                            try {
+                                fetchImageComponent.fetchAndSaveAnimeImages(shikimori.id, animeIds.kitsu, urlLinkPath)
+                            } catch (e: Exception) {
+                                println("❌ Failed to fetch and save images: ${e.message}")
+                                throw e
+                            }
+                        }
+
+                        val (images, bufferedLargeImage) = try {
+                            imagesDeferred.await()
+                        } catch (e: Exception) {
+                            println("❌ Failed to process images: ${e.message}")
+                            return@supervisorScope
+                        }
+
+                        val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
+                        val isLicensed = licensors.isNotEmpty()
+
+                        val episodesReady =
+                            if (!isLicensed) {
+                                episodesComponent.fetchEpisodes(
                                     shikimoriId = shikimori.id,
-                                    createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
-                                    airedOn = airedOn,
-                                    releasedOn = releasedOn,
-                                    updatedAt = null,
-                                    status = status,
-                                    description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
-                                    franchise = shikimori.franchise,
-                                    images = AnimeImagesTable(
-                                        large = images.large,
-                                        medium = images.medium,
-                                        cover = images.cover ?: "",
-                                    ),
-                                    screenshots = screenshots,
-                                    shikimoriRating = shikimoriRating,
-                                    shikimoriVotes = userRatesStats,
-                                    ratingMpa = ratingMpa,
-                                    minimalAge = minimalAge,
-                                    season = season,
-                                    accentColor = commonParserComponent.getMostCommonColor(bufferedLargeImage),
+                                    kitsuId = animeIds.kitsu.toString(),
+                                    type = type,
+                                    urlLinkPath = urlLinkPath,
+                                    defaultImage = images.medium,
                                 )
-
-                            if (translationsCountReady != null) {
-                                animeToSave.addTranslationCount(translationsCountReady)
-                            }
-                            if (translations != null) {
-                                animeToSave.addTranslation(translations)
-                            }
-                            if (episodesReady != null) {
-                                animeToSave.addEpisodesAll(episodesReady)
-                            }
-
-                            animeToSave.nextEpisode?.let { nextEpisodeDate ->
-                                animeToSave.updateEpisodeSchedule(nextEpisodeDate)
-                            }
-
-                            animeToSave.addAllAnimeGenre(genres)
-                            animeToSave.addAllAnimeStudios(studios)
-                            animeToSave.addVideos(videos)
-                            animeToSave.addExternalLinks(externalLinks)
-                            animeToSave.addLicensors(licensors)
-
-                            val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
-                            if (preparationToSaveAnime.isPresent) {
-                                return@runBlocking
                             } else {
-                                animeRepository.saveAndFlush(animeToSave)
+                                null
                             }
+
+                        val translationsCountReady =
+                            if (episodesReady != null) {
+                                episodesComponent.translationsCount(episodesReady)
+                            } else {
+                                null
+                            }
+
+                        val translations = translationsCountReady?.map { it.translation }
+
+                        val videos = try {
+                            videosShikimoriDeferred.await().let { videosList ->
+                                animeVideoRepository.saveAll(
+                                    videosList
+                                        .filter { it.hosting == "youtube" && it.kind != "episode_preview" }
+                                        .map { video ->
+                                            AnimeVideoTable(
+                                                url = video.url,
+                                                imageUrl = video.imageUrl,
+                                                playerUrl = video.playerUrl,
+                                                name = video.name,
+                                                type =
+                                                when (video.kind) {
+                                                    "ed" -> AnimeVideoType.Ending
+                                                    "op" -> AnimeVideoType.Opening
+                                                    "pv" -> AnimeVideoType.Trailer
+                                                    else -> AnimeVideoType.Other
+                                                },
+                                            )
+                                        },
+                                )
+                            }
+                        } catch (e: Exception) {
+                            println("❌ Failed to process videos: ${e.message}")
+                            return@supervisorScope
+                        }
+
+                        jikan.data.trailer?.let { trailer ->
+                            if (trailer.url != null && trailer.embedUrl != null && trailer.images?.maximumImageUrl != null) {
+                                videos.add(
+                                    AnimeVideoTable(
+                                        url = trailer.url,
+                                        imageUrl = trailer.images.maximumImageUrl,
+                                        playerUrl = trailer.embedUrl.replace("?enablejsapi=1&wmode=opaque&autoplay=1", ""),
+                                        name = null,
+                                        type = AnimeVideoType.MainTrailer,
+                                    ),
+                                )
+                            }
+                        }
+
+                        val screenshots = try {
+                            shikimoriScreenshotsDeferred.await().map { screenshot ->
+                                fetchImageComponent.saveImage(screenshot, CompressAnimeImageType.Screenshot, urlLinkPath, true)
+                            }.toMutableList()
+                        } catch (e: Exception) {
+                            println("❌ Failed to process screenshots: ${e.message}")
+                            return@supervisorScope
+                        }
+
+                        val externalLinks = try {
+                            shikimoriExternalLinksDeferred.await().let { externalList ->
+                                animeExternalLinksRepository.saveAll(
+                                    externalList
+                                        .filter { it.kind == "official_site" || it.kind == "wikipedia" || it.kind == "kinopoisk" || it.kind == "ivi" || it.kind == "wink" || it.kind == "okko" }
+                                        .map { external ->
+                                            AnimeExternalLinksTable(
+                                                kind =
+                                                when (external.kind) {
+                                                    "official_site" -> AnimeExternalLinksType.OfficialSite
+                                                    "wikipedia" -> AnimeExternalLinksType.Wikipedia
+                                                    "kinopoisk" -> AnimeExternalLinksType.Kinopoisk
+                                                    "ivi" -> AnimeExternalLinksType.Ivi
+                                                    "wink" -> AnimeExternalLinksType.Wink
+                                                    "okko" -> AnimeExternalLinksType.Okko
+                                                    else -> AnimeExternalLinksType.Okko
+                                                },
+                                                url = external.url,
+                                            )
+                                        },
+                                )
+                            }
+                        } catch (e: Exception) {
+                            println("❌ Failed to process external links: ${e.message}")
+                            return@supervisorScope
+                        }
+
+                        var episodesCount =
+                            when {
+                                episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
+                                shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
+                                else -> shikimori.episodes
+                            }
+
+                        if (episodesCount != null) {
+                            if (episodesReady != null && episodesCount < episodesReady.size) {
+                                episodesCount = episodesReady.size
+                            }
+                        }
+
+                        val animeToSave =
+                            AnimeTable(
+                                type = type,
+                                url = urlLinkPath,
+                                playerLink = if (licensors.isEmpty()) animeKodik.link else null,
+                                title = if (!shikimori.russianLic.isNullOrEmpty() && commonParserComponent.checkEnglishLetter(shikimori.russian)) shikimori.russianLic else shikimori.russian,
+                                titleEn = shikimori.english.map { it.toString() }.toMutableList(),
+                                titleJapan = shikimori.japanese.toMutableList(),
+                                synonyms = shikimori.synonyms.toMutableList(),
+                                titleOther = otherTitles,
+                                ids =
+                                AnimeIdsTable(
+                                    aniDb = animeIds.aniDb,
+                                    aniList = animeIds.aniList,
+                                    animePlanet = animeIds.animePlanet,
+                                    aniSearch = animeIds.aniSearch,
+                                    imdb = animeIds.imdb,
+                                    kitsu = animeIds.kitsu,
+                                    liveChart = animeIds.liveChart,
+                                    notifyMoe = animeIds.notifyMoe,
+                                    thetvdb = animeIds.theMovieDb,
+                                    myAnimeList = animeIds.myAnimeList,
+                                ),
+                                isLicensed = isLicensed,
+                                year = airedOn.year,
+                                nextEpisode = nextEpisode,
+                                episodesCount = episodesCount,
+                                episodesAired = episodesReady?.size,
+                                shikimoriId = shikimori.id,
+                                createdAt = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime(),
+                                airedOn = airedOn,
+                                releasedOn = releasedOn,
+                                updatedAt = null,
+                                status = status,
+                                description = shikimori.description.replace(Regex("\\[\\/?[a-z]+.*?\\]"), ""),
+                                franchise = shikimori.franchise,
+                                images = AnimeImagesTable(
+                                    large = images.large,
+                                    medium = images.medium,
+                                    cover = images.cover ?: "",
+                                ),
+                                screenshots = screenshots,
+                                shikimoriRating = shikimoriRating,
+                                shikimoriVotes = userRatesStats,
+                                ratingMpa = ratingMpa,
+                                minimalAge = minimalAge,
+                                season = season,
+                                accentColor = commonParserComponent.getMostCommonColor(bufferedLargeImage),
+                            )
+
+                        if (translationsCountReady != null) {
+                            animeToSave.addTranslationCount(translationsCountReady)
+                        }
+                        if (translations != null) {
+                            animeToSave.addTranslation(translations)
+                        }
+                        if (episodesReady != null) {
+                            animeToSave.addEpisodesAll(episodesReady)
+                        }
+
+                        animeToSave.nextEpisode?.let { nextEpisodeDate ->
+                            animeToSave.updateEpisodeSchedule(nextEpisodeDate)
+                        }
+
+                        animeToSave.addAllAnimeGenre(genres)
+                        animeToSave.addAllAnimeStudios(studios)
+                        animeToSave.addVideos(videos)
+                        animeToSave.addExternalLinks(externalLinks)
+                        animeToSave.addLicensors(licensors)
+
+                        val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
+                        if (preparationToSaveAnime.isPresent) {
+                            return@supervisorScope
+                        } else {
+                            animeRepository.saveAndFlush(animeToSave)
                         }
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                animeErrorParserRepository.save(
-                    AnimeErrorParserTable(
-                        message = e.message,
-                        cause = "parser",
-                        shikimoriId = animeKodik.shikimoriId,
-                    ),
-                )
-                return@coroutineScope
+                println("❌ Unexpected error in processData: ${e.message}")
+                return@supervisorScope
             }
         }
     }

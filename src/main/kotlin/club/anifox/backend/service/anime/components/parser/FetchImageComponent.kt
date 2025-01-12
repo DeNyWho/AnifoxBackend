@@ -30,7 +30,7 @@ class FetchImageComponent {
         shikimoriId: Int,
         kitsuId: Int?,
         urlLinking: String,
-    ): Pair<AnimeImages, BufferedImage>? {
+    ): Pair<AnimeImages, BufferedImage> {
         val kitsuImages =
             if (kitsuId != null) {
                 fetchKitsuImages(kitsuId)
@@ -39,12 +39,10 @@ class FetchImageComponent {
             }
         val jikanImages = fetchJikanImages(shikimoriId)
 
-        return runCatching {
-            when {
-                kitsuImages != null -> saveKitsuImages(kitsuImages, urlLinking)
-                else -> saveJikanImages(jikanImages, urlLinking)
-            }
-        }.getOrNull()
+        return when {
+            kitsuImages != null -> saveKitsuImages(kitsuImages, urlLinking)
+            else -> saveJikanImages(jikanImages, urlLinking)
+        }
     }
 
     private suspend fun fetchKitsuImages(kitsuId: Int): AnimeImages? {
@@ -79,7 +77,7 @@ class FetchImageComponent {
             AnimeImages(
                 large = saveImage(large, CompressAnimeImageType.LargeKitsu, urlLinking, false),
                 medium = saveImage(medium, CompressAnimeImageType.MediumKitsu, urlLinking, false),
-                cover = saveImage(cover ?: "", CompressAnimeImageType.Cover, urlLinking, false),
+                cover = if (!cover.isNullOrEmpty()) saveImage(cover, CompressAnimeImageType.Cover, urlLinking, false) else null,
             )
 
         return Pair(
@@ -100,6 +98,7 @@ class FetchImageComponent {
             AnimeImages(
                 large = saveImage(large, CompressAnimeImageType.LargeJikan, urlLinking, false),
                 medium = saveImage(medium, CompressAnimeImageType.MediumJikan, urlLinking, true),
+                cover = null,
             )
 
         return Pair(
@@ -117,16 +116,20 @@ class FetchImageComponent {
         compress: Boolean = true,
     ): String {
         return withContext(Dispatchers.IO) {
-            val bytes = URL(url).readBytes()
-            val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
-            val path = "images/anime/${type.path}/$urlLinking/$fileName"
+            try {
+                val bytes = URL(url).readBytes()
+                val fileName = "${mdFive(UUID.randomUUID().toString())}.${type.imageType.textFormat()}"
+                val path = "images/anime/${type.path}/$urlLinking/$fileName"
 
-            imageService.saveFileInSThird(
-                filePath = path,
-                data = bytes,
-                type = type,
-                compress = compress,
-            )
+                imageService.saveFileInSThird(
+                    filePath = path,
+                    data = bytes,
+                    type = type,
+                    compress = compress,
+                )
+            } catch (e: Exception) {
+                throw Exception()
+            }
         }
     }
 
