@@ -17,6 +17,7 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -104,4 +105,6 @@ interface AnimeRepository {
         role: String?,
         search: String?,
     ): AnimeCharacterResponse
+
+    fun findExternalLinksByAnimeId(animeId: String): List<AnimeExternalLinksTable>
 }

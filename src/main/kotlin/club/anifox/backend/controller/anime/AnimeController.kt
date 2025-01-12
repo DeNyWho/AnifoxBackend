@@ -18,6 +18,7 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.service.anime.AnimeService
 import io.swagger.v3.oas.annotations.Operation
@@ -128,6 +129,11 @@ class AnimeController {
         @PathVariable url: String,
     ): AnimeDetail {
         return animeService.getAnimeDetails(url)
+    }
+
+    @GetMapping("/{id}/external_links")
+    fun getExternalLinks(@PathVariable id: String): List<AnimeExternalLinksTable> {
+        return animeService.findExternalLinksByAnimeId(id)
     }
 
     @GetMapping("/{url}/similar")

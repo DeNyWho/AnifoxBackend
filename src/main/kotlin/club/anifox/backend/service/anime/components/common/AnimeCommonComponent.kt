@@ -27,6 +27,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
+import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
@@ -106,6 +107,32 @@ class AnimeCommonComponent {
             throw NotFoundException("Anime not found")
         } else {
             return anime.first().toAnimeDetail()
+        }
+    }
+
+    @Transactional()
+    fun getAnimeExternalLinks(url: String): List<AnimeExternalLinksTable> {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
+        val root = criteriaQuery.from(AnimeTable::class.java)
+
+        root.fetch<AnimeExternalLinksTable, Any>("externalLinks", JoinType.LEFT)
+
+        criteriaQuery.select(root)
+            .where(criteriaBuilder.equal(root.get<String>("url"), url))
+
+        val anime = entityManager.createQuery(criteriaQuery).resultList
+
+        if (anime.isEmpty()) {
+            throw NotFoundException("Anime not found")
+        } else {
+            val externalLinks = anime.first().externalLinks.toList()
+
+            if (externalLinks.isNotEmpty()) {
+                return externalLinks
+            }
+
+            throw NoContentException("External links not found")
         }
     }
 
