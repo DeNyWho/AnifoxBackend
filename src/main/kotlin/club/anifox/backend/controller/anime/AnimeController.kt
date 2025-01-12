@@ -65,18 +65,24 @@ class AnimeController {
         @RequestParam(required = false)
         status: AnimeStatus?,
         @RequestParam(required = false)
+        @Schema(description = "Enum: update, aired, released, random, rating")
         order: AnimeSearchFilter?,
         @RequestParam(required = false)
+        @Schema(description = "Enum: desc, asc")
         sort: AnimeDefaultFilter?,
-        @Schema(name = "search", required = false, nullable = true) search: String?,
+        @Schema(name = "search", required = false, nullable = true)
+        search: String?,
+        @RequestParam(required = false)
+        @Schema(description = "Enum: winter, spring, summer, fall")
         season: AnimeSeason?,
         @RequestParam(required = false)
+        @Schema(description = "Enum: movie, ona, ova, music, special, tv")
         type: AnimeType?,
         @RequestParam(name = "genres", required = false)
         @Parameter(name = "genres", description = "Require genres IDS", required = false)
         genres: List<String>?,
         @RequestParam(name = "rating_mpa", required = false)
-        @Parameter(name = "rating_mpa", required = false, description = "Must be one of: PG | PG-13 | R | R+ | G")
+        @Parameter(name = "rating_mpa", required = false, description = "Enum: PG | PG-13 | R | R+ | G")
         ratingMpa: String?,
         @RequestParam(name = "episode_count", required = false)
         @Parameter(name = "episode_count", required = false)
