@@ -818,7 +818,6 @@ class AnimeParseComponent(
                             when {
                                 shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
                                 episodesReady != null && shikimori.episodes < episodesReady.size -> episodesReady.size
-                                status == AnimeStatus.Ongoing -> null
                                 else -> shikimori.episodes
                             }
 

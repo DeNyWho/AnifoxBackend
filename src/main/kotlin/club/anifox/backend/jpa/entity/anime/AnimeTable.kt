@@ -33,6 +33,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import org.hibernate.annotations.BatchSize
+import org.hibernate.annotations.DynamicUpdate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -40,6 +41,7 @@ import java.util.*
 @Entity
 @Table(name = "anime", schema = "anime")
 @Cacheable(true)
+@DynamicUpdate
 data class AnimeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
