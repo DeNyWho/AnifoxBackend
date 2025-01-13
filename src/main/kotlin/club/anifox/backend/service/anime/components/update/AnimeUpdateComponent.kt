@@ -200,8 +200,9 @@ class AnimeUpdateComponent {
             }
 
             episodesCount = when {
-                shikimori.episodes < currentEpisodesSize -> currentEpisodesSize
                 shikimori.episodes == 0 && status == AnimeStatus.Ongoing -> null
+                shikimori.episodes < currentEpisodesSize -> currentEpisodesSize
+                status == AnimeStatus.Ongoing -> null
                 else -> maxOf(shikimori.episodes, currentEpisodesSize)
             }
 
