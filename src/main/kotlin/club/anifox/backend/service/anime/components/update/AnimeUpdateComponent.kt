@@ -23,14 +23,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Component
 class AnimeUpdateComponent(
-    private val transactionTemplate: TransactionTemplate,
     private val animeErrorParserRepository: AnimeErrorParserRepository,
     private val fetchImageComponent: FetchImageComponent,
     private val entityManager: EntityManager,
@@ -102,12 +100,12 @@ class AnimeUpdateComponent(
                 }.awaitAll()
 
                 // Process each anime in the batch
-                animeList.mapNotNull { anime ->
+                val animeTemps = animeList.mapNotNull { anime ->
                     try {
                         val shikimori = shikimoriData.find { it?.id == anime.shikimoriId } ?: return@mapNotNull null
 
                         val readyToUpdate = updateAnime(anime, shikimori)
-                        animeRepository.saveAndFlush(readyToUpdate)
+                        readyToUpdate
                     } catch (e: Exception) {
                         logger.error("Failed to process anime ${anime.shikimoriId}", e)
                         animeErrorParserRepository.save(
@@ -119,6 +117,10 @@ class AnimeUpdateComponent(
                         )
                         null
                     }
+                }
+
+                if (animeTemps.isNotEmpty()) {
+                    animeRepository.saveAllAndFlush(animeTemps)
                 }
             } catch (e: Exception) {
                 logger.error("Failed to process batch $batchIds: ${e.message}", e)
