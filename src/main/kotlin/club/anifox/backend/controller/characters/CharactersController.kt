@@ -1,6 +1,7 @@
 package club.anifox.backend.controller.characters
 
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterFull
+import club.anifox.backend.domain.model.anime.character.AnimeCharacterSitemap
 import club.anifox.backend.service.character.CharactersService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -25,5 +26,11 @@ class CharactersController {
         @PathVariable id: String,
     ): AnimeCharacterFull {
         return charactersService.getCharacterFull(id)
+    }
+
+    @GetMapping("/sitemap")
+    @Operation(summary = "characters site map")
+    fun getCharactersSiteMap(): List<AnimeCharacterSitemap> {
+        return charactersService.getCharactersSitemap()
     }
 }

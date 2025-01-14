@@ -16,6 +16,7 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
@@ -283,5 +284,11 @@ class AnimeController {
     @Operation(summary = "anime translations")
     fun getAnimeTranslations(): List<AnimeTranslationTable> {
         return animeService.getAnimeTranslations()
+    }
+
+    @GetMapping("/sitemap")
+    @Operation(summary = "anime site map")
+    fun getAnimeSiteMap(): List<AnimeSitemap> {
+        return animeService.getAnimeSitemap()
     }
 }

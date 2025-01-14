@@ -16,6 +16,7 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.domain.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
@@ -187,5 +188,9 @@ class AnimeService : AnimeRepository {
         shikimoriId: Int?,
     ) {
         animeCommonComponent.blockAnime(url, shikimoriId)
+    }
+
+    fun getAnimeSitemap(): List<AnimeSitemap> {
+        return animeCommonComponent.getAnimeSitemap()
     }
 }

@@ -24,6 +24,7 @@ import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
@@ -625,5 +626,15 @@ class AnimeCommonComponent {
                     } ?: emptyList()
                     )
             }
+    }
+
+    fun getAnimeSitemap(): List<AnimeSitemap> {
+        return entityManager.createQuery(
+            """
+            SELECT new club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap(a.url, a.updatedAt) FROM AnimeTable a
+            """.trimIndent(),
+            AnimeSitemap::class.java,
+        )
+            .resultList
     }
 }
