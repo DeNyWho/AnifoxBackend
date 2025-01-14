@@ -178,8 +178,8 @@ class AnimeService : AnimeRepository {
         animeParseComponent.integrations()
     }
 
-    override fun updateEpisodes() {
-        animeUpdateComponent.update()
+    override fun updateEpisodes(onlyOngoing: Boolean) {
+        animeUpdateComponent.update(onlyOngoing = onlyOngoing)
     }
 
     override fun addBlocked(

@@ -40,22 +40,36 @@ class AnimeUpdateComponent(
 
     @Async
     @Transactional
-    fun update() = runBlocking {
+    fun update(
+        onlyOngoing: Boolean = false,
+    ) = runBlocking {
         val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
 
-        // Get all ongoing anime IDs in one query
-        val shikimoriIds: List<Int> = entityManager.createQuery(
-            """
+        val shikimoriIds: List<Int> = if (onlyOngoing) {
+            entityManager.createQuery(
+                """
             SELECT a.shikimoriId FROM AnimeTable a
             WHERE a.year BETWEEN :prevYear AND :currentYear
             AND a.status = :status
-            """.trimIndent(),
-            Int::class.java,
-        )
-            .setParameter("prevYear", currentYear - 1)
-            .setParameter("currentYear", currentYear)
-            .setParameter("status", AnimeStatus.Ongoing)
-            .resultList
+                """.trimIndent(),
+                Int::class.java,
+            )
+                .setParameter("prevYear", currentYear - 1)
+                .setParameter("currentYear", currentYear)
+                .setParameter("status", AnimeStatus.Ongoing)
+                .resultList
+        } else {
+            entityManager.createQuery(
+                """
+            SELECT a.shikimoriId FROM AnimeTable a
+            WHERE a.year BETWEEN :prevYear AND :currentYear
+                """.trimIndent(),
+                Int::class.java,
+            )
+                .setParameter("prevYear", currentYear - 1)
+                .setParameter("currentYear", currentYear)
+                .resultList
+        }
 
         val supervisor = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

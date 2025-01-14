@@ -65,7 +65,7 @@ interface AnimeRepository {
         searchQuery: String?,
     ): List<AnimeEpisode>
 
-    fun updateEpisodes()
+    fun updateEpisodes(onlyOngoing: Boolean)
 
     fun addBlocked(
         url: String?,

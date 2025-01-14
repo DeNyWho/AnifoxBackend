@@ -24,8 +24,17 @@ class ParserTasks {
         animeService.parseAnimeIntegrations()
     }
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
     fun updateData() {
-        animeService.updateEpisodes()
+        animeService.updateEpisodes(
+            onlyOngoing = false,
+        )
+    }
+
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
+    fun updateDataOngoingOnly() {
+        animeService.updateEpisodes(
+            onlyOngoing = true,
+        )
     }
 }
