@@ -18,6 +18,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import org.hibernate.jpa.AvailableHints
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.stream.Collectors
 
 @Component
 class AnimeUpdateComponent(
@@ -45,7 +47,7 @@ class AnimeUpdateComponent(
         try {
             val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
 
-            val shikimoriIds: List<Int> = if (onlyOngoing) {
+            val shikimoriIdsStream = if (onlyOngoing) {
                 entityManager.createQuery(
                     """
                     SELECT a.shikimoriId FROM AnimeTable a
@@ -57,7 +59,7 @@ class AnimeUpdateComponent(
                     .setParameter("prevYear", currentYear - 1)
                     .setParameter("currentYear", currentYear)
                     .setParameter("status", AnimeStatus.Ongoing)
-                    .resultList
+                    .resultStream
             } else {
                 entityManager.createQuery(
                     """
@@ -68,21 +70,33 @@ class AnimeUpdateComponent(
                 )
                     .setParameter("prevYear", currentYear - 1)
                     .setParameter("currentYear", currentYear)
-                    .resultList
+                    .resultStream
             }
 
-            logger.info("Starting update for ${shikimoriIds.size} anime entries")
+            shikimoriIdsStream.use { stream ->
+                stream.collect(Collectors.toList())
+                    .chunked(BATCH_SIZE)
+                    .forEach { batchIds ->
+                        processBatchWithRetry(batchIds, onlyOngoing)
+                    }
+            }
+        } catch (e: Exception) {
+            logger.error("Critical error in update process", e)
+            throw e
+        }
+    }
 
-            // Process in batches with supervisorScope for better error handling
-            shikimoriIds.chunked(4).forEach { batchIds ->
-                try {
+    private fun processBatchWithRetry(batchIds: List<Int>, onlyOngoing: Boolean, retryCount: Int = 3) {
+        repeat(retryCount) { attempt ->
+            try {
+                runBlocking {
                     supervisorScope {
                         val jobs = batchIds.map { id ->
                             async(Dispatchers.IO + SupervisorJob()) {
                                 try {
                                     processAnimeBatch(listOf(id))
                                 } catch (e: Exception) {
-                                    logger.error("Failed to process anime ID $id", e)
+                                    logger.error("Failed to process anime ID $id (attempt ${attempt + 1}/$retryCount)", e)
                                     animeErrorParserRepository.save(
                                         AnimeErrorParserTable(
                                             message = e.message,
@@ -95,22 +109,22 @@ class AnimeUpdateComponent(
                         }
                         jobs.awaitAll()
                     }
-                } catch (e: Exception) {
-                    logger.error("Batch processing failed for IDs: ${batchIds.joinToString()}", e)
+                }
+                return // Успешно выполнено
+            } catch (e: Exception) {
+                if (attempt == retryCount - 1) {
+                    logger.error("All retry attempts failed for batch ${batchIds.joinToString()}", e)
                     batchIds.forEach { id ->
                         animeErrorParserRepository.save(
                             AnimeErrorParserTable(
                                 message = e.message,
-                                cause = "UPDATE BATCH $onlyOngoing",
+                                cause = "UPDATE BATCH FAILED ALL RETRIES",
                                 shikimoriId = id,
                             ),
                         )
                     }
                 }
             }
-        } catch (e: Exception) {
-            logger.error("Critical error in update process", e)
-            throw e
         }
     }
 
@@ -120,19 +134,20 @@ class AnimeUpdateComponent(
             val animeList = withContext(Dispatchers.IO) {
                 entityManager.createQuery(
                     """
-                SELECT DISTINCT a FROM AnimeTable a
-                LEFT JOIN FETCH a.episodes e
-                LEFT JOIN FETCH a.screenshots
-                LEFT JOIN FETCH a.ids
-                LEFT JOIN FETCH a.images
-                LEFT JOIN FETCH a.translations
-                LEFT JOIN FETCH a.schedule
-                LEFT JOIN FETCH a.translationsCountEpisodes
-                WHERE a.shikimoriId IN :ids
+                    SELECT DISTINCT a FROM AnimeTable a
+                    LEFT JOIN FETCH a.episodes e
+                    LEFT JOIN FETCH a.screenshots
+                    LEFT JOIN FETCH a.ids
+                    LEFT JOIN FETCH a.images
+                    LEFT JOIN FETCH a.translations
+                    LEFT JOIN FETCH a.schedule
+                    LEFT JOIN FETCH a.translationsCountEpisodes
+                    WHERE a.shikimoriId IN :ids
                     """.trimIndent(),
                     AnimeTable::class.java,
                 )
                     .setParameter("ids", batchIds)
+                    .setHint(AvailableHints.HINT_FETCH_SIZE, BATCH_SIZE)
                     .resultList
             }
 
@@ -350,5 +365,9 @@ class AnimeUpdateComponent(
             println("❌ Ошибка при загрузке скриншотов: ${e.message}")
             emptyList()
         }
+    }
+
+    private companion object {
+        const val BATCH_SIZE = 4
     }
 }
