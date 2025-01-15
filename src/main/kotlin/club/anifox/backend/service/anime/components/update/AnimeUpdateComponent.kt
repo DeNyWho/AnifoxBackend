@@ -18,7 +18,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -236,8 +235,8 @@ class AnimeUpdateComponent(
 
             if (!anime.isLicensed) {
                 try {
-                    val episodesReady = withTimeout(60_000) {
-                        withContext(Dispatchers.IO) {
+                    supervisorScope {
+                        val episodesReady = async {
                             episodesComponent.fetchEpisodes(
                                 shikimoriId = anime.shikimoriId,
                                 kitsuId = anime.ids.kitsu.toString(),
@@ -245,20 +244,20 @@ class AnimeUpdateComponent(
                                 urlLinkPath = anime.url,
                                 defaultImage = anime.images.medium,
                             )
+                        }.await()
+
+                        val translationsCountReady = episodesComponent.translationsCount(episodesReady)
+
+                        anime.apply {
+                            episodes.clear()
+                            episodes.addAll(episodesReady)
+
+                            translations.clear()
+                            translations.addAll(translationsCountReady.map { it.translation }.toSet())
+
+                            translationsCountEpisodes.clear()
+                            translationsCountEpisodes.addAll(translationsCountReady)
                         }
-                    }
-
-                    val translationsCountReady = episodesComponent.translationsCount(episodesReady)
-
-                    anime.apply {
-                        episodes.clear()
-                        episodes.addAll(episodesReady)
-
-                        translations.clear()
-                        translations.addAll(translationsCountReady.map { it.translation }.toSet())
-
-                        translationsCountEpisodes.clear()
-                        translationsCountEpisodes.addAll(translationsCountReady)
                     }
                 } catch (e: Exception) {
                     logger.error("Failed to update episodes for anime ${anime.shikimoriId}", e)
