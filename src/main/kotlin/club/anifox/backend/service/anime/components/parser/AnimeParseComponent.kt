@@ -128,32 +128,50 @@ class AnimeParseComponent(
             try {
                 processData(animeTemp)
             } catch (e: Exception) {
+                println("⚠️ Error processing anime ${animeTemp.shikimoriId}: ${e.message}")
                 animeErrorParserRepository.save(
                     AnimeErrorParserTable(
                         message = e.message,
-                        cause = "INTEGRATE SIMILAR, RELATED",
+                        cause = "PARSER",
                         shikimoriId = animeTemp.shikimoriId,
                     ),
                 )
             }
         }
 
-        val supervisor = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            while (ar.nextPage != null || firstPage) {
+                supervisorScope {
+                    val jobs = ar.result
+                        .distinctBy { it.shikimoriId }
+                        .filter { !shikimoriIds.contains(it.shikimoriId) }
+                        .map { animeTemp ->
+                            async { processJob(animeTemp) }
+                        }
 
-        while (ar.nextPage != null || firstPage) {
-            val jobs = ar.result
-                .distinctBy { it.shikimoriId }
-                .filter { !shikimoriIds.contains(it.shikimoriId) }
-                .map { animeTemp ->
-                    supervisor.async { processJob(animeTemp) }
+                    try {
+                        jobs.awaitAll()
+                    } catch (e: Exception) {
+                        println("❌ Error in batch processing: ${e.message}")
+                    }
                 }
-            jobs.awaitAll()
-            firstPage = false
-            if (ar.nextPage != null) {
-                ar = client.get(ar.nextPage!!) {
-                    headers { contentType(ContentType.Application.Json) }
-                }.body()
+
+                firstPage = false
+
+                if (ar.nextPage != null) {
+                    try {
+                        ar = client.get(ar.nextPage!!) {
+                            headers { contentType(ContentType.Application.Json) }
+                        }.body()
+                    } catch (e: Exception) {
+                        println("❌ Failed to fetch next page: ${e.message}")
+                        break
+                    }
+                }
             }
+        } catch (e: Exception) {
+            println("❌ Critical error in main processing loop: ${e.message}")
+            throw e
         }
     }
 
