@@ -12,7 +12,7 @@ import club.anifox.backend.service.anime.components.parser.FetchImageComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
@@ -26,9 +26,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.stream.Collectors
 
 @Component
+@OptIn(ExperimentalCoroutinesApi::class)
 class AnimeUpdateComponent(
     private val animeErrorParserRepository: AnimeErrorParserRepository,
     private val fetchImageComponent: FetchImageComponent,
@@ -38,48 +38,45 @@ class AnimeUpdateComponent(
     private val animeRepository: AnimeRepository,
 ) {
     private val logger = LoggerFactory.getLogger(this::class.java)
+    private val limitedDispatcher = Dispatchers.IO.limitedParallelism(2)
 
     @Async
     @Transactional
-    fun update(
-        onlyOngoing: Boolean = false,
-    ) = runBlocking {
+    fun update(onlyOngoing: Boolean = false) = runBlocking(limitedDispatcher) {
         try {
             val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
 
-            val shikimoriIdsStream = if (onlyOngoing) {
-                entityManager.createQuery(
+            val shikimoriIds = withContext(Dispatchers.IO) {
+                val query = if (onlyOngoing) {
                     """
                     SELECT a.shikimoriId FROM AnimeTable a
                     WHERE a.year BETWEEN :prevYear AND :currentYear
                     AND a.status = :status
-                    """.trimIndent(),
-                    Int::class.java,
-                )
-                    .setParameter("prevYear", currentYear - 1)
-                    .setParameter("currentYear", currentYear)
-                    .setParameter("status", AnimeStatus.Ongoing)
-                    .resultStream
-            } else {
-                entityManager.createQuery(
+                    """.trimIndent()
+                } else {
                     """
                     SELECT a.shikimoriId FROM AnimeTable a
                     WHERE a.year BETWEEN :prevYear AND :currentYear
-                    """.trimIndent(),
-                    Int::class.java,
-                )
+                    """.trimIndent()
+                }
+
+                entityManager.createQuery(query, Int::class.java)
                     .setParameter("prevYear", currentYear - 1)
                     .setParameter("currentYear", currentYear)
-                    .resultStream
+                    .apply {
+                        if (onlyOngoing) {
+                            setParameter("status", AnimeStatus.Ongoing)
+                        }
+                    }
+                    .resultList
             }
 
-            shikimoriIdsStream.use { stream ->
-                stream.collect(Collectors.toList())
-                    .chunked(BATCH_SIZE)
-                    .forEach { batchIds ->
-                        processBatchWithRetry(batchIds, onlyOngoing)
-                    }
-            }
+            shikimoriIds.asSequence()
+                .chunked(BATCH_SIZE)
+                .forEach { batchIds ->
+                    processBatchWithRetry(batchIds, onlyOngoing)
+                    entityManager.clear()
+                }
         } catch (e: Exception) {
             logger.error("Critical error in update process", e)
             throw e
@@ -89,28 +86,29 @@ class AnimeUpdateComponent(
     private fun processBatchWithRetry(batchIds: List<Int>, onlyOngoing: Boolean, retryCount: Int = 3) {
         repeat(retryCount) { attempt ->
             try {
-                runBlocking {
+                runBlocking(limitedDispatcher) {
                     supervisorScope {
-                        val jobs = batchIds.map { id ->
-                            async(Dispatchers.IO + SupervisorJob()) {
+                        batchIds.map { id ->
+                            async {
                                 try {
                                     processAnimeBatch(listOf(id))
                                 } catch (e: Exception) {
                                     logger.error("Failed to process anime ID $id (attempt ${attempt + 1}/$retryCount)", e)
-                                    animeErrorParserRepository.save(
-                                        AnimeErrorParserTable(
-                                            message = e.message,
-                                            cause = "UPDATE $onlyOngoing",
-                                            shikimoriId = id,
-                                        ),
-                                    )
+                                    withContext(Dispatchers.IO) {
+                                        animeErrorParserRepository.save(
+                                            AnimeErrorParserTable(
+                                                message = e.message,
+                                                cause = "UPDATE $onlyOngoing",
+                                                shikimoriId = id,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
-                        }
-                        jobs.awaitAll()
+                        }.awaitAll()
                     }
                 }
-                return // Успешно выполнено
+                return
             } catch (e: Exception) {
                 if (attempt == retryCount - 1) {
                     logger.error("All retry attempts failed for batch ${batchIds.joinToString()}", e)
@@ -154,72 +152,81 @@ class AnimeUpdateComponent(
             logger.info("Processing batch of ${animeList.size} anime")
 
             supervisorScope {
-                // Fetch Shikimori data in parallel
-                val shikimoriData = batchIds.map { shikimoriId ->
-                    async {
+                // Process in smaller chunks with controlled memory usage
+                animeList.chunked(2).forEach { chunk ->
+                    val shikimoriData = chunk.map { anime ->
+                        async(limitedDispatcher) {
+                            try {
+                                shikimoriComponent.fetchAnime(anime.shikimoriId)
+                            } catch (e: Exception) {
+                                logger.error("Failed to fetch Shikimori data for ID ${anime.shikimoriId}", e)
+                                withContext(Dispatchers.IO) {
+                                    animeErrorParserRepository.save(
+                                        AnimeErrorParserTable(
+                                            message = e.message,
+                                            cause = "UPDATE SHIKIMORI FETCH FAILED",
+                                            shikimoriId = anime.shikimoriId,
+                                        ),
+                                    )
+                                }
+                                null
+                            }
+                        }
+                    }.awaitAll()
+
+                    val updatedAnime = chunk.mapNotNull { anime ->
                         try {
-                            shikimoriComponent.fetchAnime(shikimoriId)
+                            val shikimori = shikimoriData.find { it?.id == anime.shikimoriId }
+                            if (shikimori == null) {
+                                logger.warn("No Shikimori data found for anime ${anime.shikimoriId}")
+                                withContext(Dispatchers.IO) {
+                                    animeErrorParserRepository.save(
+                                        AnimeErrorParserTable(
+                                            message = "No Shikimori data found",
+                                            cause = "NO_SHIKIMORI_DATA",
+                                            shikimoriId = anime.shikimoriId,
+                                        ),
+                                    )
+                                }
+                                return@mapNotNull null
+                            }
+
+                            withContext(limitedDispatcher) {
+                                updateAnime(anime, shikimori)
+                            }
                         } catch (e: Exception) {
-                            logger.error("Failed to fetch Shikimori data for ID $shikimoriId", e)
-                            animeErrorParserRepository.save(
-                                AnimeErrorParserTable(
-                                    message = e.message,
-                                    cause = "UPDATE SHIKIMORI FETCH FAILED",
-                                    shikimoriId = shikimoriId,
-                                ),
-                            )
+                            logger.error("Failed to process anime ${anime.shikimoriId}", e)
+                            withContext(Dispatchers.IO) {
+                                animeErrorParserRepository.save(
+                                    AnimeErrorParserTable(
+                                        message = e.message,
+                                        cause = "UPDATE FAILED",
+                                        shikimoriId = anime.shikimoriId,
+                                    ),
+                                )
+                            }
                             null
                         }
                     }
-                }.awaitAll()
 
-                // Process each anime in the batch
-                val animeTemps = animeList.mapNotNull { anime ->
-                    try {
-                        val shikimori = shikimoriData.find { it?.id == anime.shikimoriId }
-                        if (shikimori == null) {
-                            logger.warn("No Shikimori data found for anime ${anime.shikimoriId}")
-                            animeErrorParserRepository.save(
-                                AnimeErrorParserTable(
-                                    message = "No Shikimori data found",
-                                    cause = "NO_SHIKIMORI_DATA",
-                                    shikimoriId = anime.shikimoriId,
-                                ),
-                            )
-                            return@mapNotNull null
-                        }
-
-                        withContext(Dispatchers.IO) {
-                            updateAnime(anime, shikimori)
-                        }
-                    } catch (e: Exception) {
-                        logger.error("Failed to process anime ${anime.shikimoriId}", e)
-                        animeErrorParserRepository.save(
-                            AnimeErrorParserTable(
-                                message = e.message,
-                                cause = "UPDATE FAILED",
-                                shikimoriId = anime.shikimoriId,
-                            ),
-                        )
-                        null
-                    }
-                }
-
-                if (animeTemps.isNotEmpty()) {
-                    try {
-                        withContext(Dispatchers.IO) {
-                            animeRepository.saveAllAndFlush(animeTemps)
-                        }
-                    } catch (e: Exception) {
-                        logger.error("Failed to save updated anime batch", e)
-                        animeTemps.forEach { anime ->
-                            animeErrorParserRepository.save(
-                                AnimeErrorParserTable(
-                                    message = e.message,
-                                    cause = "SAVE UPDATE FAILED",
-                                    shikimoriId = anime.shikimoriId,
-                                ),
-                            )
+                    if (updatedAnime.isNotEmpty()) {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                animeRepository.saveAllAndFlush(updatedAnime)
+                            }
+                            // Clear after save to free memory
+                            entityManager.clear()
+                        } catch (e: Exception) {
+                            logger.error("Failed to save updated anime batch", e)
+                            updatedAnime.forEach { anime ->
+                                animeErrorParserRepository.save(
+                                    AnimeErrorParserTable(
+                                        message = e.message,
+                                        cause = "SAVE UPDATE FAILED",
+                                        shikimoriId = anime.shikimoriId,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
@@ -368,6 +375,6 @@ class AnimeUpdateComponent(
     }
 
     private companion object {
-        const val BATCH_SIZE = 4
+        const val BATCH_SIZE = 2
     }
 }

@@ -82,5 +82,4 @@ jobs:
             docker load -i app.tar
             docker run -d -p 12200:12200 --env-file env.txt --log-opt max-size=50m --memory="2g" --memory-swap="2g" --name backend app
             cd /home/project/parser
-            docker run -d -p 12900:12900 --env-file env.txt --log-opt max-size=50m --memory="4g" --memory-swap="4g" --name parser app
-
+            docker run -d -p 12900:12900 --env-file env.txt --log-opt max-size=50m --memory="4g" -e JAVA_OPTS="-Xmx4G -Xms2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError" --name parser app
