@@ -145,11 +145,7 @@ class AnimeUpdateComponent(
                 val shikimoriData = batchIds.map { shikimoriId ->
                     async {
                         try {
-                            withRetry(maxAttempts = 3) {
-                                withTimeout(30_000) {
-                                    shikimoriComponent.fetchAnime(shikimoriId)
-                                }
-                            }
+                            shikimoriComponent.fetchAnime(shikimoriId)
                         } catch (e: Exception) {
                             logger.error("Failed to fetch Shikimori data for ID $shikimoriId", e)
                             animeErrorParserRepository.save(
@@ -356,27 +352,5 @@ class AnimeUpdateComponent(
             println("❌ Ошибка при загрузке скриншотов: ${e.message}")
             emptyList()
         }
-    }
-
-    private suspend fun <T> withRetry(
-        maxAttempts: Int,
-        initialDelay: Long = 1000,
-        maxDelay: Long = 10000,
-        factor: Double = 2.0,
-        block: suspend () -> T,
-    ): T {
-        var currentDelay = initialDelay
-        repeat(maxAttempts) { attempt ->
-            try {
-                return block()
-            } catch (e: Exception) {
-                if (attempt == maxAttempts - 1) throw e
-
-                logger.warn("Attempt ${attempt + 1} failed, retrying after $currentDelay ms", e)
-                delay(currentDelay)
-                currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
-            }
-        }
-        throw Exception("Retry failed after $maxAttempts attempts")
     }
 }
