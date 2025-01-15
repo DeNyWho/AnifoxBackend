@@ -94,6 +94,22 @@ tasks.withType<KotlinCompile> {
     }
 }
 
+tasks.withType<JavaExec> {
+    val profile = project.findProperty("spring.profiles.active") ?: "dev"
+
+    jvmArgs = if (profile == "parser") {
+        listOf(
+            "-Xmx4G", // больше памяти для parser профиля
+            "-Xms2G",
+        )
+    } else {
+        listOf(
+            "-Xmx2G", // стандартные значения для dev
+            "-Xms1G",
+        )
+    }
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }
