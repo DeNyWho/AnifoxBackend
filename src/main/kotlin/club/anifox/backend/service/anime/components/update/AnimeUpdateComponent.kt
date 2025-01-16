@@ -44,38 +44,53 @@ class AnimeUpdateComponent(
     @Transactional
     fun update(onlyOngoing: Boolean = false) = runBlocking(limitedDispatcher) {
         try {
+            logger.info("Starting update process with onlyOngoing=$onlyOngoing")
             val currentYear = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime().year
+            logger.info("Fetching shikimoriIds for year $currentYear")
 
             val shikimoriIds = withContext(Dispatchers.IO) {
-                val query = if (onlyOngoing) {
-                    """
-                    SELECT a.shikimoriId FROM AnimeTable a
-                    WHERE a.year BETWEEN :prevYear AND :currentYear
-                    AND a.status = :status
-                    """.trimIndent()
-                } else {
-                    """
-                    SELECT a.shikimoriId FROM AnimeTable a
-                    WHERE a.year BETWEEN :prevYear AND :currentYear
-                    """.trimIndent()
-                }
-
-                entityManager.createQuery(query, Int::class.java)
-                    .setParameter("prevYear", currentYear - 1)
-                    .setParameter("currentYear", currentYear)
-                    .apply {
-                        if (onlyOngoing) {
-                            setParameter("status", AnimeStatus.Ongoing)
-                        }
+                try {
+                    val query = if (onlyOngoing) {
+                        """
+                        SELECT a.shikimoriId FROM AnimeTable a
+                        WHERE a.year BETWEEN :prevYear AND :currentYear
+                        AND a.status = :status
+                        """.trimIndent()
+                    } else {
+                        """
+                        SELECT a.shikimoriId FROM AnimeTable a
+                        WHERE a.year BETWEEN :prevYear AND :currentYear
+                        """.trimIndent()
                     }
-                    .resultList
+
+                    entityManager.createQuery(query, Int::class.java)
+                        .setParameter("prevYear", currentYear - 1)
+                        .setParameter("currentYear", currentYear)
+                        .apply {
+                            if (onlyOngoing) {
+                                setParameter("status", AnimeStatus.Ongoing)
+                            }
+                        }
+                        .resultList
+                } catch (e: Exception) {
+                    logger.error("Failed to fetch shikimoriIds", e)
+                    throw e
+                }
             }
+
+            logger.info("Found ${shikimoriIds.size} anime to update")
 
             shikimoriIds.asSequence()
                 .chunked(BATCH_SIZE)
                 .forEach { batchIds ->
+                    logger.debug("Processing batch: ${batchIds.joinToString()}")
                     processBatchWithRetry(batchIds, onlyOngoing)
-                    entityManager.clear()
+                    logger.debug("Batch completed: ${batchIds.joinToString()}")
+                    try {
+                        entityManager.clear()
+                    } catch (e: Exception) {
+                        logger.error("Failed to clear entity manager", e)
+                    }
                 }
         } catch (e: Exception) {
             logger.error("Critical error in update process", e)

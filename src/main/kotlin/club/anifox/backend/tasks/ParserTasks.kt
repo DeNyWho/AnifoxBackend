@@ -1,6 +1,7 @@
 package club.anifox.backend.tasks
 
 import club.anifox.backend.service.anime.AnimeService
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
@@ -12,6 +13,8 @@ import java.util.concurrent.TimeUnit
 class ParserTasks {
     @Autowired
     private lateinit var animeService: AnimeService
+
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
     fun parseAnime() {
@@ -36,5 +39,29 @@ class ParserTasks {
         animeService.updateEpisodes(
             onlyOngoing = true,
         )
+    }
+
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    fun logHealthStatus() {
+        logger.info("Parser health check - Active threads: ${Thread.activeCount()}")
+        try {
+            val runtime = Runtime.getRuntime()
+            val usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
+            val freeMemory = runtime.freeMemory() / 1024 / 1024
+            val totalMemory = runtime.totalMemory() / 1024 / 1024
+            val maxMemory = runtime.maxMemory() / 1024 / 1024
+
+            logger.info(
+                """
+                Memory Usage:
+                Used Memory: $usedMemory MB
+                Free Memory: $freeMemory MB
+                Total Memory: $totalMemory MB
+                Max Memory: $maxMemory MB
+                """.trimIndent(),
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to log memory statistics", e)
+        }
     }
 }
