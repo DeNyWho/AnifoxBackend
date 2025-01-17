@@ -83,13 +83,19 @@ class AnimeUpdateComponent(
             shikimoriIds.asSequence()
                 .chunked(BATCH_SIZE)
                 .forEach { batchIds ->
-                    logger.debug("Processing batch: ${batchIds.joinToString()}")
-                    processBatchWithRetry(batchIds, onlyOngoing)
-                    logger.debug("Batch completed: ${batchIds.joinToString()}")
                     try {
-                        entityManager.clear()
+                        logger.debug("Processing batch: ${batchIds.joinToString()}")
+                        processBatchWithRetry(batchIds)
+                        logger.debug("Batch completed: ${batchIds.joinToString()}")
                     } catch (e: Exception) {
-                        logger.error("Failed to clear entity manager", e)
+                        logger.error("Failed to process batch ${batchIds.joinToString()}", e)
+                        // Continue with next batch instead of stopping
+                    } finally {
+                        try {
+                            entityManager.clear()
+                        } catch (e: Exception) {
+                            logger.error("Failed to clear entity manager", e)
+                        }
                     }
                 }
         } catch (e: Exception) {
@@ -98,43 +104,28 @@ class AnimeUpdateComponent(
         }
     }
 
-    private fun processBatchWithRetry(batchIds: List<Int>, onlyOngoing: Boolean, retryCount: Int = 3) {
-        repeat(retryCount) { attempt ->
-            try {
-                runBlocking(limitedDispatcher) {
-                    supervisorScope {
-                        batchIds.map { id ->
-                            async {
-                                try {
-                                    processAnimeBatch(listOf(id))
-                                } catch (e: Exception) {
-                                    logger.error("Failed to process anime ID $id (attempt ${attempt + 1}/$retryCount)", e)
-                                    withContext(Dispatchers.IO) {
-                                        animeErrorParserRepository.save(
-                                            AnimeErrorParserTable(
-                                                message = e.message,
-                                                cause = "UPDATE $onlyOngoing",
-                                                shikimoriId = id,
-                                            ),
-                                        )
-                                    }
-                                }
-                            }
-                        }.awaitAll()
-                    }
-                }
-                return
-            } catch (e: Exception) {
-                if (attempt == retryCount - 1) {
-                    logger.error("All retry attempts failed for batch ${batchIds.joinToString()}", e)
-                    batchIds.forEach { id ->
-                        animeErrorParserRepository.save(
-                            AnimeErrorParserTable(
-                                message = e.message,
-                                cause = "UPDATE BATCH FAILED ALL RETRIES",
-                                shikimoriId = id,
-                            ),
-                        )
+    private fun processBatchWithRetry(batchIds: List<Int>, retryCount: Int = 3) {
+        batchIds.forEach { id ->
+            var success = false
+            repeat(retryCount) { attempt ->
+                if (!success) {
+                    try {
+                        runBlocking(limitedDispatcher) {
+                            processAnimeBatch(listOf(id))
+                        }
+                        success = true
+                    } catch (e: Exception) {
+                        logger.error("Failed to process anime ID $id (attempt ${attempt + 1}/$retryCount)", e)
+                        if (attempt == retryCount - 1) {
+                            // Save error after all retries failed
+                            animeErrorParserRepository.save(
+                                AnimeErrorParserTable(
+                                    message = e.message,
+                                    cause = "UPDATE BATCH FAILED ALL RETRIES",
+                                    shikimoriId = id,
+                                ),
+                            )
+                        }
                     }
                 }
             }
