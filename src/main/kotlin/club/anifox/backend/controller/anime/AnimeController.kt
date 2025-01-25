@@ -145,8 +145,20 @@ class AnimeController {
     @Operation(summary = "similar anime")
     fun getAnimeSimilar(
         @PathVariable url: String,
+        @RequestParam(required = true)
+        @Schema(defaultValue = "0", name = "page")
+        page:
+        @Min(0)
+        @Max(500)
+        Int,
+        @RequestParam(required = true)
+        @Schema(defaultValue = "48", name = "limit")
+        limit:
+        @Min(1)
+        @Max(500)
+        Int,
     ): List<AnimeLight> {
-        return animeService.getAnimeSimilar(url)
+        return animeService.getAnimeSimilar(page, limit, url)
     }
 
     @GetMapping("/{url}/related")

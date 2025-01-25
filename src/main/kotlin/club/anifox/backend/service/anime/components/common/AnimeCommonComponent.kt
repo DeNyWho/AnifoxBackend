@@ -213,34 +213,24 @@ class AnimeCommonComponent {
         )
     }
 
-    fun getAnimeSimilar(url: String): List<AnimeLight> {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root = criteriaQuery.from(AnimeTable::class.java)
+    fun getAnimeSimilar(page: Int, limit: Int, url: String): List<AnimeLight> {
+        val animeId = entityManager.createQuery(
+            "SELECT a.id FROM AnimeTable a WHERE a.url = :url",
+            String::class.java,
+        )
+            .setParameter("url", url)
+            .singleResult
 
-        root.fetch<AnimeGenreTable, Any>("genres", JoinType.LEFT)
-        root.fetch<AnimeImagesTable, Any>("images", JoinType.LEFT)
-        root.fetch<AnimeStudioTable, Any>("studios", JoinType.LEFT)
-        root.fetch<AnimeTable, Any>("similar", JoinType.LEFT)
+        val query = entityManager.createQuery(
+            "SELECT s.similarAnime FROM AnimeSimilarTable s WHERE s.anime.id = :animeId",
+            AnimeTable::class.java,
+        )
+            .setParameter("animeId", animeId)
+            .setFirstResult(page * limit)
+            .setMaxResults(limit)
 
-        criteriaQuery.select(root)
-            .where(criteriaBuilder.equal(root.get<String>("url"), url))
-
-        val anime = entityManager.createQuery(criteriaQuery).resultList
-
-        if (anime.isEmpty()) {
-            throw NotFoundException("Anime not found")
-        } else {
-            val similarAnimeList =
-                anime[0].similar.map { similar ->
-                    similar.similarAnime.toAnimeLight()
-                }
-
-            if (similarAnimeList.isNotEmpty()) {
-                return similarAnimeList
-            }
-
-            throw NoContentException("Similar anime not found")
+        return query.resultList.map {
+            it.toAnimeLight()
         }
     }
 
