@@ -1,4 +1,5 @@
 [versions]
+apache-text = "1.13.0"
 kotlin = "2.0.20"
 kotlin-logging = "4.0.1"
 kotlin-serialization = "1.6.0"
@@ -21,6 +22,8 @@ postgresql = "42.7.2"
 imageio-webp = "3.12.0"
 
 [libraries]
+apache-text = { module = "org.apache.commons:commons-text", version.ref = "apache-text" }
+
 imageio-webp = { module = "com.twelvemonkeys.imageio:imageio-webp", version.ref = "imageio-webp" }
 
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }

@@ -16,9 +16,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
-import jakarta.persistence.criteria.Expression
 import jakarta.persistence.criteria.JoinType
-import jakarta.persistence.criteria.ListJoin
 import jakarta.persistence.criteria.Order
 import jakarta.persistence.criteria.Predicate
 import org.springframework.beans.factory.annotation.Autowired
@@ -157,49 +155,47 @@ class AnimeSearchComponent {
             }
         }
         if (!searchQuery.isNullOrEmpty()) {
-            val titleExpression: Expression<Boolean> =
-                criteriaBuilder.like(
-                    criteriaBuilder.lower(root.get("title")),
-                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
+            // Нормализуем поисковый запрос
+            val normalizedSearchQuery = normalizeText(searchQuery)
+
+            val searchFields = listOf(
+                root.get<String>("title"),
+                root.joinList<AnimeTable, String>("titleOther", JoinType.LEFT),
+                root.joinList<AnimeTable, String>("titleEn", JoinType.LEFT),
+                root.joinList<AnimeTable, String>("titleJapan", JoinType.LEFT),
+                root.joinList<AnimeTable, String>("synonyms", JoinType.LEFT),
+            )
+
+            val fuzzySearchPredicates = searchFields.map { field ->
+                criteriaBuilder.or(
+                    // Точное совпадение с нормализацией
+                    criteriaBuilder.like(
+                        criteriaBuilder.function(
+                            "REPLACE",
+                            String::class.java,
+                            criteriaBuilder.function(
+                                "REPLACE",
+                                String::class.java,
+                                criteriaBuilder.function(
+                                    "LOWER",
+                                    String::class.java,
+                                    field,
+                                ),
+                                criteriaBuilder.literal("ё"),
+                                criteriaBuilder.literal("е"),
+                            ),
+                            criteriaBuilder.literal("-"),
+                            criteriaBuilder.literal(""),
+                        ),
+                        "%$normalizedSearchQuery%",
+                    ),
                 )
+            }
 
-            val exactMatchPredicate: Predicate = criteriaBuilder.equal(root.get<String>("title"), searchQuery)
-
-            val otherTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleOther", JoinType.LEFT)
-            val otherTitlesExpression =
-                criteriaBuilder.like(
-                    criteriaBuilder.lower(otherTitlesJoin),
-                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-                )
-
-            val enTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleEn", JoinType.LEFT)
-            val enTitlesExpression =
-                criteriaBuilder.like(
-                    criteriaBuilder.lower(enTitlesJoin),
-                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-                )
-
-            val japTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("titleJapan", JoinType.LEFT)
-            val japTitlesExpression =
-                criteriaBuilder.like(
-                    criteriaBuilder.lower(japTitlesJoin),
-                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-                )
-
-            val synTitlesJoin: ListJoin<AnimeTable, String> = root.joinList("synonyms", JoinType.LEFT)
-            val synTitlesExpression =
-                criteriaBuilder.like(
-                    criteriaBuilder.lower(synTitlesJoin),
-                    "%" + searchQuery.lowercase(Locale.getDefault()) + "%",
-                )
-
-            predicates.addAll(
-                listOf(
-                    criteriaBuilder.or(titleExpression, exactMatchPredicate),
-                    criteriaBuilder.or(otherTitlesExpression),
-                    criteriaBuilder.or(enTitlesExpression),
-                    criteriaBuilder.or(japTitlesExpression),
-                    criteriaBuilder.or(synTitlesExpression),
+            // Объединяем предикаты
+            predicates.add(
+                criteriaBuilder.or(
+                    *fuzzySearchPredicates.toTypedArray(),
                 ),
             )
         }
@@ -283,5 +279,17 @@ class AnimeSearchComponent {
         query.maxResults = pageable.pageSize
 
         return query.resultList
+    }
+
+    private fun normalizeText(input: String): String {
+        return input
+            .lowercase()
+            .replace('ё', 'е')
+            .replace('щ', 'ш')
+            .replace('ъ', 'ь')
+            .replace('э', 'е')
+            .replace('ы', 'и')
+            .replace("-", "")
+            .replace(" ", "")
     }
 }

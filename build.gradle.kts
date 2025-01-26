@@ -20,6 +20,8 @@ java {
 }
 
 dependencies {
+    implementation(libs.apache.text)
+
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.logging)
     implementation(libs.kotlin.serialization)
