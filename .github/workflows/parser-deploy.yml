@@ -1,0 +1,81 @@
+name: parser-deploy
+
+on:
+  push:
+    branches:
+      - parser
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.SSH_TOKEN }}
+  SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SSH_TOKEN }}
+          submodules: 'true'
+
+      - name: Set up SSH
+        run: |
+          mkdir -p $HOME/.ssh
+          echo "$SSHK" > $HOME/.ssh/id_rsa
+          chmod 600 $HOME/.ssh/id_rsa
+          ssh-keyscan github.com >> $HOME/.ssh/known_hosts
+          git submodule update --init --recursive
+        env:
+          SSHK: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Gradlew Build
+        run: ./gradlew clean build -x test
+
+      - name: Build Docker image
+        run: docker build --build-arg JAR_FILE=build/libs/*.jar -t app .
+
+      - name: Save Docker image as tar
+        run: docker save -o app.tar app
+
+      - name: Change permissions for app.tar
+        run: chmod 755 app.tar
+
+      - name: Transfer parser files to remote server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_PARSER_HOST }}
+          username: ${{ secrets.SERVER_PARSER_USERNAME }}
+          password: ${{ secrets.SSH_PARSER_PRIVATE_KEY }}
+          source: ./app.tar
+          target: /home/project/parser
+
+      - name: SSH into remote server and run Docker container
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_PARSER_HOST }}
+          username: ${{ secrets.SERVER_PARSER_USERNAME }}
+          password: ${{ secrets.SSH_PARSER_PRIVATE_KEY }}
+          script: |
+            cd /home/project/parser
+            docker container stop parser || true
+            docker container rm parser || true
+            docker rmi app || true
+            docker load -i app.tar
+            docker run -d -p 12900:12900 --env-file env.txt --log-opt max-size=50m --name parser app
