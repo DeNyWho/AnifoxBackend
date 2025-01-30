@@ -27,6 +27,8 @@ data class AnimeEpisodeTable(
     var description: String? = "",
     @Column(nullable = false)
     val number: Int = 0,
+    @Column(nullable = true)
+    val duration: Int? = null,
     @Column(nullable = false)
     var image: String = "",
     @Column(nullable = true)

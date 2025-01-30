@@ -170,7 +170,7 @@ class AnimeParseComponent(
     fun integrations() {
         runBlocking {
             val integrationJobs = listOf(
-                async { integrateSimilarRelatedFranchise() },
+//                async { integrateSimilarRelatedFranchise() },
                 async { integrateCharacters() },
             )
             integrationJobs.awaitAll()
@@ -791,8 +791,10 @@ class AnimeParseComponent(
                     )
 
                     val translationsCountReady = episodesComponent.translationsCount(episodesReady)
-
                     val translations = translationsCountReady.map { it.translation }
+
+                    val durations = episodesReady.map { it.duration ?: 0 }
+                    val duration = durations.sumOf { it }
 
                     val videos = try {
                         videosShikimoriDeferred.await().let { videosList ->
@@ -927,6 +929,11 @@ class AnimeParseComponent(
                                 medium = images.medium,
                                 cover = images.cover ?: "",
                             ),
+                            duration = if (episodesReady.size * 16 < duration && status == AnimeStatus.Released) {
+                                duration
+                            } else {
+                                null
+                            },
                             screenshots = screenshots,
                             shikimoriRating = shikimoriRating,
                             shikimoriVotes = userRatesStats,

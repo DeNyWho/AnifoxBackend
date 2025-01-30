@@ -78,6 +78,8 @@ data class AnimeTable(
     @BatchSize(size = 10)
     @JoinTable(schema = "anime")
     val episodes: MutableSet<AnimeEpisodeTable> = mutableSetOf(),
+    @Column(nullable = true)
+    var duration: Int? = null,
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @BatchSize(size = 10)
     @JoinTable(schema = "anime")

@@ -15,6 +15,8 @@ data class KitsuEpisodeAttributesDto(
     val relativeNumber: Int? = null,
     @SerialName("airdate")
     val airDate: String? = null,
+    @SerialName("length")
+    val length: Int? = null,
     @SerialName("thumbnail")
     val thumbnail: KitsuEpisodeThumbnail? = null,
 )

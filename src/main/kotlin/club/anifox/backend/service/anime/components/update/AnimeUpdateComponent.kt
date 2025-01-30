@@ -228,6 +228,14 @@ class AnimeUpdateComponent(
 
                     translationsCountEpisodes.clear()
                     translationsCountEpisodes.addAll(translationsCount)
+
+                    this.duration = this.duration?.let { duration ->
+                        if (this.status == AnimeStatus.Released && episodes.size * 16 < duration) {
+                            duration
+                        } else {
+                            null
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 logError(anime.shikimoriId, "EPISODES_UPDATE_FAILED", e.message)

@@ -338,6 +338,7 @@ class EpisodesComponent {
             description = descriptionRu,
             descriptionEn = kitsuEpisode?.attributes?.description.orEmpty(),
             number = kitsuNumber,
+            duration = kitsuEpisode?.attributes?.length,
             image = imageEpisode.takeIf { it.length > 5 } ?: imageDefault,
             filler = jikanEpisode?.filler ?: false,
             recap = jikanEpisode?.recap ?: false,
