@@ -120,11 +120,6 @@ data class AnimeTable(
     val airedOn: LocalDate = LocalDate.now(),
     val releasedOn: LocalDate? = null,
     var updatedAt: LocalDateTime? = null,
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "licensors", schema = "anime")
-    @Column(columnDefinition = "text")
-    @BatchSize(size = 10)
-    val licensors: MutableList<String> = mutableListOf(),
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @BatchSize(size = 10)
     @JoinTable(schema = "anime")
@@ -280,11 +275,6 @@ data class AnimeTable(
 
     fun addExternalLinks(externalLinksList: List<AnimeExternalLinksTable>): AnimeTable {
         this.externalLinks.addAll(externalLinksList)
-        return this
-    }
-
-    fun addLicensors(licensorsList: List<String>): AnimeTable {
-        this.licensors.addAll(licensorsList)
         return this
     }
 

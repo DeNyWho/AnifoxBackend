@@ -174,8 +174,17 @@ class AnimeUpdateComponent(
                 return@coroutineScope null
             }
 
-            val updatedAnime = updateAnimeDetails(anime, shikimori)
-            updatedAnime
+            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
+            val isLicensed = licensors.isNotEmpty()
+
+            if (!isLicensed) {
+                val updatedAnime = updateAnimeDetails(anime, shikimori)
+                updatedAnime
+            } else {
+                animeBlockComponent.blockAnime(anime.url)
+                logError(anime.shikimoriId, "ANIME_UPDATE_FAILED", "THIS ANIME IS BLOCKED")
+                null
+            }
         } catch (e: Exception) {
             logError(anime.shikimoriId, "UPDATE_FAILED", e.message)
             null
@@ -196,41 +205,32 @@ class AnimeUpdateComponent(
                 anime.screenshots.addAll(screenshotsDeferred.await())
             }
 
-            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
-            val isLicensed = licensors.isNotEmpty()
-
-            if (!isLicensed) {
-                try {
-                    val episodesDeferred = async {
-                        episodesComponent.fetchEpisodes(
-                            shikimoriId = anime.shikimoriId,
-                            kitsuId = anime.ids.kitsu.toString(),
-                            type = anime.type,
-                            urlLinkPath = anime.url,
-                            defaultImage = anime.images.medium,
-                        )
-                    }
-
-                    val episodes = episodesDeferred.await()
-                    val translationsCount = episodesComponent.translationsCount(episodes)
-
-                    anime.apply {
-                        this.episodes.clear()
-                        this.episodes.addAll(episodes)
-
-                        translations.clear()
-                        translations.addAll(translationsCount.map { it.translation }.toSet())
-
-                        translationsCountEpisodes.clear()
-                        translationsCountEpisodes.addAll(translationsCount)
-                    }
-                } catch (e: Exception) {
-                    logError(anime.shikimoriId, "EPISODES_UPDATE_FAILED", e.message)
+            try {
+                val episodesDeferred = async {
+                    episodesComponent.fetchEpisodes(
+                        shikimoriId = anime.shikimoriId,
+                        kitsuId = anime.ids.kitsu.toString(),
+                        type = anime.type,
+                        urlLinkPath = anime.url,
+                        defaultImage = anime.images.medium,
+                    )
                 }
-            } else {
-                animeBlockComponent.blockAnime(anime.url)
-                logError(anime.shikimoriId, "ANIME_UPDATE_FAILED", "THIS ANIME IS BLOCKED")
-                throw IllegalArgumentException()
+
+                val episodes = episodesDeferred.await()
+                val translationsCount = episodesComponent.translationsCount(episodes)
+
+                anime.apply {
+                    this.episodes.clear()
+                    this.episodes.addAll(episodes)
+
+                    translations.clear()
+                    translations.addAll(translationsCount.map { it.translation }.toSet())
+
+                    translationsCountEpisodes.clear()
+                    translationsCountEpisodes.addAll(translationsCount)
+                }
+            } catch (e: Exception) {
+                logError(anime.shikimoriId, "EPISODES_UPDATE_FAILED", e.message)
             }
 
             updateAnimeFromShikimori(anime, shikimori)
@@ -261,7 +261,7 @@ class AnimeUpdateComponent(
         try {
             animeErrorParserRepository.save(
                 AnimeErrorParserTable(
-                    message = message,
+                    message = message ?: "FAILED",
                     cause = cause,
                     shikimoriId = shikimoriId,
                 ),

@@ -948,9 +948,6 @@ class AnimeParseComponent(
                     animeToSave.addAllAnimeStudios(studios)
                     animeToSave.addVideos(videos)
                     animeToSave.addExternalLinks(externalLinks)
-                    if (licensors != null) {
-                        animeToSave.addLicensors(licensors)
-                    }
 
                     val preparationToSaveAnime = animeRepository.findByShikimoriId(shikimori.id)
                     if (preparationToSaveAnime.isPresent) {
