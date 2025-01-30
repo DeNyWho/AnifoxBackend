@@ -429,11 +429,14 @@ class AnimeCommonComponent {
         val query = entityManager.createQuery(criteriaQuery)
         val anime = query.resultList
 
+        entityManager.flush()
+
         if (anime.isNotEmpty()) {
             val animeEntity = anime[0]
+            val shikimoriIdEntity = animeEntity.shikimoriId
 
             animeEntity.apply {
-//                related.clear()
+                related.clear()
                 episodes.clear()
                 translationsCountEpisodes.clear()
                 translations.clear()
@@ -451,10 +454,10 @@ class AnimeCommonComponent {
                 screenshots.clear()
                 ids = AnimeIdsTable()
                 images = AnimeImagesTable()
-                franchiseMultiple.clear()
             }
 
             entityManager.remove(animeEntity)
+            entityManager.flush()
 
             if (animeEntity.url.isNotEmpty()) {
                 CompressAnimeImageType.entries.forEach { imageType ->
@@ -464,7 +467,7 @@ class AnimeCommonComponent {
 
             val animeBlocked =
                 AnimeBlockedTable(
-                    shikimoriID = animeEntity.shikimoriId,
+                    shikimoriID = shikimoriIdEntity,
                 )
 
             animeBlockedRepository.saveAndFlush(animeBlocked)

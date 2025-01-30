@@ -197,18 +197,14 @@ data class AnimeTable(
         schema = "anime",
     )
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
-    @ManyToMany(
+    @OneToMany(
+        mappedBy = "anime",
         fetch = FetchType.LAZY,
-        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
     )
     @BatchSize(size = 10)
-    @JoinTable(
-        name = "anime_franchise",
-        joinColumns = [JoinColumn(name = "anime_id", referencedColumnName = "id")],
-        inverseJoinColumns = [JoinColumn(name = "franchise_id", referencedColumnName = "id")],
-        schema = "anime",
-    )
-    var franchiseMultiple: MutableSet<AnimeFranchiseTable> = mutableSetOf(),
+    val franchiseMultiple: MutableSet<AnimeFranchiseTable> = mutableSetOf(),
     var shikimoriRating: Double = 0.0,
     var shikimoriVotes: Int = 0,
     val ratingMpa: String = "",

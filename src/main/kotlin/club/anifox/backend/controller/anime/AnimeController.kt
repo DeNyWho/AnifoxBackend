@@ -32,6 +32,7 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -116,17 +117,14 @@ class AnimeController {
         )
     }
 
-    /*
-        TODO: REWORK BLOCKED REQUEST
-     */
-//    @PostMapping("/block")
-//    fun addBlockedAnime(
-//        @RequestHeader(value = "Authorization") token: String,
-//        @RequestParam(required = false) url: String?,
-//        @RequestParam(required = false) shikimoriId: Int?,
-//    ) {
-//        animeService.addBlocked(url, shikimoriId)
-//    }
+    @PostMapping("/block")
+    fun addBlockedAnime(
+        @RequestHeader(value = "Authorization") token: String,
+        @RequestParam(required = false) url: String?,
+        @RequestParam(required = false) shikimoriId: Int?,
+    ) {
+        animeService.addBlocked(url, shikimoriId)
+    }
 
     @GetMapping("/{url}")
     @Operation(summary = "detail anime")

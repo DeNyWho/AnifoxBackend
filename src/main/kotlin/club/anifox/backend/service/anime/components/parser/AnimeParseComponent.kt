@@ -251,6 +251,7 @@ class AnimeParseComponent(
                                         else -> AnimeRelationFranchise.Other
                                     }
                                     AnimeFranchiseTable(
+                                        anime = anime,
                                         source = animeToSource.get(),
                                         target = animeToTarget.get(),
                                         relationType = relationType,
