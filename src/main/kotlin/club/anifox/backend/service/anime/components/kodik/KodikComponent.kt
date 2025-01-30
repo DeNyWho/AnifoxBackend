@@ -48,7 +48,7 @@ class KodikComponent {
             parameter("limit", 100)
             parameter("sort", "shikimori_rating")
             parameter("order", "desc")
-            parameter("year", "${LocalDate.now().year}, ${LocalDate.now().year - 1}")
+//            parameter("year", "${LocalDate.now().year}, ${LocalDate.now().year - 1}")
             parameter("types", "anime-serial, anime")
             parameter("camrip", false)
             parameter("with_episodes_data", true)
