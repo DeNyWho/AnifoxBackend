@@ -125,8 +125,6 @@ data class AnimeTable(
     @Column(columnDefinition = "text")
     @BatchSize(size = 10)
     val licensors: MutableList<String> = mutableListOf(),
-    @Column(nullable = false)
-    val isLicensed: Boolean = false,
     @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     @BatchSize(size = 10)
     @JoinTable(schema = "anime")

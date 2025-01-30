@@ -7,6 +7,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
+import club.anifox.backend.service.anime.components.block.AnimeBlockComponent
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.parser.FetchImageComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
@@ -36,6 +37,7 @@ class AnimeUpdateComponent(
     private val episodesComponent: EpisodesComponent,
     private val shikimoriComponent: AnimeShikimoriComponent,
     private val animeRepository: AnimeRepository,
+    private val animeBlockComponent: AnimeBlockComponent,
 ) {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val coroutineScope = CoroutineScope(SupervisorJob())
@@ -194,7 +196,10 @@ class AnimeUpdateComponent(
                 anime.screenshots.addAll(screenshotsDeferred.await())
             }
 
-            if (!anime.isLicensed) {
+            val licensors = shikimori.licensors.filter { it == "DEEP" || it == "Экспонента" || it == "Вольга" }
+            val isLicensed = licensors.isNotEmpty()
+
+            if (!isLicensed) {
                 try {
                     val episodesDeferred = async {
                         episodesComponent.fetchEpisodes(
@@ -222,6 +227,10 @@ class AnimeUpdateComponent(
                 } catch (e: Exception) {
                     logError(anime.shikimoriId, "EPISODES_UPDATE_FAILED", e.message)
                 }
+            } else {
+                animeBlockComponent.blockAnime(anime.url)
+                logError(anime.shikimoriId, "ANIME_UPDATE_FAILED", "THIS ANIME IS BLOCKED")
+                throw IllegalArgumentException()
             }
 
             updateAnimeFromShikimori(anime, shikimori)

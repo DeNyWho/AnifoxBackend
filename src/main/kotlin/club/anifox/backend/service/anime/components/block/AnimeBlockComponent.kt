@@ -28,8 +28,8 @@ class AnimeBlockComponent {
 
     @Transactional
     fun blockAnime(
-        url: String?,
-        shikimoriId: Int?,
+        url: String? = null,
+        shikimoriId: Int? = null,
     ) {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
