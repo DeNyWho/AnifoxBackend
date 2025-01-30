@@ -3,7 +3,6 @@ package club.anifox.backend.service.anime.components.common
 import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
-import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
@@ -25,14 +24,12 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
-import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
@@ -401,85 +398,6 @@ class AnimeCommonComponent {
             }
         } else {
             episodes.map { it.toAnimeEpisodeLight() }
-        }
-    }
-
-    /*
-        TODO: REWORK BLOCKED REQUEST
-     */
-    @Transactional
-    fun blockAnime(
-        url: String?,
-        shikimoriId: Int?,
-    ) {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
-        val root = criteriaQuery.from(AnimeTable::class.java)
-
-        root.fetch<AnimeTable, Any>("episodes", JoinType.LEFT)
-
-        val predicate =
-            when {
-                url?.isNotEmpty() == true -> criteriaBuilder.equal(root.get<String>("url"), url)
-                shikimoriId != null -> criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId)
-                else -> return
-            }
-        criteriaQuery.where(predicate)
-
-        val query = entityManager.createQuery(criteriaQuery)
-        val anime = query.resultList
-
-        entityManager.flush()
-
-        if (anime.isNotEmpty()) {
-            val animeEntity = anime[0]
-            val shikimoriIdEntity = animeEntity.shikimoriId
-
-            animeEntity.apply {
-                related.clear()
-                episodes.clear()
-                translationsCountEpisodes.clear()
-                translations.clear()
-                favorites.clear()
-                rating.clear()
-                videos.clear()
-                genres.clear()
-                studios.clear()
-                titleEn.clear()
-                titleJapan.clear()
-                synonyms.clear()
-                titleOther.clear()
-                episodes.clear()
-                similar.clear()
-                screenshots.clear()
-                ids = AnimeIdsTable()
-                images = AnimeImagesTable()
-            }
-
-            entityManager.remove(animeEntity)
-            entityManager.flush()
-
-            if (animeEntity.url.isNotEmpty()) {
-                CompressAnimeImageType.entries.forEach { imageType ->
-                    imageService.deleteObjectsInFolder("images/anime/${imageType.path}/${animeEntity.url}/")
-                }
-            }
-
-            val animeBlocked =
-                AnimeBlockedTable(
-                    shikimoriID = shikimoriIdEntity,
-                )
-
-            animeBlockedRepository.saveAndFlush(animeBlocked)
-        } else {
-            if (shikimoriId != null) {
-                val animeBlocked =
-                    AnimeBlockedTable(
-                        shikimoriID = shikimoriId,
-                    )
-
-                animeBlockedRepository.saveAndFlush(animeBlocked)
-            }
         }
     }
 

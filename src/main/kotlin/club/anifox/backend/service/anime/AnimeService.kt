@@ -21,6 +21,7 @@ import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.domain.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
+import club.anifox.backend.service.anime.components.block.AnimeBlockComponent
 import club.anifox.backend.service.anime.components.common.AnimeCommonComponent
 import club.anifox.backend.service.anime.components.episodes.AnimeTranslationsComponent
 import club.anifox.backend.service.anime.components.parser.AnimeParseComponent
@@ -37,6 +38,9 @@ class AnimeService : AnimeRepository {
 
     @Autowired
     private lateinit var animeCommonComponent: AnimeCommonComponent
+
+    @Autowired
+    private lateinit var animeBlockComponent: AnimeBlockComponent
 
     @Autowired
     private lateinit var animeTranslationsComponent: AnimeTranslationsComponent
@@ -187,7 +191,7 @@ class AnimeService : AnimeRepository {
         url: String?,
         shikimoriId: Int?,
     ) {
-        animeCommonComponent.blockAnime(url, shikimoriId)
+        animeBlockComponent.blockAnime(url, shikimoriId)
     }
 
     fun getAnimeSitemap(): List<AnimeSitemap> {
