@@ -235,7 +235,7 @@ class AnimeUpdateComponent(
 
             updateAnimeFromShikimori(anime, shikimori)
         } catch (e: Exception) {
-            logError(anime.shikimoriId, "ANIME_UPDATE_FAILED", e.message)
+            logError(anime.shikimoriId, "ANIME_UPDATE_FAILED", e.message ?: "FAILED ")
             throw e
         }
     }
