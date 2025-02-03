@@ -7,7 +7,6 @@ import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriAnimeIdDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriMangaIdDto
 import club.anifox.backend.domain.enums.anime.AnimeExternalLinksType
-import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
@@ -124,6 +123,7 @@ class AnimeParseComponent(
 
                 do {
                     val batchToProcess = ar.result
+                        .shuffled()
                         .distinctBy { it.shikimoriId }
                         .filter { !shikimoriIds.contains(it.shikimoriId) }
 
@@ -170,8 +170,8 @@ class AnimeParseComponent(
     fun integrations() {
         runBlocking {
             val integrationJobs = listOf(
-//                async { integrateSimilarRelatedFranchise() },
-                async { integrateCharacters() },
+                async { integrateSimilarRelatedFranchise() },
+//                async { integrateCharacters() },
             )
             integrationJobs.awaitAll()
         }
@@ -203,72 +203,72 @@ class AnimeParseComponent(
                     .resultList
                     .first()
 
-                val similarShikimoriIds = shikimoriComponent.fetchSimilar(shikimoriId)
+//                val similarShikimoriIds = shikimoriComponent.fetchSimilar(shikimoriId)
                 val relatedShikimori = shikimoriComponent.fetchRelated(shikimoriId)
-                val franchiseShikimori = shikimoriComponent.fetchFranchise(shikimoriId)
+//                val franchiseShikimori = shikimoriComponent.fetchFranchise(shikimoriId)
 
-                val similar = animeSimilarRepository.saveAll(
-                    similarShikimoriIds.mapNotNull { id ->
-                        val animeToSimilar = animeRepository.findByShikimoriId(id)
-                        if (animeToSimilar.isPresent) {
-                            val existingSimilar = anime.similar.any { it.similarAnime.id == animeToSimilar.get().id }
-                            if (!existingSimilar) {
-                                AnimeSimilarTable(
-                                    anime = anime,
-                                    similarAnime = animeToSimilar.get(),
-                                )
-                            } else {
-                                null
-                            }
-                        } else {
-                            null
-                        }
-                    },
-                )
-
-                val franchise = if (anime.franchise != null) {
-                    animeFranchiseRepository.saveAll(
-                        franchiseShikimori.links.mapNotNull { fran ->
-                            val animeToTarget = animeRepository.findByShikimoriId(fran.targetId)
-                            val animeToSource = animeRepository.findByShikimoriId(fran.sourceId)
-                            if (animeToTarget.isPresent && animeToSource.isPresent) {
-                                val existingFranchise = anime.franchiseMultiple.any {
-                                    it.target.shikimoriId == animeToTarget.get().shikimoriId &&
-                                        it.source.shikimoriId == animeToSource.get().shikimoriId
-                                }
-                                if (!existingFranchise) {
-                                    val relationType = when (fran.relation) {
-                                        "sequel" -> AnimeRelationFranchise.Sequel
-                                        "prequel" -> AnimeRelationFranchise.Prequel
-                                        "side_story" -> AnimeRelationFranchise.SideStory
-                                        "parent_story", "full_story" -> AnimeRelationFranchise.SideStory
-                                        "summary" -> AnimeRelationFranchise.Summary
-                                        "alternative_version" -> AnimeRelationFranchise.AlternativeVersion
-                                        "adaptation" -> AnimeRelationFranchise.Adaptation
-                                        "alternative_setting" -> AnimeRelationFranchise.AlternativeSetting
-                                        "spin_off" -> AnimeRelationFranchise.SpinOff
-                                        "character" -> AnimeRelationFranchise.Character
-                                        else -> AnimeRelationFranchise.Other
-                                    }
-                                    AnimeFranchiseTable(
-                                        anime = anime,
-                                        source = animeToSource.get(),
-                                        target = animeToTarget.get(),
-                                        relationType = relationType,
-                                        relationTypeRus = relationType.russian,
-                                        urlPath = anime.franchise!!,
-                                    )
-                                } else {
-                                    null
-                                }
-                            } else {
-                                null
-                            }
-                        },
-                    )
-                } else {
-                    null
-                }
+//                val similar = animeSimilarRepository.saveAll(
+//                    similarShikimoriIds.mapNotNull { id ->
+//                        val animeToSimilar = animeRepository.findByShikimoriId(id)
+//                        if (animeToSimilar.isPresent) {
+//                            val existingSimilar = anime.similar.any { it.similarAnime.id == animeToSimilar.get().id }
+//                            if (!existingSimilar) {
+//                                AnimeSimilarTable(
+//                                    anime = anime,
+//                                    similarAnime = animeToSimilar.get(),
+//                                )
+//                            } else {
+//                                null
+//                            }
+//                        } else {
+//                            null
+//                        }
+//                    },
+//                )
+//
+//                val franchise = if (anime.franchise != null) {
+//                    animeFranchiseRepository.saveAll(
+//                        franchiseShikimori.links.mapNotNull { fran ->
+//                            val animeToTarget = animeRepository.findByShikimoriId(fran.targetId)
+//                            val animeToSource = animeRepository.findByShikimoriId(fran.sourceId)
+//                            if (animeToTarget.isPresent && animeToSource.isPresent) {
+//                                val existingFranchise = anime.franchiseMultiple.any {
+//                                    it.target.shikimoriId == animeToTarget.get().shikimoriId &&
+//                                        it.source.shikimoriId == animeToSource.get().shikimoriId
+//                                }
+//                                if (!existingFranchise) {
+//                                    val relationType = when (fran.relation) {
+//                                        "sequel" -> AnimeRelationFranchise.Sequel
+//                                        "prequel" -> AnimeRelationFranchise.Prequel
+//                                        "side_story" -> AnimeRelationFranchise.SideStory
+//                                        "parent_story", "full_story" -> AnimeRelationFranchise.SideStory
+//                                        "summary" -> AnimeRelationFranchise.Summary
+//                                        "alternative_version" -> AnimeRelationFranchise.AlternativeVersion
+//                                        "adaptation" -> AnimeRelationFranchise.Adaptation
+//                                        "alternative_setting" -> AnimeRelationFranchise.AlternativeSetting
+//                                        "spin_off" -> AnimeRelationFranchise.SpinOff
+//                                        "character" -> AnimeRelationFranchise.Character
+//                                        else -> AnimeRelationFranchise.Other
+//                                    }
+//                                    AnimeFranchiseTable(
+//                                        anime = anime,
+//                                        source = animeToSource.get(),
+//                                        target = animeToTarget.get(),
+//                                        relationType = relationType,
+//                                        relationTypeRus = relationType.russian,
+//                                        urlPath = anime.franchise!!,
+//                                    )
+//                                } else {
+//                                    null
+//                                }
+//                            } else {
+//                                null
+//                            }
+//                        },
+//                    )
+//                } else {
+//                    null
+//                }
 
                 val related = animeRelatedRepository.saveAll(
                     relatedShikimori.mapNotNull { relation ->
@@ -295,10 +295,14 @@ class AnimeParseComponent(
                     },
                 )
 
-                if (similar.isNotEmpty() || related.isNotEmpty() || !franchise.isNullOrEmpty()) {
-                    anime.addSimilar(similar)
+//                if (similar.isNotEmpty() || related.isNotEmpty() || !franchise.isNullOrEmpty()) {
+//                    anime.addSimilar(similar)
+//                    anime.addRelation(related)
+//                    franchise?.let { anime.addFranchiseMultiple(it) }
+//                    animeRepository.saveAndFlush(anime)
+//                }
+                if (related.isNotEmpty()) {
                     anime.addRelation(related)
-                    franchise?.let { anime.addFranchiseMultiple(it) }
                     animeRepository.saveAndFlush(anime)
                 }
             } catch (e: Exception) {

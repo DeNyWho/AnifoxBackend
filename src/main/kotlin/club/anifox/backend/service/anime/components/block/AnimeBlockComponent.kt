@@ -54,11 +54,37 @@ class AnimeBlockComponent {
             val animeEntity = anime[0]
             val shikimoriIdEntity = animeEntity.shikimoriId
 
-            entityManager.createQuery("DELETE FROM AnimeRelatedTable r WHERE r.anime.id = :animeId OR r.relatedAnime.id = :animeId")
+            // Delete franchise relationships in all directions
+            entityManager.createQuery(
+                """
+                DELETE FROM AnimeFranchiseTable f
+                WHERE f.anime.id = :animeId
+                OR f.source.id = :animeId
+                OR f.target.id = :animeId
+            """,
+            )
                 .setParameter("animeId", animeEntity.id)
                 .executeUpdate()
 
-            entityManager.createQuery("DELETE FROM AnimeSimilarTable s WHERE s.anime.id = :animeId OR s.similarAnime.id = :animeId")
+            // Delete related anime relationships in both directions
+            entityManager.createQuery(
+                """
+                DELETE FROM AnimeRelatedTable r
+                WHERE r.anime.id = :animeId
+                OR r.relatedAnime.id = :animeId
+            """,
+            )
+                .setParameter("animeId", animeEntity.id)
+                .executeUpdate()
+
+            // Delete similar anime relationships in both directions
+            entityManager.createQuery(
+                """
+                DELETE FROM AnimeSimilarTable s
+                WHERE s.anime.id = :animeId
+                OR s.similarAnime.id = :animeId
+            """,
+            )
                 .setParameter("animeId", animeEntity.id)
                 .executeUpdate()
 
@@ -78,6 +104,8 @@ class AnimeBlockComponent {
                 episodes.clear()
                 screenshots.clear()
                 franchiseMultiple.clear()
+                similar.clear()
+                related.clear()
                 ids = AnimeIdsTable()
                 images = AnimeImagesTable()
             }
