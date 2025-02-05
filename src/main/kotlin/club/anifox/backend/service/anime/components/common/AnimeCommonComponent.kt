@@ -449,8 +449,8 @@ class AnimeCommonComponent {
                             criteriaBuilder.literal(startOfDay),
                             criteriaBuilder.literal(endOfDay),
                         ),
-                        criteriaBuilder.isNotNull(scheduleRoot.get<LocalDateTime>("nextEpisodeDate"))
-                    )
+                        criteriaBuilder.isNotNull(scheduleRoot.get<LocalDateTime>("nextEpisodeDate")),
+                    ),
                 )
             }
 
@@ -459,7 +459,7 @@ class AnimeCommonComponent {
 
         criteriaQuery.where(*predicates.toTypedArray())
         criteriaQuery.orderBy(
-            criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate"))
+            criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate")),
         )
 
         val allSchedules = entityManager.createQuery(criteriaQuery).resultList
