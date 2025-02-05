@@ -103,7 +103,6 @@ class AnimeBlockComponent {
                 titleOther.clear()
                 episodes.clear()
                 screenshots.clear()
-                franchiseMultiple.clear()
                 similar.clear()
                 related.clear()
                 ids = AnimeIdsTable()

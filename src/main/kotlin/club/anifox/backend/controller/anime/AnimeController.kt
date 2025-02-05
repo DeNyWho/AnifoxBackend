@@ -1,13 +1,11 @@
 package club.anifox.backend.controller.anime
 
-import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -206,15 +204,6 @@ class AnimeController {
         search: String?,
     ): AnimeCharacterResponse {
         return animeService.getAnimeCharacters(page, limit, url, role, search)
-    }
-
-    @GetMapping("/{url}/franchise")
-    @Operation(summary = "anime franchise")
-    fun getAnimeFranchise(
-        @PathVariable url: String,
-        type: AnimeRelationFranchise?,
-    ): List<AnimeFranchise> {
-        return animeService.getAnimeFranchises(url, type)
     }
 
     @GetMapping("/{url}/episodes")

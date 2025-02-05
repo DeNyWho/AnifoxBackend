@@ -18,7 +18,6 @@ import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
@@ -32,7 +31,6 @@ import club.anifox.backend.jpa.repository.anime.AnimeCharacterRepository
 import club.anifox.backend.jpa.repository.anime.AnimeCharacterRoleRepository
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeExternalLinksRepository
-import club.anifox.backend.jpa.repository.anime.AnimeFranchiseRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRelatedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
@@ -64,10 +62,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.net.URL
 import java.time.LocalDate
@@ -94,7 +94,6 @@ class AnimeParseComponent(
     private val animeVideoRepository: AnimeVideoRepository,
     private val animeRelatedRepository: AnimeRelatedRepository,
     private val animeSimilarRepository: AnimeSimilarRepository,
-    private val animeFranchiseRepository: AnimeFranchiseRepository,
     private val animeExternalLinksRepository: AnimeExternalLinksRepository,
     private val animeCharacterRoleRepository: AnimeCharacterRoleRepository,
     private val animeCharacterRepository: AnimeCharacterRepository,
@@ -166,18 +165,16 @@ class AnimeParseComponent(
         }
     }
 
-    @Async
-    fun integrations() {
-        runBlocking {
-            val integrationJobs = listOf(
-                async { integrateSimilarRelatedFranchise() },
-//                async { integrateCharacters() },
-            )
-            integrationJobs.awaitAll()
-        }
+    fun integrations() = CoroutineScope(Dispatchers.IO).launch {
+        val integrationJobs = listOf(
+            async { integrateSimilarRelated() },
+            async { integrateCharacters() },
+        )
+        integrationJobs.awaitAll()
     }
 
-    private suspend fun integrateSimilarRelatedFranchise() {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private suspend fun integrateSimilarRelated() {
         val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
         val criteriaQueryShikimori: CriteriaQuery<Int> = criteriaBuilder.createQuery(Int::class.java)
         val shikimoriRoot = criteriaQueryShikimori.from(AnimeTable::class.java)
@@ -193,7 +190,6 @@ class AnimeParseComponent(
 
                 root.fetch<AnimeSimilarTable, Any>("similar", JoinType.LEFT)
                 root.fetch<AnimeRelatedTable, Any>("related", JoinType.LEFT)
-                root.fetch<AnimeFranchiseTable, Any>("franchiseMultiple", JoinType.LEFT)
 
                 criteriaQuery.select(root)
                     .where(criteriaBuilder.equal(root.get<Int>("shikimoriId"), shikimoriId))
@@ -203,72 +199,27 @@ class AnimeParseComponent(
                     .resultList
                     .first()
 
-//                val similarShikimoriIds = shikimoriComponent.fetchSimilar(shikimoriId)
+                val similarShikimoriIds = shikimoriComponent.fetchSimilar(shikimoriId)
                 val relatedShikimori = shikimoriComponent.fetchRelated(shikimoriId)
-//                val franchiseShikimori = shikimoriComponent.fetchFranchise(shikimoriId)
 
-//                val similar = animeSimilarRepository.saveAll(
-//                    similarShikimoriIds.mapNotNull { id ->
-//                        val animeToSimilar = animeRepository.findByShikimoriId(id)
-//                        if (animeToSimilar.isPresent) {
-//                            val existingSimilar = anime.similar.any { it.similarAnime.id == animeToSimilar.get().id }
-//                            if (!existingSimilar) {
-//                                AnimeSimilarTable(
-//                                    anime = anime,
-//                                    similarAnime = animeToSimilar.get(),
-//                                )
-//                            } else {
-//                                null
-//                            }
-//                        } else {
-//                            null
-//                        }
-//                    },
-//                )
-//
-//                val franchise = if (anime.franchise != null) {
-//                    animeFranchiseRepository.saveAll(
-//                        franchiseShikimori.links.mapNotNull { fran ->
-//                            val animeToTarget = animeRepository.findByShikimoriId(fran.targetId)
-//                            val animeToSource = animeRepository.findByShikimoriId(fran.sourceId)
-//                            if (animeToTarget.isPresent && animeToSource.isPresent) {
-//                                val existingFranchise = anime.franchiseMultiple.any {
-//                                    it.target.shikimoriId == animeToTarget.get().shikimoriId &&
-//                                        it.source.shikimoriId == animeToSource.get().shikimoriId
-//                                }
-//                                if (!existingFranchise) {
-//                                    val relationType = when (fran.relation) {
-//                                        "sequel" -> AnimeRelationFranchise.Sequel
-//                                        "prequel" -> AnimeRelationFranchise.Prequel
-//                                        "side_story" -> AnimeRelationFranchise.SideStory
-//                                        "parent_story", "full_story" -> AnimeRelationFranchise.SideStory
-//                                        "summary" -> AnimeRelationFranchise.Summary
-//                                        "alternative_version" -> AnimeRelationFranchise.AlternativeVersion
-//                                        "adaptation" -> AnimeRelationFranchise.Adaptation
-//                                        "alternative_setting" -> AnimeRelationFranchise.AlternativeSetting
-//                                        "spin_off" -> AnimeRelationFranchise.SpinOff
-//                                        "character" -> AnimeRelationFranchise.Character
-//                                        else -> AnimeRelationFranchise.Other
-//                                    }
-//                                    AnimeFranchiseTable(
-//                                        anime = anime,
-//                                        source = animeToSource.get(),
-//                                        target = animeToTarget.get(),
-//                                        relationType = relationType,
-//                                        relationTypeRus = relationType.russian,
-//                                        urlPath = anime.franchise!!,
-//                                    )
-//                                } else {
-//                                    null
-//                                }
-//                            } else {
-//                                null
-//                            }
-//                        },
-//                    )
-//                } else {
-//                    null
-//                }
+                val similar = animeSimilarRepository.saveAll(
+                    similarShikimoriIds.mapNotNull { id ->
+                        val animeToSimilar = animeRepository.findByShikimoriId(id)
+                        if (animeToSimilar.isPresent) {
+                            val existingSimilar = anime.similar.any { it.similarAnime.id == animeToSimilar.get().id }
+                            if (!existingSimilar) {
+                                AnimeSimilarTable(
+                                    anime = anime,
+                                    similarAnime = animeToSimilar.get(),
+                                )
+                            } else {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    },
+                )
 
                 val related = animeRelatedRepository.saveAll(
                     relatedShikimori.mapNotNull { relation ->
@@ -295,13 +246,8 @@ class AnimeParseComponent(
                     },
                 )
 
-//                if (similar.isNotEmpty() || related.isNotEmpty() || !franchise.isNullOrEmpty()) {
-//                    anime.addSimilar(similar)
-//                    anime.addRelation(related)
-//                    franchise?.let { anime.addFranchiseMultiple(it) }
-//                    animeRepository.saveAndFlush(anime)
-//                }
-                if (related.isNotEmpty()) {
+                if (similar.isNotEmpty() || related.isNotEmpty()) {
+                    anime.addSimilar(similar)
                     anime.addRelation(related)
                     animeRepository.saveAndFlush(anime)
                 }
@@ -373,7 +319,7 @@ class AnimeParseComponent(
                 processCharacterData(anime, characterData, existingCharacter)
             }
 
-            saveProcessedDataBatch(processedData, anime)
+            saveProcessedDataBatch(processedData)
         } catch (e: Exception) {
             animeErrorParserRepository.save(
                 AnimeErrorParserTable(
@@ -386,7 +332,7 @@ class AnimeParseComponent(
     }
 
     @Transactional
-    private suspend fun saveProcessedDataBatch(processedData: List<ProcessedCharacterData>, anime: AnimeTable) {
+    private suspend fun saveProcessedDataBatch(processedData: List<ProcessedCharacterData>) {
         // Сначала сохраняем новых персонажей
         val newCharacters = processedData.mapNotNull { it.character }
         if (newCharacters.isNotEmpty()) {

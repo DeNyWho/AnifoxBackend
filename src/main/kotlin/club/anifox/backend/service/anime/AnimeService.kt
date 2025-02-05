@@ -1,13 +1,11 @@
 package club.anifox.backend.service.anime
 
-import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
-import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeStudio
 import club.anifox.backend.domain.model.anime.AnimeVideo
@@ -142,13 +140,6 @@ class AnimeService : AnimeRepository {
         date: LocalDate,
     ): Map<String, List<AnimeLight>> {
         return animeCommonComponent.getWeeklySchedule(page, limit, date)
-    }
-
-    override fun getAnimeFranchises(
-        url: String,
-        type: AnimeRelationFranchise?,
-    ): List<AnimeFranchise> {
-        return animeCommonComponent.getAnimeFranchise(url, type)
     }
 
     override fun getAnimeYears(): List<String> {

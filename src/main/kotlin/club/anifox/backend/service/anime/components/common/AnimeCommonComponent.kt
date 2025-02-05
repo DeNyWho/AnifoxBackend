@@ -1,6 +1,5 @@
 package club.anifox.backend.service.anime.components.common
 
-import club.anifox.backend.domain.enums.anime.AnimeRelationFranchise
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.exception.common.NoContentException
@@ -12,7 +11,6 @@ import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeUser
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
-import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -28,7 +26,6 @@ import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
@@ -398,52 +395,6 @@ class AnimeCommonComponent {
             }
         } else {
             episodes.map { it.toAnimeEpisodeLight() }
-        }
-    }
-
-    fun getAnimeFranchise(
-        url: String,
-        type: AnimeRelationFranchise?,
-    ): List<AnimeFranchise> {
-        val anime: AnimeTable = animeUtils.checkAnime(url)
-
-        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
-        val criteriaQuery: CriteriaQuery<AnimeFranchiseTable> = criteriaBuilder.createQuery(AnimeFranchiseTable::class.java)
-
-        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
-
-        val franchiseJoin = animeRoot.join<AnimeTable, AnimeFranchiseTable>("franchiseMultiple", JoinType.LEFT)
-        franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
-        val targetAnime = franchiseJoin.join<AnimeFranchiseTable, AnimeTable>("target", JoinType.INNER)
-
-        targetAnime.join<AnimeTable, AnimeGenreTable>("genres", JoinType.LEFT)
-        targetAnime.join<AnimeTable, AnimeImagesTable>("images", JoinType.LEFT)
-        targetAnime.join<AnimeTable, AnimeStudioTable>("studios", JoinType.LEFT)
-
-        val predicates =
-            mutableListOf(
-                criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url),
-            )
-
-        if (type != null) {
-            predicates.add(criteriaBuilder.equal(franchiseJoin.get<AnimeRelationFranchise>("relationType"), type))
-        }
-
-        criteriaQuery.select(franchiseJoin)
-        criteriaQuery.where(*predicates.toTypedArray())
-
-        val results = entityManager.createQuery(criteriaQuery).resultList
-
-        if (results.isEmpty()) {
-            throw NoContentException("Franchise relations for this anime not found")
-        }
-
-        return results.map { franchise ->
-            AnimeFranchise(
-                anime = franchise.target.toAnimeLight(),
-                relation = franchise.relationTypeRus,
-                targetUrl = franchise.target.url,
-            )
         }
     }
 
