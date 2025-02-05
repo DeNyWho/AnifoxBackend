@@ -419,12 +419,10 @@ class AnimeCommonComponent {
         val allDates = date.let { inputDate ->
             val currentDayOfWeek = inputDate.dayOfWeek
 
-            // Создаем даты в фиксированном порядке дней недели
             (1..7).map { dayNumber ->
                 val targetDate = when {
                     dayNumber < currentDayOfWeek.value ->
                         inputDate.plusWeeks(1).with(DayOfWeek.of(dayNumber))
-
                     else ->
                         inputDate.with(DayOfWeek.of(dayNumber))
                 }
@@ -437,10 +435,22 @@ class AnimeCommonComponent {
                 val startOfDay = targetDate.atStartOfDay()
                 val endOfDay = targetDate.atTime(23, 59, 59)
 
-                criteriaBuilder.between(
-                    scheduleRoot.get<LocalDateTime>("nextEpisodeDate"),
-                    criteriaBuilder.literal(startOfDay),
-                    criteriaBuilder.literal(endOfDay),
+                criteriaBuilder.or(
+                    // Проверяем nextEpisodeDate
+                    criteriaBuilder.between(
+                        scheduleRoot.get<LocalDateTime>("nextEpisodeDate"),
+                        criteriaBuilder.literal(startOfDay),
+                        criteriaBuilder.literal(endOfDay),
+                    ),
+                    // Проверяем previousEpisodeDate для тех аниме, которые уже обновились
+                    criteriaBuilder.and(
+                        criteriaBuilder.between(
+                            scheduleRoot.get<LocalDateTime>("previousEpisodeDate"),
+                            criteriaBuilder.literal(startOfDay),
+                            criteriaBuilder.literal(endOfDay),
+                        ),
+                        criteriaBuilder.isNotNull(scheduleRoot.get<LocalDateTime>("nextEpisodeDate"))
+                    )
                 )
             }
 
@@ -448,20 +458,27 @@ class AnimeCommonComponent {
         }
 
         criteriaQuery.where(*predicates.toTypedArray())
-
         criteriaQuery.orderBy(
-            criteriaBuilder.asc(scheduleRoot.get<LocalDate>("nextEpisodeDate")),
+            criteriaBuilder.asc(scheduleRoot.get<LocalDateTime>("nextEpisodeDate"))
         )
 
         val allSchedules = entityManager.createQuery(criteriaQuery).resultList
 
-        val groupedSchedules = allSchedules
-            .groupBy { it.nextEpisodeDate.toLocalDate() }
-            .mapValues { (_, schedules) ->
-                schedules
-                    .distinctBy { it.anime.id }
-                    .take(maxPerDay)
+        // Группируем расписание по дням, учитывая как nextEpisodeDate, так и previousEpisodeDate
+        val groupedSchedules = allSchedules.groupBy { schedule ->
+            when {
+                // Если previousEpisodeDate попадает в нужный день и уже есть nextEpisodeDate,
+                // значит аниме уже обновилось и должно отображаться в этот день
+                allDates.any { it == schedule.previousEpisodeDate?.toLocalDate() } &&
+                    schedule.nextEpisodeDate != null -> schedule.previousEpisodeDate?.toLocalDate()
+                // Иначе группируем по nextEpisodeDate
+                else -> schedule.nextEpisodeDate?.toLocalDate()
             }
+        }.mapValues { (_, schedules) ->
+            schedules
+                .distinctBy { it.anime.id }
+                .take(maxPerDay)
+        }
 
         val daysOrder = listOf(
             "monday" to DayOfWeek.MONDAY,
@@ -481,8 +498,8 @@ class AnimeCommonComponent {
             .associate { (dayName, dayOfWeek) ->
                 val dateOfWeek = allDates.find { it.dayOfWeek == dayOfWeek }
                 dayName to (
-                    dateOfWeek?.let {
-                        groupedSchedules[it]?.map { schedule ->
+                    dateOfWeek?.let { date ->
+                        groupedSchedules[date]?.map { schedule ->
                             schedule.anime.toAnimeLight()
                         }
                     } ?: emptyList()

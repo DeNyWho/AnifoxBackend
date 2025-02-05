@@ -24,8 +24,11 @@ data class AnimeEpisodeScheduleTable(
     @JoinColumn(name = "anime_id", nullable = false, unique = true)
     val anime: AnimeTable,
 
-    @Column(name = "next_episode_date", nullable = false)
-    val nextEpisodeDate: LocalDateTime,
+    @Column(name = "next_episode_date")
+    val nextEpisodeDate: LocalDateTime? = null,
+
+    @Column(name = "previous_episode_date")
+    val previousEpisodeDate: LocalDateTime? = null,
 
     @Column(name = "day_of_week", nullable = false)
     @Enumerated(EnumType.STRING)

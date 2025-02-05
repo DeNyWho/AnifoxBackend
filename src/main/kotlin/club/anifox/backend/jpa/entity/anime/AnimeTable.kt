@@ -219,25 +219,33 @@ data class AnimeTable(
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
     fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime?): AnimeTable {
-        if (nextEpisodeDate != null) {
-            val dayOfWeek = nextEpisodeDate.dayOfWeek
-
-            if (this.schedule != null) {
-                if (this.schedule?.nextEpisodeDate != nextEpisodeDate) {
+        if (this.schedule != null) {
+            when {
+                nextEpisodeDate == null &&
+                    LocalDateTime.now().isAfter(this.schedule!!.previousEpisodeDate) -> {
                     this.schedule = null
-                } else {
-                    return this
+                }
+                nextEpisodeDate != null &&
+                    this.schedule?.nextEpisodeDate != nextEpisodeDate -> {
+                    val currentNextEpisodeDate = this.schedule!!.nextEpisodeDate
+                    this.schedule = AnimeEpisodeScheduleTable(
+                        anime = this,
+                        nextEpisodeDate = nextEpisodeDate,
+                        previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
+                        dayOfWeek = nextEpisodeDate.dayOfWeek
+                    )
                 }
             }
+            return this
+        }
 
-            val newSchedule = AnimeEpisodeScheduleTable(
+        if (nextEpisodeDate != null) {
+            this.schedule = AnimeEpisodeScheduleTable(
                 anime = this,
                 nextEpisodeDate = nextEpisodeDate,
-                dayOfWeek = dayOfWeek,
+                previousEpisodeDate = LocalDateTime.now(),
+                dayOfWeek = nextEpisodeDate.dayOfWeek
             )
-            this.schedule = newSchedule
-        } else {
-            this.schedule = null
         }
 
         return this
