@@ -232,7 +232,7 @@ data class AnimeTable(
                         anime = this,
                         nextEpisodeDate = nextEpisodeDate,
                         previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
-                        dayOfWeek = nextEpisodeDate.dayOfWeek
+                        dayOfWeek = nextEpisodeDate.dayOfWeek,
                     )
                 }
             }
@@ -244,7 +244,7 @@ data class AnimeTable(
                 anime = this,
                 nextEpisodeDate = nextEpisodeDate,
                 previousEpisodeDate = LocalDateTime.now(),
-                dayOfWeek = nextEpisodeDate.dayOfWeek
+                dayOfWeek = nextEpisodeDate.dayOfWeek,
             )
         }
 
