@@ -1,4 +1,4 @@
-package club.anifox.backend.domain.model.anime
+package club.anifox.backend.domain.model.anime.franchise
 
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import kotlinx.serialization.SerialName

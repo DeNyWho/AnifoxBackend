@@ -12,7 +12,6 @@ import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeUser
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
 import club.anifox.backend.domain.mappers.anime.toGenre
 import club.anifox.backend.domain.mappers.anime.toStudio
-import club.anifox.backend.domain.model.anime.AnimeFranchise
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
@@ -21,6 +20,7 @@ import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.franchise.AnimeFranchise
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
@@ -438,13 +438,7 @@ class AnimeCommonComponent {
             throw NoContentException("Franchise relations for this anime not found")
         }
 
-        return results.map { franchise ->
-            AnimeFranchise(
-                anime = franchise.target.toAnimeLight(),
-                relation = franchise.relationTypeRus,
-                targetUrl = franchise.target.url,
-            )
-        }
+        return listOf()
     }
 
     fun getWeeklySchedule(

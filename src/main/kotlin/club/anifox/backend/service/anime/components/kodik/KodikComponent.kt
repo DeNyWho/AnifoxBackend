@@ -41,7 +41,7 @@ class KodikComponent {
             url {
                 protocol = URLProtocol.HTTPS
                 host = Constants.KODIK
-                encodedPath = Constants.KODIK_LIST
+                encodedPath = Constants.KODIK_SEARCH
             }
             parameter("token", animeToken)
             parameter("limit", 100)
@@ -50,6 +50,7 @@ class KodikComponent {
 //            parameter("year", "${LocalDate.now().year}, ${LocalDate.now().year - 1}")
             parameter("types", "anime-serial, anime")
             parameter("camrip", false)
+            parameter("title", "Девушка на час")
             parameter("with_episodes_data", true)
             parameter("not_blocked_in", "RU,UA")
             parameter("with_material_data", true)

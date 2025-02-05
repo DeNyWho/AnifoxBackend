@@ -3,7 +3,7 @@ package club.anifox.backend.service.anime.components.shikimori
 import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriExternalLinksDto
-import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriFranchise
+import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriFranchiseDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriRelationDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriScreenshotsDto
 import club.anifox.backend.domain.dto.anime.shikimori.ShikimoriSimilarDto
@@ -116,7 +116,7 @@ class AnimeShikimoriComponent {
         }.map { it }
     }
 
-    suspend fun fetchFranchise(shikimoriId: Int): ShikimoriFranchise {
+    suspend fun fetchFranchise(shikimoriId: Int): ShikimoriFranchiseDto {
         return client.get {
             headers {
                 contentType(ContentType.Application.Json)
@@ -128,6 +128,6 @@ class AnimeShikimoriComponent {
                 host = Constants.SHIKIMORI
                 encodedPath = "${Constants.SHIKIMORI_API}${Constants.SHIKIMORI_ANIMES}/${shikimoriId}${Constants.SHIKIMORI_FRANCHISE}"
             }
-        }.body<ShikimoriFranchise>()
+        }.body<ShikimoriFranchiseDto>()
     }
 }

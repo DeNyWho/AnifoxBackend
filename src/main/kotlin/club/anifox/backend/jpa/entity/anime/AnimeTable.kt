@@ -3,7 +3,6 @@ package club.anifox.backend.jpa.entity.anime
 import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
-import club.anifox.backend.jpa.entity.anime.common.AnimeFranchiseTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
@@ -192,14 +191,6 @@ data class AnimeTable(
         schema = "anime",
     )
     var studios: MutableSet<AnimeStudioTable> = mutableSetOf(),
-    @OneToMany(
-        mappedBy = "anime",
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
-    @BatchSize(size = 10)
-    val franchiseMultiple: MutableSet<AnimeFranchiseTable> = mutableSetOf(),
     var shikimoriRating: Double = 0.0,
     var shikimoriVotes: Int = 0,
     val ratingMpa: String = "",
@@ -292,11 +283,6 @@ data class AnimeTable(
 
     fun addVideos(videos: List<AnimeVideoTable>): AnimeTable {
         this.videos.addAll(videos)
-        return this
-    }
-
-    fun addFranchiseMultiple(franchises: List<AnimeFranchiseTable>): AnimeTable {
-        this.franchiseMultiple.addAll(franchises)
         return this
     }
 

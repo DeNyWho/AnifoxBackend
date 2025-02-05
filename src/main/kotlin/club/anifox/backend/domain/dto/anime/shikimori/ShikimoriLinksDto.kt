@@ -5,10 +5,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ShikimoriLinksDto(
+    val id: Long,
     @SerialName("source_id")
     val sourceId: Int,
     @SerialName("target_id")
     val targetId: Int,
-    @SerialName("relation")
+    val source: Int,
+    val target: Int,
+    val weight: Int,
     val relation: String,
 )
