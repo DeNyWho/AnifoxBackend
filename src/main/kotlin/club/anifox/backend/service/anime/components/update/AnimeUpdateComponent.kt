@@ -45,7 +45,7 @@ class AnimeUpdateComponent(
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
     @Async
-    @Transactional
+    @Transactional(readOnly = true)
     fun update(onlyOngoing: Boolean = false) {
         runBlocking {
             try {
@@ -157,7 +157,6 @@ class AnimeUpdateComponent(
                 LEFT JOIN FETCH a.ids
                 LEFT JOIN FETCH a.images
                 LEFT JOIN FETCH a.translations
-                LEFT JOIN FETCH a.schedule
                 LEFT JOIN FETCH a.translationsCountEpisodes
                 WHERE a.shikimoriId IN :ids
                 """.trimIndent(),

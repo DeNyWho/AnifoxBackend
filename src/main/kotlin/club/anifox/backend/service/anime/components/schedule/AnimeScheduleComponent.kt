@@ -4,6 +4,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -11,7 +12,7 @@ import java.time.LocalDateTime
 class AnimeScheduleComponent(
     private val entityManager: EntityManager,
 ) {
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun updateSchedule(animeId: String, nextEpisodeDate: LocalDateTime?) {
         val anime = findAnime(animeId)
         val schedule = findSchedule(animeId)
@@ -39,9 +40,8 @@ class AnimeScheduleComponent(
         val cb = entityManager.criteriaBuilder
         val query = cb.createQuery(AnimeEpisodeScheduleTable::class.java)
         val root = query.from(AnimeEpisodeScheduleTable::class.java)
-        val anime = root.get<AnimeTable>("anime")
+        query.where(cb.equal(root.get<String>("id"), animeId))
 
-        query.where(cb.equal(anime.get<String>("id"), animeId))
         return entityManager.createQuery(query).resultList.firstOrNull()
     }
 
