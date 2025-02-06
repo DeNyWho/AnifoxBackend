@@ -301,14 +301,24 @@ class AnimeUpdateComponent(
                 else -> AnimeStatus.Ongoing
             }
 
-            when {
-                status == AnimeStatus.Ongoing && nextEpisode != null -> {
-                    shikimori.nextEpisodeAt?.let { updateEpisodeSchedule(LocalDateTime.parse(it, formatterUpdated)) }
-                }
-                status == AnimeStatus.Released && schedule != null -> {
-                    updateEpisodeSchedule(null)
+            if (nextEpisode != null) {
+                val now = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
+
+                if (now.toLocalDate().isAfter(nextEpisode!!.toLocalDate())) {
+                    nextEpisode = shikimori.nextEpisodeAt?.let {
+                        LocalDateTime.parse(it, formatterUpdated)
+                    }
                 }
             }
+
+//            when {
+//                status == AnimeStatus.Ongoing && nextEpisode != null -> {
+//                    nextEpisode?.let { updateEpisodeSchedule(it) }
+//                }
+//                status == AnimeStatus.Released && schedule != null -> {
+//                    updateEpisodeSchedule(null)
+//                }
+//            }
 
             val currentEpisodesSize = episodes.size
             if ((episodesAired ?: 0) < currentEpisodesSize) {

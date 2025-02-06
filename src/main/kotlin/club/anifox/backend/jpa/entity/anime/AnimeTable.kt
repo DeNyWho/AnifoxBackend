@@ -10,7 +10,6 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeRelatedTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeSimilarTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeVideoTable
-import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
@@ -107,13 +106,6 @@ data class AnimeTable(
     val related: MutableSet<AnimeRelatedTable> = mutableSetOf(),
     val year: Int = 0,
     var nextEpisode: LocalDateTime? = null,
-    @OneToOne(
-        mappedBy = "anime",
-        cascade = [CascadeType.ALL],
-        fetch = FetchType.LAZY,
-        orphanRemoval = true,
-    )
-    var schedule: AnimeEpisodeScheduleTable? = null,
     var episodesCount: Int? = null,
     var episodesAired: Int? = null,
     val shikimoriId: Int = 0,
@@ -218,45 +210,45 @@ data class AnimeTable(
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
-    fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime?): AnimeTable {
-        if (this.schedule != null) {
-            when {
-                nextEpisodeDate == null &&
-                    LocalDateTime.now().isAfter(this.schedule!!.previousEpisodeDate) -> {
-                    this.schedule = null
-                    this.nextEpisode = null
-                }
-                nextEpisodeDate == null && this.schedule?.previousEpisodeDate == null -> {
-                    this.schedule = null
-                    this.nextEpisode = null
-                }
-                nextEpisodeDate != null &&
-                    this.schedule?.nextEpisodeDate != nextEpisodeDate -> {
-                    val currentNextEpisodeDate = this.schedule!!.nextEpisodeDate
-                    this.schedule = AnimeEpisodeScheduleTable(
-                        anime = this,
-                        nextEpisodeDate = nextEpisodeDate,
-                        previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
-                        dayOfWeek = nextEpisodeDate.dayOfWeek,
-                    )
-                    this.nextEpisode = nextEpisodeDate
-                }
-            }
-            return this
-        }
-
-        if (nextEpisodeDate != null) {
-            this.schedule = AnimeEpisodeScheduleTable(
-                anime = this,
-                nextEpisodeDate = nextEpisodeDate,
-                previousEpisodeDate = LocalDateTime.now(),
-                dayOfWeek = nextEpisodeDate.dayOfWeek,
-            )
-            this.nextEpisode = nextEpisodeDate
-        }
-
-        return this
-    }
+//    fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime?): AnimeTable {
+//        if (this.schedule != null) {
+//            when {
+//                nextEpisodeDate == null &&
+//                    LocalDateTime.now().isAfter(this.schedule!!.previousEpisodeDate) -> {
+//                    this.schedule = null
+//                    this.nextEpisode = null
+//                }
+//                nextEpisodeDate == null && this.schedule?.previousEpisodeDate == null -> {
+//                    this.schedule = null
+//                    this.nextEpisode = null
+//                }
+//                nextEpisodeDate != null &&
+//                    this.schedule?.nextEpisodeDate != nextEpisodeDate -> {
+//                    val currentNextEpisodeDate = this.schedule!!.nextEpisodeDate
+//                    this.schedule = AnimeEpisodeScheduleTable(
+//                        anime = this,
+//                        nextEpisodeDate = nextEpisodeDate,
+//                        previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
+//                        dayOfWeek = nextEpisodeDate.dayOfWeek,
+//                    )
+//                    this.nextEpisode = nextEpisodeDate
+//                }
+//            }
+//            return this
+//        }
+//
+//        if (nextEpisodeDate != null) {
+//            this.schedule = AnimeEpisodeScheduleTable(
+//                anime = this,
+//                nextEpisodeDate = nextEpisodeDate,
+//                previousEpisodeDate = LocalDateTime.now(),
+//                dayOfWeek = nextEpisodeDate.dayOfWeek,
+//            )
+//            this.nextEpisode = nextEpisodeDate
+//        }
+//
+//        return this
+//    }
 
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)

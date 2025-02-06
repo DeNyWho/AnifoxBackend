@@ -897,9 +897,9 @@ class AnimeParseComponent(
                     animeToSave.addTranslation(translations)
                     animeToSave.addEpisodesAll(episodesReady)
 
-                    animeToSave.nextEpisode?.let { nextEpisodeDate ->
-                        animeToSave.updateEpisodeSchedule(nextEpisodeDate)
-                    }
+//                    animeToSave.nextEpisode?.let { nextEpisodeDate ->
+//                        animeToSave.updateEpisodeSchedule(nextEpisodeDate)
+//                    }
 
                     animeToSave.addAllAnimeGenre(genres)
                     animeToSave.addAllAnimeStudios(studios)
