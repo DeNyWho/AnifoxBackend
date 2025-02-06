@@ -7,6 +7,19 @@ server:
       cookie:
         http-only: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+      enabled: true
+  health:
+    diskspace:
+      enabled: false
+
 springdoc:
   api-docs:
     enabled: true

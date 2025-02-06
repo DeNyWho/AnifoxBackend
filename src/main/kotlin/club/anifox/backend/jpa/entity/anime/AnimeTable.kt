@@ -224,6 +224,11 @@ data class AnimeTable(
                 nextEpisodeDate == null &&
                     LocalDateTime.now().isAfter(this.schedule!!.previousEpisodeDate) -> {
                     this.schedule = null
+                    this.nextEpisode = null
+                }
+                nextEpisodeDate == null && this.schedule?.previousEpisodeDate == null -> {
+                    this.schedule = null
+                    this.nextEpisode = null
                 }
                 nextEpisodeDate != null &&
                     this.schedule?.nextEpisodeDate != nextEpisodeDate -> {
@@ -234,6 +239,7 @@ data class AnimeTable(
                         previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
                         dayOfWeek = nextEpisodeDate.dayOfWeek,
                     )
+                    this.nextEpisode = nextEpisodeDate
                 }
             }
             return this
@@ -246,6 +252,7 @@ data class AnimeTable(
                 previousEpisodeDate = LocalDateTime.now(),
                 dayOfWeek = nextEpisodeDate.dayOfWeek,
             )
+            this.nextEpisode = nextEpisodeDate
         }
 
         return this

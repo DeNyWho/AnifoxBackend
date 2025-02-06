@@ -106,6 +106,7 @@ constructor(
                     AntPathRequestMatcher("/api/anime/block"), // Явное указание путей
                 ).hasRole(RoleName.ADMIN.name)
                 auth.requestMatchers(
+                    AntPathRequestMatcher("/actuator/**"),
                     AntPathRequestMatcher("/api/anime/**"),
                     AntPathRequestMatcher("/api/characters/**"),
                     AntPathRequestMatcher("/api/test/**"),
