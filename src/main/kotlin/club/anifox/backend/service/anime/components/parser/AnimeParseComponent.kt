@@ -42,6 +42,7 @@ import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.haglund.HaglundComponent
 import club.anifox.backend.service.anime.components.jikan.JikanComponent
 import club.anifox.backend.service.anime.components.kodik.KodikComponent
+import club.anifox.backend.service.anime.components.schedule.AnimeScheduleComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import club.anifox.backend.service.anime.components.translate.TranslateComponent
 import club.anifox.backend.service.image.ImageService
@@ -101,6 +102,7 @@ class AnimeParseComponent(
     private val jikanComponent: JikanComponent,
     private val translateComponent: TranslateComponent,
     private val imageService: ImageService,
+    private val animeScheduleComponent: AnimeScheduleComponent,
 ) {
     private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -897,10 +899,6 @@ class AnimeParseComponent(
                     animeToSave.addTranslation(translations)
                     animeToSave.addEpisodesAll(episodesReady)
 
-//                    animeToSave.nextEpisode?.let { nextEpisodeDate ->
-//                        animeToSave.updateEpisodeSchedule(nextEpisodeDate)
-//                    }
-
                     animeToSave.addAllAnimeGenre(genres)
                     animeToSave.addAllAnimeStudios(studios)
                     animeToSave.addVideos(videos)
@@ -912,6 +910,8 @@ class AnimeParseComponent(
                     } else {
                         animeRepository.saveAndFlush(animeToSave)
                     }
+
+                    animeScheduleComponent.updateSchedule(animeToSave.id, animeToSave.nextEpisode)
                 }
             }
         } catch (e: Exception) {

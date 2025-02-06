@@ -210,46 +210,6 @@ data class AnimeTable(
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
-//    fun updateEpisodeSchedule(nextEpisodeDate: LocalDateTime?): AnimeTable {
-//        if (this.schedule != null) {
-//            when {
-//                nextEpisodeDate == null &&
-//                    LocalDateTime.now().isAfter(this.schedule!!.previousEpisodeDate) -> {
-//                    this.schedule = null
-//                    this.nextEpisode = null
-//                }
-//                nextEpisodeDate == null && this.schedule?.previousEpisodeDate == null -> {
-//                    this.schedule = null
-//                    this.nextEpisode = null
-//                }
-//                nextEpisodeDate != null &&
-//                    this.schedule?.nextEpisodeDate != nextEpisodeDate -> {
-//                    val currentNextEpisodeDate = this.schedule!!.nextEpisodeDate
-//                    this.schedule = AnimeEpisodeScheduleTable(
-//                        anime = this,
-//                        nextEpisodeDate = nextEpisodeDate,
-//                        previousEpisodeDate = currentNextEpisodeDate ?: this.schedule!!.previousEpisodeDate,
-//                        dayOfWeek = nextEpisodeDate.dayOfWeek,
-//                    )
-//                    this.nextEpisode = nextEpisodeDate
-//                }
-//            }
-//            return this
-//        }
-//
-//        if (nextEpisodeDate != null) {
-//            this.schedule = AnimeEpisodeScheduleTable(
-//                anime = this,
-//                nextEpisodeDate = nextEpisodeDate,
-//                previousEpisodeDate = LocalDateTime.now(),
-//                dayOfWeek = nextEpisodeDate.dayOfWeek,
-//            )
-//            this.nextEpisode = nextEpisodeDate
-//        }
-//
-//        return this
-//    }
-
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)
         translation.forEach { newTranslation ->

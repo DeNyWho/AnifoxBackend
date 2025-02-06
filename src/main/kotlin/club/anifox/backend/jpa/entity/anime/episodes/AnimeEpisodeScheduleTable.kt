@@ -34,5 +34,5 @@ data class AnimeEpisodeScheduleTable(
     val dayOfWeek: DayOfWeek,
 ) {
     @Id
-    val id: String = "" // This will be populated by @MapsId from the anime reference
+    val id: String = ""
 }

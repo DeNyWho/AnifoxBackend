@@ -10,6 +10,7 @@ import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.service.anime.components.block.AnimeBlockComponent
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
 import club.anifox.backend.service.anime.components.parser.FetchImageComponent
+import club.anifox.backend.service.anime.components.schedule.AnimeScheduleComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +39,7 @@ class AnimeUpdateComponent(
     private val shikimoriComponent: AnimeShikimoriComponent,
     private val animeRepository: AnimeRepository,
     private val animeBlockComponent: AnimeBlockComponent,
+    private val animeScheduleComponent: AnimeScheduleComponent,
 ) {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val coroutineScope = CoroutineScope(SupervisorJob())
@@ -301,24 +303,10 @@ class AnimeUpdateComponent(
                 else -> AnimeStatus.Ongoing
             }
 
-            if (nextEpisode != null) {
-                val now = LocalDateTime.now().atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime()
-
-                if (now.toLocalDate().isAfter(nextEpisode!!.toLocalDate())) {
-                    nextEpisode = shikimori.nextEpisodeAt?.let {
-                        LocalDateTime.parse(it, formatterUpdated)
-                    }
-                }
-            }
-
-//            when {
-//                status == AnimeStatus.Ongoing && nextEpisode != null -> {
-//                    nextEpisode?.let { updateEpisodeSchedule(it) }
-//                }
-//                status == AnimeStatus.Released && schedule != null -> {
-//                    updateEpisodeSchedule(null)
-//                }
-//            }
+            animeScheduleComponent.updateSchedule(
+                animeId = this.id,
+                nextEpisodeDate = shikimori.nextEpisodeAt?.let { LocalDateTime.parse(it, formatterUpdated) },
+            )
 
             val currentEpisodesSize = episodes.size
             if ((episodesAired ?: 0) < currentEpisodesSize) {
