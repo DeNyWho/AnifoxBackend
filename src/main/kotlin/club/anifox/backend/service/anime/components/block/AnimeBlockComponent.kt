@@ -54,18 +54,6 @@ class AnimeBlockComponent {
             val animeEntity = anime[0]
             val shikimoriIdEntity = animeEntity.shikimoriId
 
-            // Delete franchise relationships in all directions
-            entityManager.createQuery(
-                """
-                DELETE FROM AnimeFranchiseTable f
-                WHERE f.anime.id = :animeId
-                OR f.source.id = :animeId
-                OR f.target.id = :animeId
-            """,
-            )
-                .setParameter("animeId", animeEntity.id)
-                .executeUpdate()
-
             // Delete related anime relationships in both directions
             entityManager.createQuery(
                 """
