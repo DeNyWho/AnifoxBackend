@@ -14,7 +14,7 @@ data class AnimeLight(
     var title: String = "",
     var image: AnimeImages = AnimeImages(),
     val url: String = "",
-    var type: AnimeType = AnimeType.Tv,
+    val type: AnimeType,
     val rating: Double? = 0.0,
     @SerialName("rating_mpa")
     val ratingMpa: String = "",
@@ -22,8 +22,8 @@ data class AnimeLight(
     val minimalAge: Int = 0,
     val description: String,
     val year: Int = 0,
-    val status: AnimeStatus = AnimeStatus.Ongoing,
-    val season: AnimeSeason = AnimeSeason.Summer,
+    val status: AnimeStatus,
+    val season: AnimeSeason,
     val episodes: Int? = null,
     @SerialName("episodes_aired")
     val episodesAired: Int? = null,

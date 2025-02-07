@@ -19,6 +19,8 @@ import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Order
 import jakarta.persistence.criteria.Predicate
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -54,7 +56,7 @@ class AnimeSearchComponent {
         studios: List<String>?,
         episodeCount: Int?,
     ): List<AnimeLight> {
-        return findAnime(
+        val result = findAnime(
             pageable = PageRequest.of(page, limit),
             status = status,
             searchQuery = searchQuery,
@@ -72,6 +74,10 @@ class AnimeSearchComponent {
         ).map {
             it.toAnimeLight()
         }
+        val json = Json.encodeToString(result.first())
+        println("Serialized JSON: $json")
+        println("FDSFDS = ${result.map { it.type }}")
+        return result
     }
 
     private fun findAnime(

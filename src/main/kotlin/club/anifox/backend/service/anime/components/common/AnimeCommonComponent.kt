@@ -438,8 +438,6 @@ class AnimeCommonComponent {
                 aired = nextEpisode.toLocalDate(),
             )
 
-            println("FDSFDSSD = ${anime.episodesAired} | ${episodes.maxOf { it.number }}")
-
             if (page == 0 && anime.status == AnimeStatus.Ongoing) {
                 episodes.add(0, newEpisode)
             }
