@@ -1,5 +1,6 @@
 package club.anifox.backend.domain.mappers.anime
 
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeLight
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeUser
 import club.anifox.backend.domain.model.anime.translation.AnimeEpisodeTranslations
@@ -16,6 +17,14 @@ fun AnimeEpisodeTable.toAnimeEpisodeLight(): AnimeEpisodeLight {
         filler = filler,
         recap = recap,
         translations = translationsNormal(translations),
+    )
+}
+
+fun AnimeEpisodeTable.toAnimeEpisodeHistory(): AnimeEpisodeHistory {
+    return AnimeEpisodeHistory(
+        title = title,
+        number = number,
+        aired = aired,
     )
 }
 

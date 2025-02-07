@@ -12,6 +12,7 @@ import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
@@ -226,6 +227,22 @@ class AnimeController {
         searchQuery: String?,
     ): List<AnimeEpisode> {
         return animeService.getAnimeEpisodes(token, url, page, limit, sort, translationId, searchQuery)
+    }
+
+    @GetMapping("/{url}/episodes/history")
+    @Operation(summary = "anime episodes history date")
+    fun getAnimeEpisodesHistory(
+        @PathVariable url: String,
+        @RequestParam(defaultValue = "0", name = "page") page:
+        @Min(0)
+        @Max(500)
+        Int,
+        @RequestParam(defaultValue = "48", name = "limit") limit:
+        @Min(1)
+        @Max(500)
+        Int,
+    ): List<AnimeEpisodeHistory> {
+        return animeService.getAnimeEpisodesHistory(url, page, limit)
     }
 
     @GetMapping("/schedules")

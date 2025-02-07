@@ -12,6 +12,7 @@ import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
@@ -125,6 +126,14 @@ class AnimeService : AnimeRepository {
         searchQuery: String?,
     ): List<AnimeEpisode> {
         return animeCommonComponent.getAnimeEpisodes(token, url, page, limit, sort, translationId, searchQuery)
+    }
+
+    override fun getAnimeEpisodesHistory(
+        url: String,
+        page: Int,
+        limit: Int,
+    ): List<AnimeEpisodeHistory> {
+        return animeCommonComponent.getAnimeEpisodesHistory(url, page, limit)
     }
 
     override fun getAnimeVideos(

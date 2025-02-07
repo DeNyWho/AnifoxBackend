@@ -1,11 +1,13 @@
 package club.anifox.backend.service.anime.components.common
 
+import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeVideoType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.exception.common.NoContentException
 import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.detail.toAnimeDetail
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
+import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeHistory
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeLight
 import club.anifox.backend.domain.mappers.anime.toAnimeEpisodeUser
 import club.anifox.backend.domain.mappers.anime.toAnimeVideo
@@ -19,6 +21,7 @@ import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
 import club.anifox.backend.domain.model.anime.detail.AnimeDetail
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
+import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
@@ -378,7 +381,7 @@ class AnimeCommonComponent {
         }
 
         val query = entityManager.createQuery(criteriaQuery)
-        val firstResult = (page - 1) * limit
+        val firstResult = page * limit
         query.firstResult = if (firstResult >= 0) firstResult else 0
         query.maxResults = limit
 
@@ -396,6 +399,55 @@ class AnimeCommonComponent {
         } else {
             episodes.map { it.toAnimeEpisodeLight() }
         }
+    }
+
+    fun getAnimeEpisodesHistory(
+        url: String,
+        page: Int,
+        limit: Int,
+    ): List<AnimeEpisodeHistory> {
+        val anime: AnimeTable = animeUtils.checkAnime(url)
+
+        val criteriaBuilder: CriteriaBuilder = entityManager.criteriaBuilder
+        val criteriaQuery: CriteriaQuery<AnimeEpisodeTable> = criteriaBuilder.createQuery(AnimeEpisodeTable::class.java)
+
+        val animeRoot: Root<AnimeTable> = criteriaQuery.from(AnimeTable::class.java)
+        val episodesJoin: Join<AnimeTable, AnimeEpisodeTable> = animeRoot.join("episodes", JoinType.LEFT)
+
+        criteriaQuery.select(episodesJoin)
+
+        val predicates = mutableListOf<Predicate>()
+
+        predicates.add(criteriaBuilder.equal(animeRoot.get<String>("url"), anime.url))
+        criteriaQuery.where(*predicates.toTypedArray())
+
+        criteriaQuery.orderBy(criteriaBuilder.desc(episodesJoin.get<Int>("number")))
+
+        val query = entityManager.createQuery(criteriaQuery)
+        val firstResult = page * limit
+        query.firstResult = if (firstResult >= 0) firstResult else 0
+        query.maxResults = limit
+
+        val episodes: MutableList<AnimeEpisodeHistory> = query.resultList.map { it.toAnimeEpisodeHistory() }.toMutableList()
+        val nextEpisode = anime.nextEpisode
+
+        if (nextEpisode != null && episodes.isNotEmpty()) {
+            val newEpisode = AnimeEpisodeHistory(
+                title = "Новая серия",
+                number = episodes.maxOf { it.number } + 1,
+                aired = nextEpisode.toLocalDate(),
+            )
+
+            println("FDSFDSSD = ${anime.episodesAired} | ${episodes.maxOf { it.number }}")
+
+            if (page == 0 && anime.status == AnimeStatus.Ongoing) {
+                episodes.add(0, newEpisode)
+            }
+
+            return episodes
+        }
+
+        throw NotFoundException("Episodes not found")
     }
 
     fun getWeeklySchedule(
