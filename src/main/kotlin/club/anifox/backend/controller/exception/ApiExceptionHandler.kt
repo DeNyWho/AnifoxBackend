@@ -69,7 +69,7 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
         ex: BadCredentialsException,
         request: WebRequest,
     ) {
-        response.status = HttpStatus.UNAUTHORIZED.value()
+        response.status = HttpStatus.CONFLICT.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.writer.write("{\"error\": \"${ex.message}\"}")
         response.writer.flush()
