@@ -24,7 +24,7 @@ data class AnimeDetail(
     @SerialName("player_link")
     val playerLink: String? = "",
     val url: String = "",
-    val type: AnimeType? = AnimeType.Tv,
+    val type: AnimeType,
     @SerialName("rating_mpa")
     val ratingMpa: String = "",
     @SerialName("minimal_age")
@@ -33,8 +33,8 @@ data class AnimeDetail(
     @SerialName("shikimori_rating")
     val shikimoriRating: Double = 0.0,
     val year: Int = 0,
-    val status: AnimeStatus = AnimeStatus.Ongoing,
-    val season: AnimeSeason = AnimeSeason.Summer,
+    val status: AnimeStatus,
+    val season: AnimeSeason,
     @SerialName("episodes")
     val episodes: Int? = 0,
     @SerialName("episodes_aired")

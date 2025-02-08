@@ -4,7 +4,6 @@ import club.anifox.backend.domain.enums.anime.AnimeSeason
 import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeRelatedTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeSimilarTable
@@ -82,12 +81,6 @@ data class AnimeTable(
     @BatchSize(size = 10)
     @JoinTable(schema = "anime")
     val translationsCountEpisodes: MutableSet<AnimeEpisodeTranslationCountTable> = mutableSetOf(),
-    @OneToOne(
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
-    var ids: AnimeIdsTable = AnimeIdsTable(),
     @OneToMany(
         mappedBy = "anime",
         fetch = FetchType.LAZY,
@@ -273,8 +266,13 @@ data class AnimeTable(
         return this
     }
 
-    fun addAllAnimeGenre(genre: List<AnimeGenreTable>): AnimeTable {
-        genres.addAll(genre)
+    fun addAllAnimeGenre(genres: List<AnimeGenreTable>): AnimeTable {
+        val existingGenreIds = this.genres.map { it.id }.toSet()
+
+        val newGenres = genres.filter { !existingGenreIds.contains(it.id) }
+
+        this.genres.addAll(newGenres)
+
         return this
     }
 

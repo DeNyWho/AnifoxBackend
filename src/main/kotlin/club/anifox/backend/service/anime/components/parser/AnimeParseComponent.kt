@@ -851,19 +851,6 @@ class AnimeParseComponent(
                             titleJapan = shikimori.japanese.toMutableList(),
                             synonyms = shikimori.synonyms.toMutableList(),
                             titleOther = otherTitles,
-                            ids =
-                            AnimeIdsTable(
-                                aniDb = animeIds.aniDb,
-                                aniList = animeIds.aniList,
-                                animePlanet = animeIds.animePlanet,
-                                aniSearch = animeIds.aniSearch,
-                                imdb = animeIds.imdb,
-                                kitsu = animeIds.kitsu,
-                                liveChart = animeIds.liveChart,
-                                notifyMoe = animeIds.notifyMoe,
-                                thetvdb = animeIds.theMovieDb,
-                                myAnimeList = animeIds.myAnimeList,
-                            ),
                             year = airedOn.year,
                             nextEpisode = nextEpisode,
                             episodesCount = episodesCount,
@@ -910,6 +897,23 @@ class AnimeParseComponent(
                     } else {
                         animeRepository.saveAndFlush(animeToSave)
                     }
+
+                    val ids =
+                        AnimeIdsTable(
+                            aniDb = animeIds.aniDb,
+                            aniList = animeIds.aniList,
+                            animePlanet = animeIds.animePlanet,
+                            aniSearch = animeIds.aniSearch,
+                            imdb = animeIds.imdb,
+                            kitsu = animeIds.kitsu,
+                            liveChart = animeIds.liveChart,
+                            notifyMoe = animeIds.notifyMoe,
+                            thetvdb = animeIds.theMovieDb,
+                            myAnimeList = animeIds.myAnimeList,
+                            anime = animeToSave,
+                        )
+                    entityManager.persist(ids)
+                    entityManager.merge(animeToSave)
 
                     animeScheduleComponent.updateSchedule(animeToSave.id, animeToSave.nextEpisode)
                 }

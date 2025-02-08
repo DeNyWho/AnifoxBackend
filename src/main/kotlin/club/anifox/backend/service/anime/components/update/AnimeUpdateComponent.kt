@@ -5,7 +5,10 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
+import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.service.anime.components.block.AnimeBlockComponent
 import club.anifox.backend.service.anime.components.episodes.EpisodesComponent
@@ -13,9 +16,8 @@ import club.anifox.backend.service.anime.components.parser.FetchImageComponent
 import club.anifox.backend.service.anime.components.schedule.AnimeScheduleComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
-import kotlinx.coroutines.CoroutineScope
+import jakarta.persistence.criteria.JoinType
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -29,10 +31,12 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class AnimeUpdateComponent(
     private val animeErrorParserRepository: AnimeErrorParserRepository,
+    private val animeGenreRepository: AnimeGenreRepository,
     private val fetchImageComponent: FetchImageComponent,
     private val entityManager: EntityManager,
     private val episodesComponent: EpisodesComponent,
@@ -42,7 +46,8 @@ class AnimeUpdateComponent(
     private val animeScheduleComponent: AnimeScheduleComponent,
 ) {
     private val logger = LoggerFactory.getLogger(this::class.java)
-    private val coroutineScope = CoroutineScope(SupervisorJob())
+    private val inappropriateGenres = listOf("яой", "эротика", "хентай", "Яой", "Хентай", "Эротика", "Юри", "юри")
+    private val genreCache = ConcurrentHashMap<String, AnimeGenreTable>()
 
     @Async
     @Transactional(readOnly = true)
@@ -154,7 +159,6 @@ class AnimeUpdateComponent(
                 SELECT DISTINCT a FROM AnimeTable a
                 LEFT JOIN FETCH a.episodes e
                 LEFT JOIN FETCH a.screenshots
-                LEFT JOIN FETCH a.ids
                 LEFT JOIN FETCH a.images
                 LEFT JOIN FETCH a.translations
                 LEFT JOIN FETCH a.translationsCountEpisodes
@@ -207,10 +211,20 @@ class AnimeUpdateComponent(
             }
 
             try {
+                val cb = entityManager.criteriaBuilder
+                val query = cb.createQuery(AnimeIdsTable::class.java)
+                val root = query.from(AnimeIdsTable::class.java)
+
+                root.fetch<AnimeIdsTable, AnimeTable>("anime", JoinType.INNER)
+
+                query.where(cb.equal(root.get<AnimeTable>("anime").get<String>("id"), anime.id))
+
+                val ids = entityManager.createQuery(query).singleResult
+
                 val episodesDeferred = async {
                     episodesComponent.fetchEpisodes(
                         shikimoriId = anime.shikimoriId,
-                        kitsuId = anime.ids.kitsu.toString(),
+                        kitsuId = ids.kitsu.toString(),
                         type = anime.type,
                         urlLinkPath = anime.url,
                         defaultImage = anime.images.medium,
@@ -283,8 +297,23 @@ class AnimeUpdateComponent(
     private fun updateAnimeFromShikimori(anime: AnimeTable, shikimori: ShikimoriDto): AnimeTable {
         val formatterUpdated = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
             .withZone(ZoneId.of("Europe/Moscow"))
+        val genres =
+            shikimori.genres
+                .filter { it.russian !in inappropriateGenres }
+                .map { genre ->
+                    genreCache.computeIfAbsent(genre.russian) {
+                        animeGenreRepository.findByGenre(genre.russian)
+                            .orElseGet {
+                                val newGenre = AnimeGenreTable(name = genre.russian)
+                                animeGenreRepository.save(newGenre)
+                                newGenre
+                            }
+                    }
+                }
 
         return anime.apply {
+            this.addAllAnimeGenre(genres)
+
             if (description.isEmpty()) {
                 description = shikimori.description.ifEmpty { description }
                     .replace(Regex("\\[\\/?[a-z]+.*?\\]"), "")

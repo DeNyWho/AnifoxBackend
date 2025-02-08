@@ -3,7 +3,6 @@ package club.anifox.backend.service.anime.components.block
 import club.anifox.backend.domain.enums.anime.parser.CompressAnimeImageType
 import club.anifox.backend.jpa.entity.anime.AnimeBlockedTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
-import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.service.image.ImageService
@@ -93,7 +92,6 @@ class AnimeBlockComponent {
                 screenshots.clear()
                 similar.clear()
                 related.clear()
-                ids = AnimeIdsTable()
                 images = AnimeImagesTable()
             }
 
