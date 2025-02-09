@@ -27,6 +27,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.net.URL
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -80,13 +81,13 @@ class EpisodesComponent {
         type: AnimeType,
         urlLinkPath: String,
         defaultImage: String,
+        locallyEpisodes: List<AnimeEpisodeTable>,
     ): List<AnimeEpisodeTable> {
         val jikanEpisodes = mutableListOf<JikanEpisodeDto>()
         val kitsuEpisodes = mutableListOf<KitsuEpisodeDto>()
         val episodesReady = mutableListOf<AnimeEpisodeTable>()
 
         val translations = animeTranslationRepository.findAll().map { it.id }.joinToString(", ")
-
         val kodikAnime = kodikComponent.checkKodikSingle(shikimoriId, translations)
 
         when (type) {
@@ -111,6 +112,7 @@ class EpisodesComponent {
                                 defaultImage,
                                 translations,
                                 type,
+                                locallyEpisodes,
                             ),
                         )
                     }
@@ -127,6 +129,7 @@ class EpisodesComponent {
                                 defaultImage,
                                 translations,
                                 type,
+                                locallyEpisodes,
                             ),
                         )
                     }
@@ -144,6 +147,7 @@ class EpisodesComponent {
                         defaultImage,
                         translations,
                         type,
+                        locallyEpisodes,
                     ),
                 )
             }
@@ -185,8 +189,10 @@ class EpisodesComponent {
         imageDefault: String,
         translations: String,
         type: AnimeType,
+        locallyEpisodes: List<AnimeEpisodeTable>,
     ): List<AnimeEpisodeTable> {
         val episodeReady = mutableListOf<AnimeEpisodeTable>()
+        val existingEpisodesByNumber = locallyEpisodes.associateBy { it.number }
 
         val kitsuEpisodesMapped = mutableMapOf<String, KitsuEpisodeDto?>()
         val translatedTitleMapped = mutableMapOf<String, String>()
@@ -278,6 +284,7 @@ class EpisodesComponent {
                         } catch (e: Exception) {
                             null
                         },
+                        existingEpisodesByNumber[episodeKey.toInt()],
                     )
                 }
             }
@@ -285,7 +292,14 @@ class EpisodesComponent {
         val processedEpisodes = jobs.awaitAll()
         val sortedEpisodes = processedEpisodes.sortedBy { it.number }
 
-        episodeReady.addAll(addEpisodeTranslations(sortedEpisodes, shikimoriId, type, translations))
+        episodeReady.addAll(
+            addEpisodeTranslations(
+                sortedEpisodes,
+                shikimoriId,
+                type,
+                translations,
+            ),
+        )
 
         return episodeReady
     }
@@ -298,6 +312,7 @@ class EpisodesComponent {
         descriptionRu: String?,
         imageDefault: String,
         jikanEpisode: JikanEpisodeDto?,
+        existingEpisode: AnimeEpisodeTable?,
     ): AnimeEpisodeTable {
         val imageEpisode =
             kitsuEpisode?.attributes?.thumbnail?.let { thumbnail ->
@@ -332,20 +347,32 @@ class EpisodesComponent {
             jikanEpisode?.aired?.takeIf { it.length > 3 }
                 ?: kitsuEpisode?.attributes?.airDate?.takeIf { it.length > 3 }
 
-        return AnimeEpisodeTable(
-            title = titleRu?.takeIf { it.length > 3 } ?: "$episode",
-            titleEn = kitsuEpisode?.attributes?.titles?.enToUs ?: "$episode",
-            description = descriptionRu,
-            descriptionEn = kitsuEpisode?.attributes?.description.orEmpty(),
-            number = kitsuNumber,
-            duration = kitsuEpisode?.attributes?.length,
-            image = imageEpisode.takeIf { it.length > 5 } ?: imageDefault,
-            filler = jikanEpisode?.filler ?: false,
-            recap = jikanEpisode?.recap ?: false,
-            aired = airedDate?.let { LocalDate.parse(it.take(10), DateTimeFormatter.ISO_DATE) },
-        )
+        return existingEpisode?.apply {
+            title = titleRu?.takeIf { it.length > 3 } ?: "$episode"
+            titleEn = kitsuEpisode?.attributes?.titles?.enToUs ?: "$episode"
+            description = descriptionRu
+            descriptionEn = kitsuEpisode?.attributes?.description.orEmpty()
+            duration = kitsuEpisode?.attributes?.length
+            image = imageEpisode.takeIf { it.length > 5 } ?: imageDefault
+            filler = jikanEpisode?.filler ?: false
+            recap = jikanEpisode?.recap ?: false
+            aired = airedDate?.let { LocalDate.parse(it.take(10), DateTimeFormatter.ISO_DATE) }
+        }
+            ?: AnimeEpisodeTable(
+                title = titleRu?.takeIf { it.length > 3 } ?: "$episode",
+                titleEn = kitsuEpisode?.attributes?.titles?.enToUs ?: "$episode",
+                description = descriptionRu,
+                descriptionEn = kitsuEpisode?.attributes?.description.orEmpty(),
+                number = kitsuNumber,
+                duration = kitsuEpisode?.attributes?.length,
+                image = imageEpisode.takeIf { it.length > 5 } ?: imageDefault,
+                filler = jikanEpisode?.filler ?: false,
+                recap = jikanEpisode?.recap ?: false,
+                aired = airedDate?.let { LocalDate.parse(it.take(10), DateTimeFormatter.ISO_DATE) },
+            )
     }
 
+    @Transactional
     private suspend fun addEpisodeTranslations(
         episodes: List<AnimeEpisodeTable>,
         shikimoriId: Int,
@@ -353,7 +380,6 @@ class EpisodesComponent {
         translationsId: String,
     ): List<AnimeEpisodeTable> {
         val animeVariations = kodikComponent.checkKodikVariety(shikimoriId, translationsId)
-        val episodeTranslationsToSave = mutableListOf<EpisodeTranslationTable>()
 
         animeVariations.forEach { anime ->
             val translationId =
@@ -366,48 +392,74 @@ class EpisodesComponent {
             when (type) {
                 AnimeType.Tv, AnimeType.Music, AnimeType.Ona, AnimeType.Ova, AnimeType.Special -> {
                     if (anime.seasons.values.isEmpty()) {
-                        if (anime.link.isNotEmpty()) {
+                        if (anime.link.isNotEmpty() && episodes.size == 1) {
                             val episode = episodes.first()
-                            val episodeTranslation =
-                                EpisodeTranslationTable(
+                            val existTranslation = episode.translations.find { it.translation.id == translation.id }
+
+                            if (existTranslation == null) {
+                                val episodeTranslation = EpisodeTranslationTable(
                                     translation = translation,
                                     link = anime.link,
                                 )
 
-                            episode.addTranslation(episodeTranslation)
-                            episodeTranslationsToSave.add(episodeTranslation)
+                                animeEpisodeTranslationRepository.saveAndFlush(episodeTranslation)
+
+                                episodes.map {
+                                    it.addTranslation(episodeTranslation)
+                                }
+                            }
                         }
                     } else {
-                        val episodeTranslations =
-                            anime.seasons.values
-                                .flatMap { it.episodes.keys.mapNotNull(String::toIntOrNull) }
-                                .mapNotNull { episodeNumber ->
-                                    episodes.find { it.number == episodeNumber }?.let { episode ->
-                                        EpisodeTranslationTable(
+                        anime.seasons.values
+                            .flatMap { it.episodes.keys.mapNotNull(String::toIntOrNull) }
+                            .mapNotNull { episodeNumber ->
+                                episodes.find { it.number == episodeNumber }?.let { episode ->
+                                    val existTranslation = episode.translations.find { it.translation.id == translation.id }
+
+                                    if (existTranslation == null) {
+                                        val episodeTranslation = EpisodeTranslationTable(
                                             translation = translation,
                                             link = "${anime.link}?episode=${episode.number}",
-                                        ).also { episodeTranslation ->
-                                            episode.addTranslation(episodeTranslation)
+                                        )
+
+                                        animeEpisodeTranslationRepository.saveAndFlush(episodeTranslation)
+
+                                        episodes.map { episodeExist ->
+                                            if (episodeExist.number == episodeNumber) {
+                                                episodeExist.addTranslation(episodeTranslation)
+                                            } else {
+                                                episodeExist
+                                            }
                                         }
                                     }
                                 }
-                        episodeTranslationsToSave.addAll(episodeTranslations)
+                            }
                     }
                 }
-                else -> {
+                AnimeType.Movie -> {
                     val episode = episodes.first()
-                    val episodeTranslation =
-                        EpisodeTranslationTable(
+                    val existTranslation = episode.translations.find { it.translation.id == translation.id }
+
+                    if (existTranslation == null) {
+                        val episodeTranslation = EpisodeTranslationTable(
                             translation = translation,
                             link = anime.link,
                         )
-                    episode.addTranslation(episodeTranslation)
-                    episodeTranslationsToSave.add(episodeTranslation)
+
+                        animeEpisodeTranslationRepository.saveAndFlush(episodeTranslation)
+
+                        episodes.map { episodeExist ->
+                            if (episodeExist.number == episode.number) {
+                                episodeExist.addTranslation(episodeTranslation)
+                            } else {
+                                episodeExist
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        animeEpisodeTranslationRepository.saveAll(episodeTranslationsToSave)
         return episodes
     }
 

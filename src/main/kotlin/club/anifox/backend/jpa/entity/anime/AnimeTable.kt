@@ -247,22 +247,30 @@ data class AnimeTable(
     }
 
     fun addEpisodesAll(episodesAll: List<AnimeEpisodeTable>): AnimeTable {
+        val episodesByNumber = episodes.associateBy { it.number }.toMutableMap()
+
         episodesAll.forEach { newEpisode ->
-            val existingEpisode = episodes.find { it.number == newEpisode.number }
-            if (existingEpisode == null || existingEpisode != newEpisode) {
-                existingEpisode?.apply {
-                    translations = newEpisode.translations
+            val existingEpisode = episodesByNumber[newEpisode.number]
+
+            if (existingEpisode != null) {
+                existingEpisode.apply {
                     title = newEpisode.title
                     titleEn = newEpisode.titleEn
                     description = newEpisode.description
                     descriptionEn = newEpisode.descriptionEn
+                    duration = newEpisode.duration
                     image = newEpisode.image
                     aired = newEpisode.aired
                     filler = newEpisode.filler
                     recap = newEpisode.recap
-                } ?: episodes.add(newEpisode)
+                    translations = newEpisode.translations
+                }
+            } else {
+                episodes.add(newEpisode)
+                episodesByNumber[newEpisode.number] = newEpisode
             }
         }
+
         return this
     }
 

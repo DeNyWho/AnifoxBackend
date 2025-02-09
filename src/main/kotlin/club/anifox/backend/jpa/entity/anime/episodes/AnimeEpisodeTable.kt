@@ -16,7 +16,7 @@ import java.util.*
 @Table(name = "episodes", schema = "anime")
 data class AnimeEpisodeTable(
     @Id
-    val id: String = UUID.randomUUID().toString(),
+    var id: String = UUID.randomUUID().toString(),
     @Column(nullable = false, columnDefinition = "TEXT")
     var title: String = "",
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -26,9 +26,9 @@ data class AnimeEpisodeTable(
     @Column(nullable = true, columnDefinition = "TEXT")
     var description: String? = "",
     @Column(nullable = false)
-    val number: Int = 0,
+    var number: Int = 0,
     @Column(nullable = true)
-    val duration: Int? = null,
+    var duration: Int? = null,
     @Column(nullable = false)
     var image: String = "",
     @Column(nullable = true)
@@ -41,7 +41,8 @@ data class AnimeEpisodeTable(
     var translations: MutableSet<EpisodeTranslationTable> = mutableSetOf(),
 ) {
     fun addTranslation(translation: EpisodeTranslationTable): AnimeEpisodeTable {
-        val existingTranslation = translations.find { translation.translation == it.translation }
+        val existingTranslation = translations.find { it.translation == translation.translation }
+
         if (existingTranslation == null) {
             translations.add(translation)
         }

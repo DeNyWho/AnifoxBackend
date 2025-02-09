@@ -7,6 +7,7 @@ import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
@@ -16,7 +17,10 @@ import club.anifox.backend.service.anime.components.parser.FetchImageComponent
 import club.anifox.backend.service.anime.components.schedule.AnimeScheduleComponent
 import club.anifox.backend.service.anime.components.shikimori.AnimeShikimoriComponent
 import jakarta.persistence.EntityManager
+import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.Join
 import jakarta.persistence.criteria.JoinType
+import jakarta.persistence.criteria.Root
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -27,6 +31,7 @@ import org.hibernate.jpa.AvailableHints
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -50,7 +55,7 @@ class AnimeUpdateComponent(
     private val genreCache = ConcurrentHashMap<String, AnimeGenreTable>()
 
     @Async
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun update(onlyOngoing: Boolean = false) {
         runBlocking {
             try {
@@ -72,10 +77,9 @@ class AnimeUpdateComponent(
                         logger.info("Completed $processedCount/$totalCount anime updates")
                     } catch (e: Exception) {
                         logger.error("Failed to process batch ${batchIds.joinToString()}", e)
-                    } finally {
-                        entityManager.clear()
                     }
                 }
+                entityManager.clear()
 
                 logger.info("Update process completed. Processed $processedCount anime.")
             } catch (e: Exception) {
@@ -158,6 +162,7 @@ class AnimeUpdateComponent(
                 """
                 SELECT DISTINCT a FROM AnimeTable a
                 LEFT JOIN FETCH a.episodes e
+                LEFT JOIN FETCH a.genres g
                 LEFT JOIN FETCH a.screenshots
                 LEFT JOIN FETCH a.images
                 LEFT JOIN FETCH a.translations
@@ -221,6 +226,14 @@ class AnimeUpdateComponent(
 
                 val ids = entityManager.createQuery(query).singleResult
 
+                val criteriaQueryEpisodes: CriteriaQuery<AnimeEpisodeTable> = cb.createQuery(AnimeEpisodeTable::class.java)
+
+                val animeRoot: Root<AnimeTable> = criteriaQueryEpisodes.from(AnimeTable::class.java)
+                val episodesJoin: Join<AnimeTable, AnimeEpisodeTable> = animeRoot.join("episodes", JoinType.LEFT)
+                criteriaQueryEpisodes.select(episodesJoin)
+                criteriaQueryEpisodes.where(cb.equal(animeRoot.get<String>("id"), anime.id))
+                val locallyEpisodes = entityManager.createQuery(criteriaQueryEpisodes).resultList
+
                 val episodesDeferred = async {
                     episodesComponent.fetchEpisodes(
                         shikimoriId = anime.shikimoriId,
@@ -228,15 +241,16 @@ class AnimeUpdateComponent(
                         type = anime.type,
                         urlLinkPath = anime.url,
                         defaultImage = anime.images.medium,
+                        locallyEpisodes = locallyEpisodes,
                     )
                 }
 
                 val episodes = episodesDeferred.await()
+
                 val translationsCount = episodesComponent.translationsCount(episodes)
 
                 anime.apply {
-                    this.episodes.clear()
-                    this.episodes.addAll(episodes)
+                    this.addEpisodesAll(episodes)
 
                     translations.clear()
                     translations.addAll(translationsCount.map { it.translation }.toSet())
@@ -282,7 +296,7 @@ class AnimeUpdateComponent(
 
     private suspend fun logError(shikimoriId: Int, cause: String, message: String?) {
         try {
-            animeErrorParserRepository.save(
+            animeErrorParserRepository.saveAndFlush(
                 AnimeErrorParserTable(
                     message = message ?: "FAILED",
                     cause = cause,

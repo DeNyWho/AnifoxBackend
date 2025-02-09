@@ -740,6 +740,7 @@ class AnimeParseComponent(
                         type = type,
                         urlLinkPath = urlLinkPath,
                         defaultImage = images.medium,
+                        locallyEpisodes = listOf(),
                     )
 
                     val translationsCountReady = episodesComponent.translationsCount(episodesReady)

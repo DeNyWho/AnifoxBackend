@@ -18,5 +18,5 @@ data class EpisodeTranslationTable(
     @JoinColumn(name = "translation_id", referencedColumnName = "id")
     val translation: AnimeTranslationTable = AnimeTranslationTable(),
     @Column(nullable = false, columnDefinition = "TEXT")
-    val link: String = "",
+    var link: String = "",
 )
