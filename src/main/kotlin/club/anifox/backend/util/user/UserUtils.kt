@@ -16,8 +16,9 @@ class UserUtils(
 ) {
     fun checkUser(token: String): UserTable {
         val keycloakUser = keycloakService.findByUserID(tokenHelper.getTokenInfo(token).sub!!)
+
         return if (keycloakUser != null) {
-            userRepository.findById(tokenHelper.getTokenInfo(token).preferredUsername!!)
+            userRepository.findById(tokenHelper.getTokenInfo(token).sub!!)
                 .orElseThrow { throw NotFoundException("User not found") }
         } else {
             throw NotFoundException("User not found")
