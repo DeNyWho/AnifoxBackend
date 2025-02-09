@@ -34,7 +34,6 @@ class KeycloakService(
 
     fun findByUserID(id: String): UserRepresentation? =
         try {
-            println("ZXCXZ = $realm")
             keycloak
                 .realm(realm)
                 .users()

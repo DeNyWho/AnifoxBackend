@@ -116,6 +116,7 @@ constructor(
                     AntPathRequestMatcher("/api/auth/**"),
                     AntPathRequestMatcher("/api/auth/oauth2/code/**"),
                 ).permitAll()
+                auth.anyRequest().authenticated()
             }
             .exceptionHandling {
                 it.authenticationEntryPoint(unauthorizedEntryPoint())
