@@ -252,11 +252,9 @@ class AnimeUpdateComponent(
                 anime.apply {
                     this.addEpisodesAll(episodes)
 
-                    translations.clear()
-                    translations.addAll(translationsCount.map { it.translation }.toSet())
+                    this.addTranslation(translationsCount.map { it.translation })
 
-                    translationsCountEpisodes.clear()
-                    translationsCountEpisodes.addAll(translationsCount)
+                    this.addTranslationCount(translationsCount)
 
                     this.duration = this.duration?.let { duration ->
                         if (this.status == AnimeStatus.Released && episodes.size * 16 < duration) {
