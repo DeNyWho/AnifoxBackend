@@ -145,6 +145,7 @@ class AnimeSearchComponent {
                 predicates.add(studioPredicate)
             }
         }
+
         if (!genres.isNullOrEmpty()) {
             val g = mutableListOf<AnimeGenreTable>()
             genres.forEach {
@@ -156,8 +157,11 @@ class AnimeSearchComponent {
             }
         }
         if (!searchQuery.isNullOrEmpty()) {
-            // Нормализуем поисковый запрос
+            // Нормализуем поисковый запрос и создаем варианты написания
             val normalizedSearchQuery = normalizeText(searchQuery)
+            val searchVariants = generateSearchVariants(normalizedSearchQuery)
+
+            println("FVCX = $searchVariants")
 
             val searchFields = listOf(
                 root.get<String>("title"),
@@ -167,9 +171,65 @@ class AnimeSearchComponent {
                 root.joinList<AnimeTable, String>("synonyms", JoinType.LEFT),
             )
 
-            val fuzzySearchPredicates = searchFields.map { field ->
-                criteriaBuilder.or(
-                    // Точное совпадение с нормализацией
+            val searchPredicates = mutableListOf<Predicate>()
+
+            // Для каждого варианта написания создаем предикаты
+            searchVariants.forEach { variant ->
+                searchFields.forEach { field ->
+                    // Точное совпадение (case-insensitive)
+                    searchPredicates.add(
+                        criteriaBuilder.equal(
+                            criteriaBuilder.function(
+                                "LOWER",
+                                String::class.java,
+                                field,
+                            ),
+                            variant.lowercase(),
+                        ),
+                    )
+
+                    // Совпадение без специальных символов
+                    searchPredicates.add(
+                        criteriaBuilder.equal(
+                            criteriaBuilder.function(
+                                "REPLACE",
+                                String::class.java,
+                                criteriaBuilder.function(
+                                    "REPLACE",
+                                    String::class.java,
+                                    criteriaBuilder.function(
+                                        "LOWER",
+                                        String::class.java,
+                                        field,
+                                    ),
+                                    criteriaBuilder.literal("-"),
+                                    criteriaBuilder.literal(""),
+                                ),
+                                criteriaBuilder.literal(" "),
+                                criteriaBuilder.literal(""),
+                            ),
+                            variant.replace("-", "").replace(" ", "").lowercase(),
+                        ),
+                    )
+
+                    // Частичное совпадение
+                    searchPredicates.add(
+                        criteriaBuilder.like(
+                            criteriaBuilder.function(
+                                "LOWER",
+                                String::class.java,
+                                field,
+                            ),
+                            "%${variant.lowercase()}%",
+                        ),
+                    )
+                }
+            }
+
+            // Создаем предикаты для слитного написания
+            val concatenatedQuery = normalizedSearchQuery.replace("-", "").replace(" ", "")
+            searchFields.forEach { field ->
+                searchPredicates.add(
                     criteriaBuilder.like(
                         criteriaBuilder.function(
                             "REPLACE",
@@ -182,24 +242,23 @@ class AnimeSearchComponent {
                                     String::class.java,
                                     field,
                                 ),
-                                criteriaBuilder.literal("ё"),
-                                criteriaBuilder.literal("е"),
+                                criteriaBuilder.literal("-"),
+                                criteriaBuilder.literal(""),
                             ),
-                            criteriaBuilder.literal("-"),
+                            criteriaBuilder.literal(" "),
                             criteriaBuilder.literal(""),
                         ),
-                        "%$normalizedSearchQuery%",
+                        "%${concatenatedQuery.lowercase()}%",
                     ),
                 )
             }
 
             // Объединяем предикаты
             predicates.add(
-                criteriaBuilder.or(
-                    *fuzzySearchPredicates.toTypedArray(),
-                ),
+                criteriaBuilder.or(*searchPredicates.toTypedArray()),
             )
         }
+
         if (!translationIds.isNullOrEmpty()) {
             val translationJoin = root.join<AnimeTable, AnimeTranslationTable>("translations")
 
@@ -282,15 +341,60 @@ class AnimeSearchComponent {
         return query.resultList
     }
 
-    private fun normalizeText(input: String): String {
-        return input
-            .lowercase()
-            .replace('ё', 'е')
-            .replace('щ', 'ш')
-            .replace('ъ', 'ь')
-            .replace('э', 'е')
-            .replace('ы', 'и')
-            .replace("-", "")
-            .replace(" ", "")
+    private fun normalizeText(text: String): String {
+        return text.trim()
+            .replace(Regex("\\s+"), " ")
+    }
+
+    private fun generateSearchVariants(text: String): MutableList<String> {
+        val variants = mutableListOf<String>()
+
+        variants.add(text)
+
+        if (text.contains("ё")) {
+            variants.add(text.replace("ё", "е"))
+        }
+
+        if (text.contains("е")) {
+            variants.add(text.replace("е".toRegex(), "ё"))
+        }
+
+        if (text.contains("ё")) {
+            variants.add(text.replaceFirst("ё", "е"))
+        }
+
+        if (text.contains("е")) {
+            variants.add(text.replaceFirst("е", "ё"))
+        }
+
+        if (text.contains("ё")) {
+            variants.add(text.replaceLast("ё", "е"))
+        }
+
+        if (text.contains("е")) {
+            variants.add(text.replaceLast("е", "ё"))
+        }
+
+        if (text.contains(" ")) {
+            variants.add(text.replace(" ", "-"))
+        }
+
+        if (text.contains("-")) {
+            variants.add(text.replace("-", " "))
+        }
+
+        variants.add(text.replace("-", "").replace(" ", ""))
+
+        return variants
+    }
+
+    fun String.replaceLast(oldValue: String, newValue: String): String {
+        val lastIndex = lastIndexOf(oldValue)
+        if (lastIndex == -1) {
+            return this
+        }
+        val prefix = substring(0, lastIndex)
+        val suffix = substring(lastIndex + oldValue.length)
+        return "$prefix$newValue$suffix"
     }
 }
