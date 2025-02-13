@@ -164,8 +164,6 @@ class AnimeSearchComponent {
             val normalizedSearchQuery = normalizeText(searchQuery)
             val searchVariants = generateSearchVariants(normalizedSearchQuery)
 
-            println("FVCX = $searchVariants")
-
             val language = searchQuery.detectLanguage()
 
             val searchFields = mutableListOf(
