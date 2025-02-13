@@ -16,30 +16,30 @@ class ParserTasks {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
-    fun parseAnime() {
-        animeService.parseTranslations(listOf(610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002, 1978, 1291, 1272, 1946))
-        animeService.parseAnime()
-    }
+//    @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
+//    fun parseAnime() {
+//        animeService.parseTranslations(listOf(610, 609, 735, 643, 559, 739, 767, 825, 933, 557, 794, 1002, 1978, 1291, 1272, 1946))
+//        animeService.parseAnime()
+//    }
 
     @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS)
     fun parseAnimeIntegrations() {
         animeService.parseAnimeIntegrations()
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
-    fun updateData() {
-        animeService.updateEpisodes(
-            onlyOngoing = false,
-        )
-    }
-
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
-    fun updateDataOngoingOnly() {
-        animeService.updateEpisodes(
-            onlyOngoing = true,
-        )
-    }
+//    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
+//    fun updateData() {
+//        animeService.updateEpisodes(
+//            onlyOngoing = false,
+//        )
+//    }
+//
+//    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.SECONDS)
+//    fun updateDataOngoingOnly() {
+//        animeService.updateEpisodes(
+//            onlyOngoing = true,
+//        )
+//    }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
     fun logHealthStatus() {

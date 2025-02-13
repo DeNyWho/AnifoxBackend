@@ -5,6 +5,7 @@ import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.enums.anime.AnimeType
 import club.anifox.backend.domain.enums.anime.filter.AnimeDefaultFilter
 import club.anifox.backend.domain.enums.anime.filter.AnimeSearchFilter
+import club.anifox.backend.domain.enums.common.LanguageType.*
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.jpa.entity.anime.AnimeTable
@@ -14,6 +15,8 @@ import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import club.anifox.backend.util.detectLanguage
+import club.anifox.backend.util.replaceLast
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.JoinType
@@ -163,13 +166,25 @@ class AnimeSearchComponent {
 
             println("FVCX = $searchVariants")
 
-            val searchFields = listOf(
+            val language = searchQuery.detectLanguage()
+
+            val searchFields = mutableListOf(
                 root.get<String>("title"),
-                root.joinList<AnimeTable, String>("titleOther", JoinType.LEFT),
-                root.joinList<AnimeTable, String>("titleEn", JoinType.LEFT),
-                root.joinList<AnimeTable, String>("titleJapan", JoinType.LEFT),
-                root.joinList<AnimeTable, String>("synonyms", JoinType.LEFT),
             )
+
+            when (language) {
+                JAPANESE -> {
+                    searchFields.add(root.joinList<AnimeTable, String>("titleJapan", JoinType.LEFT))
+                }
+                RUSSIAN -> {
+                    searchFields.add(root.joinList<AnimeTable, String>("titleOther", JoinType.LEFT))
+                    searchFields.add(root.joinList<AnimeTable, String>("synonyms", JoinType.LEFT))
+                }
+                ENGLISH -> {
+                    searchFields.add(root.joinList<AnimeTable, String>("titleEn", JoinType.LEFT))
+                }
+                UNKNOWN -> { }
+            }
 
             val searchPredicates = mutableListOf<Predicate>()
 
@@ -386,15 +401,5 @@ class AnimeSearchComponent {
         variants.add(text.replace("-", "").replace(" ", ""))
 
         return variants
-    }
-
-    fun String.replaceLast(oldValue: String, newValue: String): String {
-        val lastIndex = lastIndexOf(oldValue)
-        if (lastIndex == -1) {
-            return this
-        }
-        val prefix = substring(0, lastIndex)
-        val suffix = substring(lastIndex + oldValue.length)
-        return "$prefix$newValue$suffix"
     }
 }
