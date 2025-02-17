@@ -141,7 +141,7 @@ class AuthComponent(
                         UserTable(
                             id = userId,
                             login = signUpRequest.login,
-                            image = "",
+                            image = null,
                             birthday = signUpRequest.birthday,
                             nickName = "user${(1..10).map { Random.nextInt(0, 10) }.joinToString("")}",
                         )

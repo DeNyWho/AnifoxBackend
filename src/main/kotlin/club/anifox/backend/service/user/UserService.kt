@@ -5,12 +5,14 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeProgressReques
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.repository.user.UserRepository
 import club.anifox.backend.service.user.component.UserAnimeInteractionsComponent
+import club.anifox.backend.service.user.component.favourite.AnimeFavoriteStatusService
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Service
 
 @Service
 class UserService(
     private val userAnimeInteractionsComponent: UserAnimeInteractionsComponent,
+    private val animeFavoriteStatusService: AnimeFavoriteStatusService,
 ) : UserRepository {
     override fun setAnimeRating(
         token: String,
@@ -61,7 +63,7 @@ class UserService(
         episodesWatched: Int?,
         response: HttpServletResponse,
     ) {
-        userAnimeInteractionsComponent.addToFavoritesAnime(token = token, url = url, status = status, episodesWatched = episodesWatched, response = response)
+        animeFavoriteStatusService.addToFavorites(token = token, url = url, status = status, episodesWatched = episodesWatched, response = response)
     }
 
     override fun getFavoritesAnimeByStatus(
@@ -70,6 +72,6 @@ class UserService(
         page: Int,
         limit: Int,
     ): List<AnimeLight> {
-        return userAnimeInteractionsComponent.getFavoritesByStatus(token = token, status = status, page = page, limit = limit)
+        return animeFavoriteStatusService.getFavoritesByStatus(token = token, status = status, page = page, limit = limit)
     }
 }

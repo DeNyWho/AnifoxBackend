@@ -170,7 +170,7 @@ class AnimeParseComponent(
     fun integrations() = CoroutineScope(Dispatchers.IO).launch {
         val integrationJobs = listOf(
             async { integrateSimilarRelated() },
-            async { integrateCharacters() },
+//            async { integrateCharacters() },
         )
         integrationJobs.awaitAll()
     }

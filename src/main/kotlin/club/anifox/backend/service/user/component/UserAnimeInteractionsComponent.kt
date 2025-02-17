@@ -66,61 +66,6 @@ class UserAnimeInteractionsComponent {
     @Autowired
     private lateinit var animeUtils: AnimeUtils
 
-    fun addToFavoritesAnime(
-        token: String,
-        url: String,
-        status: StatusFavourite,
-        episodesWatched: Int?,
-        response: HttpServletResponse,
-    ) {
-        val user = userUtils.checkUser(token)
-        val anime = animeUtils.checkAnime(url)
-
-        val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
-        if (existingFavorite.isPresent) {
-            val existFavorite = existingFavorite.get()
-            if (existFavorite.status == status && existFavorite.episodesWatched == episodesWatched) {
-                return
-            } else {
-                existFavorite.status = status
-                if (episodesWatched != null && existFavorite.episodesWatched != episodesWatched) {
-                    existFavorite.episodesWatched = episodesWatched
-                }
-
-                userFavoriteAnimeRepository.save(existFavorite)
-                return
-            }
-        }
-
-        userFavoriteAnimeRepository.save(
-            UserFavoriteAnimeTable(
-                user = user,
-                anime = anime,
-                status = status,
-                updateDate = LocalDateTime.now(),
-                episodesWatched = episodesWatched,
-            ),
-        )
-
-        response.status = HttpStatus.CREATED.value()
-    }
-
-    fun getFavoritesByStatus(
-        token: String,
-        status: StatusFavourite,
-        page: Int,
-        limit: Int,
-    ): List<AnimeLight> {
-        val user = userUtils.checkUser(token)
-        val favoriteAnime = userFavoriteAnimeRepository.findByUserAndStatus(user, status, PageRequest.of(page, limit))
-
-        if (favoriteAnime.isNotEmpty()) {
-            return favoriteAnime.map { it.anime.toAnimeLight() }
-        }
-
-        throw NotFoundException("The user has no recent anime")
-    }
-
     fun getRecommendations(
         token: String,
         page: Int,
@@ -289,7 +234,7 @@ class UserAnimeInteractionsComponent {
 
         val favoriteStatus =
             when {
-                isEpisodeWatched -> StatusFavourite.Watched
+                isEpisodeWatched -> StatusFavourite.Completed
                 else -> StatusFavourite.Watching
             }
 
@@ -305,8 +250,8 @@ class UserAnimeInteractionsComponent {
         favorite.episodesWatched = episode.number
         favorite.status =
             when (favorite.status) {
-                StatusFavourite.Watching -> if (isEpisodeWatched) StatusFavourite.Watched else StatusFavourite.Watching
-                StatusFavourite.InPlan, StatusFavourite.Postponed, StatusFavourite.Watched -> StatusFavourite.Watching
+                StatusFavourite.Watching -> if (isEpisodeWatched) StatusFavourite.Completed else StatusFavourite.Watching
+                StatusFavourite.InPlan, StatusFavourite.Dropped, StatusFavourite.Completed, StatusFavourite.OnHold -> StatusFavourite.Watching
             }
 
         userFavoriteAnimeRepository.save(favorite)

@@ -50,6 +50,9 @@ dependencies {
     implementation(libs.ktor.client.java)
     implementation(libs.ktor.serialization.kotlinx.json)
 
+    implementation(libs.spring.boot.retry)
+    implementation(libs.spring.boot.starter.aop)
+
     implementation(libs.spring.boot.starter.data.jpa)
 //    implementation(libs.spring.boot.starter.data.elasticsearch)
     implementation(libs.spring.boot.starter.actuator)

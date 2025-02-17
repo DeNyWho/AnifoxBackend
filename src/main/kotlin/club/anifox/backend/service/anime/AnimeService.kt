@@ -16,6 +16,7 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
+import club.anifox.backend.domain.model.anime.statistics.AnimeStatistics
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.domain.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
@@ -88,6 +89,10 @@ class AnimeService : AnimeRepository {
 
     override fun getAnimeDetails(url: String): AnimeDetail {
         return animeCommonComponent.getAnimeByUrl(url)
+    }
+
+    override fun getAnimeStatistics(url: String): AnimeStatistics {
+        return animeCommonComponent.getAnimeStatistics(url)
     }
 
     override fun findExternalLinksByAnimeId(animeId: String): List<AnimeExternalLinksTable> {

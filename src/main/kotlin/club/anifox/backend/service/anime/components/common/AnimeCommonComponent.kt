@@ -25,9 +25,13 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
 import club.anifox.backend.domain.model.anime.sitemap.AnimeSitemap
+import club.anifox.backend.domain.model.anime.statistics.AnimeStatistics
+import club.anifox.backend.domain.model.anime.statistics.AnimeStatisticsScore
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterRoleTable
 import club.anifox.backend.jpa.entity.anime.AnimeCharacterTable
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
+import club.anifox.backend.jpa.entity.anime.AnimeFavoriteStatusDistributionTable
+import club.anifox.backend.jpa.entity.anime.AnimeRatingDistributionTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
@@ -108,6 +112,43 @@ class AnimeCommonComponent {
         } else {
             return anime.first().toAnimeDetail()
         }
+    }
+
+    fun getAnimeStatistics(url: String): AnimeStatistics {
+        val anime = animeUtils.checkAnime(url)
+
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val criteriaFavQuery = criteriaBuilder.createQuery(AnimeFavoriteStatusDistributionTable::class.java)
+        val rootFav = criteriaFavQuery.from(AnimeFavoriteStatusDistributionTable::class.java)
+
+        rootFav.fetch<AnimeFavoriteStatusDistributionTable, AnimeTable>("anime", JoinType.INNER)
+
+        criteriaFavQuery.where(criteriaBuilder.equal(rootFav.get<AnimeTable>("anime").get<String>("id"), anime.id))
+
+        val criteriaRatQuery = criteriaBuilder.createQuery(AnimeRatingDistributionTable::class.java)
+        val rootRat = criteriaRatQuery.from(AnimeRatingDistributionTable::class.java)
+
+        rootRat.fetch<AnimeRatingDistributionTable, AnimeTable>("anime", JoinType.INNER)
+
+        criteriaRatQuery.where(criteriaBuilder.equal(rootRat.get<AnimeTable>("anime").get<String>("id"), anime.id))
+
+        val fav = entityManager.createQuery(criteriaFavQuery).resultList
+        val rat = entityManager.createQuery(criteriaRatQuery).resultList
+
+        if (fav.isNotEmpty()) {
+            return AnimeStatistics(
+                watching = fav.firstOrNull()?.watching ?: 0,
+                completed = fav.firstOrNull()?.completed ?: 0,
+                onHold = fav.firstOrNull()?.onHold ?: 0,
+                dropped = fav.firstOrNull()?.dropped ?: 0,
+                planToWatch = fav.firstOrNull()?.planToWatch ?: 0,
+                total = fav.firstOrNull()?.total ?: 0,
+                scores = (1..10).map { score ->
+                    AnimeStatisticsScore(score, rat.firstOrNull()?.getScoreCount(score) ?: 0)
+                },
+            )
+        }
+        throw IllegalStateException("Anime statistics not found")
     }
 
     @Transactional()

@@ -15,6 +15,7 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisode
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeHistory
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.model.anime.light.AnimeRelationLight
+import club.anifox.backend.domain.model.anime.statistics.AnimeStatistics
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
 import club.anifox.backend.jpa.entity.anime.AnimeExternalLinksTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
@@ -100,4 +101,5 @@ interface AnimeRepository {
 
     fun findExternalLinksByAnimeId(animeId: String): List<AnimeExternalLinksTable>
     fun getAnimeEpisodesHistory(url: String, page: Int, limit: Int): List<AnimeEpisodeHistory>
+    fun getAnimeStatistics(url: String): AnimeStatistics
 }

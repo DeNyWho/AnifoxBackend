@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController
 class UsersAnimeController(
     private val userService: UserService,
 ) {
-    @PostMapping("{url}/favorite")
+    @PostMapping("{url}/favourite")
     fun addToFavoriteAnime(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
@@ -42,7 +42,7 @@ class UsersAnimeController(
         userService.addToFavoritesAnime(token, url, status, episodesWatched, response)
     }
 
-    @GetMapping("favorite/{status}")
+    @GetMapping("favourite/{status}")
     fun getFavoriteAnimeByStatus(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable status: StatusFavourite,

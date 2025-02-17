@@ -1,11 +1,11 @@
 package club.anifox.backend.jpa.entity.user
 
 import club.anifox.backend.domain.enums.user.StatusFavourite
+import club.anifox.backend.jpa.convert.StatusFavouriteConverter
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
@@ -19,16 +19,21 @@ import java.util.*
 data class UserFavoriteAnimeTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     val user: UserTable = UserTable(),
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
     val anime: AnimeTable = AnimeTable(),
+
     var updateDate: LocalDateTime = LocalDateTime.now(),
-    @Enumerated(EnumType.STRING)
+
+    @Convert(converter = StatusFavouriteConverter::class)
     @Column(length = 20)
     var status: StatusFavourite = StatusFavourite.Watching,
+
     @Column(length = 5, nullable = true)
     var episodesWatched: Int? = null,
 )
