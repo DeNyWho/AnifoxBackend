@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -41,7 +42,15 @@ class UsersAnimeController(
         episodesWatched: Int?,
         response: HttpServletResponse,
     ) {
-        userService.addToFavoritesAnime(token, url, status, episodesWatched, response)
+        userService.addToFavorites(token, url, status, episodesWatched, response)
+    }
+
+    @DeleteMapping("{url}/favourite")
+    fun deleteFavoriteAnime(
+        @RequestHeader(value = "Authorization") token: String,
+        @PathVariable url: String,
+    ) {
+        userService.deleteFavorite(token, url)
     }
 
     @GetMapping("favourite/{status}")
@@ -57,7 +66,7 @@ class UsersAnimeController(
         @Max(500)
         Int,
     ): List<AnimeLight> {
-        return userService.getFavoritesAnimeByStatus(token, status, page, limit)
+        return userService.getFavoritesByStatus(token, status, page, limit)
     }
 
     @GetMapping("recommendations")
@@ -96,7 +105,7 @@ class UsersAnimeController(
     }
 
     @GetMapping("recently")
-    fun getRecentlyAnime(
+    fun getRecently(
         @RequestParam(defaultValue = "0", name = "page") page:
         @Min(0)
         @Max(500)
@@ -108,20 +117,24 @@ class UsersAnimeController(
         @RequestHeader(value = "Authorization") token: String,
         response: HttpServletResponse,
     ): List<AnimeLight> {
-        return userService.getRecentlyAnimeAll(token, page, limit)
+        return userService.getRecently(token, page, limit)
     }
 
     @PutMapping("{url}/rating")
     fun setAnimeRating(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
-        @RequestParam(required = true)
-        rating:
-        @Min(0)
-        @Max(10)
-        Int,
+        @RequestParam @Min(0) @Max(10) rating: Int,
         response: HttpServletResponse,
     ) {
         userService.addRating(token, url, rating, response)
+    }
+
+    @DeleteMapping("{url}/rating")
+    fun deleteAnimeRating(
+        @RequestHeader(value = "Authorization") token: String,
+        @PathVariable url: String,
+    ) {
+        userService.deleteRating(token, url)
     }
 }

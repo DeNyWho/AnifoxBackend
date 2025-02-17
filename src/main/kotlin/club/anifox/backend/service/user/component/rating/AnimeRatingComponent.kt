@@ -1,5 +1,6 @@
 package club.anifox.backend.service.user.component.rating
 
+import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.jpa.entity.anime.AnimeRatingDistributionTable
 import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
@@ -67,6 +68,25 @@ class AnimeRatingComponent(
         } catch (e: Exception) {
             logger.error("Error processing rating update", e)
             throw e
+        }
+    }
+
+    @Transactional
+    fun deleteRating(
+        token: String,
+        url: String,
+    ) {
+        val user = userUtils.checkUser(token)
+        val anime = animeUtils.checkAnime(url)
+        val existingRating = userRatingRepository.findByUserAndAnime(user, anime)
+
+        if (existingRating.isPresent) {
+            val existRating = existingRating.get()
+            updateRatingWithRetry(anime, existRating.rating, null)
+            userRatingRepository.delete(existRating)
+            userRatingRepository.flush()
+        } else {
+            throw NotFoundException("rating not found")
         }
     }
 

@@ -74,6 +74,26 @@ class AnimeFavoriteStatusComponent(
         }
     }
 
+    @Transactional
+    fun deleteFavorite(
+        token: String,
+        url: String,
+    ) {
+        val user = userUtils.checkUser(token)
+        val anime = animeUtils.checkAnime(url)
+        val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, anime)
+
+        if (existingFavorite.isPresent) {
+            val existFavorite = existingFavorite.get()
+
+            updateStatusWithRetry(anime, existFavorite.status, null)
+            userFavoriteAnimeRepository.delete(existFavorite)
+            userFavoriteAnimeRepository.flush()
+        } else {
+            throw NotFoundException("favourite not found")
+        }
+    }
+
     fun getFavoritesByStatus(
         token: String,
         status: StatusFavourite,
@@ -89,7 +109,7 @@ class AnimeFavoriteStatusComponent(
 
         return favoriteAnime.takeIf { it.isNotEmpty() }
             ?.map { it.anime.toAnimeLight() }
-            ?: throw NotFoundException("The user has no favourite anime")
+            ?: throw NotFoundException("favourite not found")
     }
 
     @Transactional

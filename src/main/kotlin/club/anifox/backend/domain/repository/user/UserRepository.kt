@@ -13,13 +13,13 @@ interface UserRepository {
         response: HttpServletResponse,
     )
 
-    fun getRecentlyAnimeAll(
+    fun getRecently(
         token: String,
         page: Int,
         limit: Int,
     ): List<AnimeLight>
 
-    fun addToFavoritesAnime(
+    fun addToFavorites(
         token: String,
         url: String,
         status: StatusFavourite,
@@ -27,7 +27,7 @@ interface UserRepository {
         response: HttpServletResponse,
     )
 
-    fun getFavoritesAnimeByStatus(
+    fun getFavoritesByStatus(
         token: String,
         status: StatusFavourite,
         page: Int,
@@ -52,4 +52,7 @@ interface UserRepository {
         episodeNumber: Int,
         progress: AnimeEpisodeProgressRequest,
     )
+
+    fun deleteFavorite(token: String, url: String)
+    fun deleteRating(token: String, url: String)
 }

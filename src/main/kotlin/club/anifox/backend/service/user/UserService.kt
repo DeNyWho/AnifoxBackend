@@ -22,7 +22,22 @@ class UserService(
         rating: Int,
         response: HttpServletResponse,
     ) {
-        animeRatingComponent.addRating(token = token, url = url, rating = rating, response = response)
+        animeRatingComponent.addRating(
+            token = token,
+            url = url,
+            rating = rating,
+            response = response,
+        )
+    }
+
+    override fun deleteRating(
+        token: String,
+        url: String,
+    ) {
+        animeRatingComponent.deleteRating(
+            token = token,
+            url = url,
+        )
     }
 
     override fun changeEpisodeProgress(
@@ -31,15 +46,24 @@ class UserService(
         episodeNumber: Int,
         progress: AnimeEpisodeProgressRequest,
     ) {
-        userAnimeInteractionsComponent.changeEpisodeProgress(token, url, episodeNumber, progress)
+        userAnimeInteractionsComponent.changeEpisodeProgress(
+            token = token,
+            url = url,
+            episodeNumber = episodeNumber,
+            progress = progress,
+        )
     }
 
-    override fun getRecentlyAnimeAll(
+    override fun getRecently(
         token: String,
         page: Int,
         limit: Int,
     ): List<AnimeLight> {
-        return userAnimeInteractionsComponent.getRecentlyAnimeList(token = token, page = page, limit = limit)
+        return userAnimeInteractionsComponent.getRecentlyAnimeList(
+            token = token,
+            page = page,
+            limit = limit,
+        )
     }
 
     override fun updatePreferredGenres(
@@ -47,7 +71,11 @@ class UserService(
         genres: List<String>,
         response: HttpServletResponse,
     ) {
-        return userAnimeInteractionsComponent.updatePreferredGenres(token = token, genres = genres, response = response)
+        return userAnimeInteractionsComponent.updatePreferredGenres(
+            token = token,
+            genres = genres,
+            response = response,
+        )
     }
 
     override fun getRecommendations(
@@ -55,25 +83,50 @@ class UserService(
         page: Int,
         limit: Int,
     ): List<AnimeLight> {
-        return userAnimeInteractionsComponent.getRecommendations(token = token, page = page, limit = limit)
+        return userAnimeInteractionsComponent.getRecommendations(
+            token = token,
+            page = page,
+            limit = limit,
+        )
     }
 
-    override fun addToFavoritesAnime(
+    override fun addToFavorites(
         token: String,
         url: String,
         status: StatusFavourite,
         episodesWatched: Int?,
         response: HttpServletResponse,
     ) {
-        animeFavoriteStatusService.addToFavorites(token = token, url = url, status = status, episodesWatched = episodesWatched, response = response)
+        animeFavoriteStatusService.addToFavorites(
+            token = token,
+            url = url,
+            status = status,
+            episodesWatched = episodesWatched,
+            response = response,
+        )
     }
 
-    override fun getFavoritesAnimeByStatus(
+    override fun deleteFavorite(
+        token: String,
+        url: String,
+    ) {
+        animeFavoriteStatusService.deleteFavorite(
+            token = token,
+            url = url,
+        )
+    }
+
+    override fun getFavoritesByStatus(
         token: String,
         status: StatusFavourite,
         page: Int,
         limit: Int,
     ): List<AnimeLight> {
-        return animeFavoriteStatusService.getFavoritesByStatus(token = token, status = status, page = page, limit = limit)
+        return animeFavoriteStatusService.getFavoritesByStatus(
+            token = token,
+            status = status,
+            page = page,
+            limit = limit,
+        )
     }
 }
