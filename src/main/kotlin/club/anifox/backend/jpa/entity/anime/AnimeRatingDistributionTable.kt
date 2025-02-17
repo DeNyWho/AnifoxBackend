@@ -7,13 +7,13 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.MapsId
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import java.time.LocalDateTime
 import java.util.*
 
 @Entity
 @Table(name = "anime_rating_distribution", schema = "anime")
 class AnimeRatingDistributionTable(
-    @Id
     @MapsId
     @OneToOne
     @JoinColumn(name = "anime_id", nullable = false)
@@ -49,9 +49,18 @@ class AnimeRatingDistributionTable(
     @Column(nullable = false, name = "score_ten")
     var score10Count: Int = 0,
 
+    @Column(nullable = false)
+    var total: Int = 0,
+
     @Column(nullable = false, name = "updated_at")
     val updatedAt: LocalDateTime = LocalDateTime.now(),
 ) {
+    @Id
+    val id: String = ""
+
+    @Version
+    var version: Long = 0
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is AnimeRatingDistributionTable) return false
@@ -84,6 +93,36 @@ class AnimeRatingDistributionTable(
             9 -> score9Count
             10 -> score10Count
             else -> 0
+        }
+    }
+
+    fun incrementScoreCount(score: Int) {
+        when (score) {
+            1 -> score1Count++
+            2 -> score2Count++
+            3 -> score3Count++
+            4 -> score4Count++
+            5 -> score5Count++
+            6 -> score6Count++
+            7 -> score7Count++
+            8 -> score8Count++
+            9 -> score9Count++
+            10 -> score10Count++
+        }
+    }
+
+    fun decrementScoreCount(score: Int) {
+        when (score) {
+            1 -> score1Count--
+            2 -> score2Count--
+            3 -> score3Count--
+            4 -> score4Count--
+            5 -> score5Count--
+            6 -> score6Count--
+            7 -> score7Count--
+            8 -> score8Count--
+            9 -> score9Count--
+            10 -> score10Count--
         }
     }
 }

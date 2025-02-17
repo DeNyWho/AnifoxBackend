@@ -6,7 +6,7 @@ import club.anifox.backend.domain.model.anime.light.AnimeLight
 import jakarta.servlet.http.HttpServletResponse
 
 interface UserRepository {
-    fun setAnimeRating(
+    fun addRating(
         token: String,
         url: String,
         rating: Int,

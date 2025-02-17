@@ -12,6 +12,9 @@ data class AnimeStatistics(
     val dropped: Int,
     @SerialName("plan_to_watch")
     val planToWatch: Int,
-    val total: Int,
+    @SerialName("total_status")
+    val totalStatus: Int,
+    @SerialName("total_votes")
+    val totalVotes: Int,
     val scores: List<AnimeStatisticsScore>,
 )

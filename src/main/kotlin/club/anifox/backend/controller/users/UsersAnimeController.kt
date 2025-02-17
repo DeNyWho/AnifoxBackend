@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
@@ -29,11 +30,12 @@ import org.springframework.web.bind.annotation.RestController
 class UsersAnimeController(
     private val userService: UserService,
 ) {
-    @PostMapping("{url}/favourite")
+    @PutMapping("{url}/favourite")
     fun addToFavoriteAnime(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
-        @RequestParam status: StatusFavourite,
+        @RequestParam(required = true)
+        status: StatusFavourite,
         @RequestParam(name = "episodes_watched", required = false)
         @Schema(name = "episodes_watched", required = false, nullable = true)
         episodesWatched: Int?,
@@ -109,16 +111,17 @@ class UsersAnimeController(
         return userService.getRecentlyAnimeAll(token, page, limit)
     }
 
-    @PostMapping("{url}/rating")
+    @PutMapping("{url}/rating")
     fun setAnimeRating(
         @RequestHeader(value = "Authorization") token: String,
         @PathVariable url: String,
+        @RequestParam(required = true)
         rating:
         @Min(0)
         @Max(10)
         Int,
         response: HttpServletResponse,
     ) {
-        userService.setAnimeRating(token, url, rating, response)
+        userService.addRating(token, url, rating, response)
     }
 }

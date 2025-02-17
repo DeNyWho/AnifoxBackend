@@ -41,12 +41,10 @@ import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeScheduleTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
-import club.anifox.backend.jpa.repository.anime.AnimeBlockedRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
 import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
-import club.anifox.backend.service.image.ImageService
 import club.anifox.backend.util.anime.AnimeUtils
 import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
@@ -74,9 +72,6 @@ class AnimeCommonComponent {
     private lateinit var animeStudiosRepository: AnimeStudiosRepository
 
     @Autowired
-    private lateinit var animeBlockedRepository: AnimeBlockedRepository
-
-    @Autowired
     private lateinit var animeGenreRepository: AnimeGenreRepository
 
     @Autowired
@@ -90,9 +85,6 @@ class AnimeCommonComponent {
 
     @Autowired
     private lateinit var userUtils: UserUtils
-
-    @Autowired
-    private lateinit var imageService: ImageService
 
     fun getAnimeByUrl(url: String): AnimeDetail {
         val criteriaBuilder = entityManager.criteriaBuilder
@@ -142,13 +134,15 @@ class AnimeCommonComponent {
                 onHold = fav.firstOrNull()?.onHold ?: 0,
                 dropped = fav.firstOrNull()?.dropped ?: 0,
                 planToWatch = fav.firstOrNull()?.planToWatch ?: 0,
-                total = fav.firstOrNull()?.total ?: 0,
+                totalStatus = fav.firstOrNull()?.total ?: 0,
+                totalVotes = rat.firstOrNull()?.total ?: 0,
                 scores = (1..10).map { score ->
                     AnimeStatisticsScore(score, rat.firstOrNull()?.getScoreCount(score) ?: 0)
                 },
             )
         }
-        throw IllegalStateException("Anime statistics not found")
+
+        throw NotFoundException("Anime statistics not found")
     }
 
     @Transactional()

@@ -24,13 +24,13 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
-@Service
-class AnimeFavoriteStatusService(
+@Component
+class AnimeFavoriteStatusComponent(
     private val statusRepo: AnimeFavoriteStatusDistributionRepository,
     private val userFavoriteAnimeRepository: UserFavoriteAnimeRepository,
     private val userUtils: UserUtils,
@@ -109,7 +109,7 @@ class AnimeFavoriteStatusService(
                 return
             }
 
-            updateStatusWithRetry(anime, existFavorite.status, status, isNewFavorite = false)
+            updateStatusWithRetry(anime, existFavorite.status, status)
 
             existFavorite.apply {
                 this.status = status
@@ -128,17 +128,17 @@ class AnimeFavoriteStatusService(
             )
             userFavoriteAnimeRepository.saveAndFlush(newFavorite)
 
-            updateStatusWithRetry(anime, oldStatus = null, newStatus = status, isNewFavorite = true)
+            updateStatusWithRetry(anime, oldStatus = null, newStatus = status)
             response.status = HttpStatus.CREATED.value()
         }
     }
 
+    // Rest of the methods remain unchanged
     @Transactional
     protected fun updateStatusWithRetry(
         anime: AnimeTable,
         oldStatus: StatusFavourite?,
-        newStatus: StatusFavourite,
-        isNewFavorite: Boolean,
+        newStatus: StatusFavourite?,
     ) {
         try {
             entityManager.find(
@@ -146,21 +146,21 @@ class AnimeFavoriteStatusService(
                 anime.id,
                 LockModeType.PESSIMISTIC_WRITE,
             )?.let { distribution ->
-                updateDistribution(distribution, oldStatus, newStatus, isNewFavorite)
+                updateDistribution(distribution, oldStatus, newStatus)
             } ?: createNewDistribution(anime, oldStatus, newStatus)
-        } catch (ex: Exception) {
-            when (ex) {
+        } catch (e: Exception) {
+            when (e) {
                 is PessimisticLockingFailureException -> {
-                    logger.warn("Lock acquisition failed for anime ${anime.id}", ex)
-                    throw ex
+                    logger.warn("Lock acquisition failed for anime ${anime.id}", e)
+                    throw e
                 }
                 is OptimisticLockException -> {
-                    logger.warn("Concurrent modification detected for anime ${anime.id}", ex)
-                    throw ex
+                    logger.warn("Concurrent modification detected for anime ${anime.id}", e)
+                    throw e
                 }
                 else -> {
-                    logger.error("Unexpected error updating status distribution", ex)
-                    throw ex
+                    logger.error("Unexpected error updating status distribution", e)
+                    throw e
                 }
             }
         }
@@ -170,13 +170,13 @@ class AnimeFavoriteStatusService(
     protected fun createNewDistribution(
         anime: AnimeTable,
         oldStatus: StatusFavourite?,
-        newStatus: StatusFavourite,
+        newStatus: StatusFavourite?,
     ): AnimeFavoriteStatusDistributionTable {
         val distribution = AnimeFavoriteStatusDistributionTable(anime = anime, total = 1)
         entityManager.persist(distribution)
         entityManager.merge(anime)
         oldStatus?.let { decrementStatus(distribution, it) }
-        incrementStatus(distribution, newStatus)
+        newStatus?.let { incrementStatus(distribution, it) }
         return statusRepo.saveAndFlush(distribution)
     }
 
@@ -184,39 +184,36 @@ class AnimeFavoriteStatusService(
         distribution: AnimeFavoriteStatusDistributionTable,
         oldStatus: StatusFavourite?,
         newStatus: StatusFavourite?,
-        isNewFavorite: Boolean,
     ) {
         oldStatus?.let { decrementStatus(distribution, it) }
-        incrementStatus(distribution, newStatus)
+        newStatus?.let { incrementStatus(distribution, it) }
 
-        if (isNewFavorite) {
-            distribution.total++
-        } else if (oldStatus != null && newStatus == null) {
-            distribution.total--
+        when {
+            oldStatus != null && newStatus == null -> distribution.total--
+            oldStatus != null && newStatus != null -> distribution.total
+            else -> distribution.total++
         }
 
         statusRepo.saveAndFlush(distribution)
     }
 
-    private fun incrementStatus(distribution: AnimeFavoriteStatusDistributionTable, status: StatusFavourite?) {
+    private fun incrementStatus(distribution: AnimeFavoriteStatusDistributionTable, status: StatusFavourite) {
         when (status) {
             StatusFavourite.Watching -> distribution.watching++
             StatusFavourite.Completed -> distribution.completed++
             StatusFavourite.OnHold -> distribution.onHold++
             StatusFavourite.Dropped -> distribution.dropped++
             StatusFavourite.InPlan -> distribution.planToWatch++
-            null -> { }
         }
     }
 
-    private fun decrementStatus(distribution: AnimeFavoriteStatusDistributionTable, status: StatusFavourite?) {
+    private fun decrementStatus(distribution: AnimeFavoriteStatusDistributionTable, status: StatusFavourite) {
         when (status) {
             StatusFavourite.Watching -> distribution.watching--
             StatusFavourite.Completed -> distribution.completed--
             StatusFavourite.OnHold -> distribution.onHold--
             StatusFavourite.Dropped -> distribution.dropped--
             StatusFavourite.InPlan -> distribution.planToWatch--
-            null -> { }
         }
     }
 }

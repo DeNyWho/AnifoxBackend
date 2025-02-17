@@ -202,8 +202,6 @@ data class AnimeTable(
     )
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
-    @OneToMany(mappedBy = "anime", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val ratingDistribution: List<AnimeRatingDistributionTable> = mutableListOf(),
 ) {
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)

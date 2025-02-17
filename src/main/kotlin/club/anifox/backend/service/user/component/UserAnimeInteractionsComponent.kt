@@ -5,8 +5,6 @@ import club.anifox.backend.domain.exception.common.NotFoundException
 import club.anifox.backend.domain.mappers.anime.light.toAnimeLight
 import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeProgressRequest
 import club.anifox.backend.domain.model.anime.light.AnimeLight
-import club.anifox.backend.jpa.entity.anime.AnimeRatingCountTable
-import club.anifox.backend.jpa.entity.anime.AnimeRatingTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeStudioTable
@@ -15,11 +13,8 @@ import club.anifox.backend.jpa.entity.user.UserFavoriteAnimeTable
 import club.anifox.backend.jpa.entity.user.UserProgressAnimeTable
 import club.anifox.backend.jpa.entity.user.UserRecentlyAnimeTable
 import club.anifox.backend.jpa.entity.user.UserTable
-import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserFavoriteAnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
-import club.anifox.backend.jpa.repository.user.anime.UserRatingCountRepository
-import club.anifox.backend.jpa.repository.user.anime.UserRatingRepository
 import club.anifox.backend.jpa.repository.user.anime.UserRecentlyRepository
 import club.anifox.backend.util.anime.AnimeUtils
 import club.anifox.backend.util.user.UserUtils
@@ -30,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
@@ -43,12 +37,6 @@ class UserAnimeInteractionsComponent {
     private lateinit var entityManager: EntityManager
 
     @Autowired
-    private lateinit var userRatingCountRepository: UserRatingCountRepository
-
-    @Autowired
-    private lateinit var userRatingRepository: UserRatingRepository
-
-    @Autowired
     private lateinit var userRecentlyRepository: UserRecentlyRepository
 
     @Autowired
@@ -56,9 +44,6 @@ class UserAnimeInteractionsComponent {
 
     @Autowired
     private lateinit var userProgressAnimeRepository: UserProgressAnimeRepository
-
-    @Autowired
-    private lateinit var animeRepository: AnimeRepository
 
     @Autowired
     private lateinit var userUtils: UserUtils
@@ -130,57 +115,6 @@ class UserAnimeInteractionsComponent {
         query.maxResults = pageable.pageSize
 
         return query.resultList.map { it.toAnimeLight() }
-    }
-
-    fun setRating(
-        token: String,
-        url: String,
-        rating: Int,
-        response: HttpServletResponse,
-    ) {
-        val user = userUtils.checkUser(token)
-        val anime = animeUtils.checkAnime(url)
-
-        val existingRatingCount = userRatingCountRepository.findByAnimeAndRating(anime, rating)
-
-        val existingRating = userRatingRepository.findByUserAndAnime(user, anime)
-        if (existingRating.isPresent) {
-            val existRating = existingRating.get()
-            if (existRating.rating == rating) {
-                response.status = HttpStatus.OK.value()
-                return
-            } else {
-                val prevRatingCount = userRatingCountRepository.findByAnimeAndRating(anime, existRating.rating).get()
-                prevRatingCount.count--
-                if (prevRatingCount.count == 0) {
-                    userRatingCountRepository.deleteById(prevRatingCount.id)
-                } else {
-                    userRatingCountRepository.save(prevRatingCount)
-                }
-
-                existRating.rating = rating
-                userRatingRepository.save(existRating)
-                response.status = HttpStatus.OK.value()
-            }
-        } else {
-            userRatingRepository.save(AnimeRatingTable(anime = anime, rating = rating, user = user))
-            response.status = HttpStatus.CREATED.value()
-        }
-
-        if (existingRatingCount.isPresent) {
-            val existCount = existingRatingCount.get()
-            val a = existCount.count + 1
-            existCount.count = a
-            userRatingCountRepository.save(existCount)
-        } else {
-            userRatingCountRepository.save(AnimeRatingCountTable(anime = anime, rating = rating, count = 1))
-        }
-
-        val animeRating = userRatingRepository.findByAnime(anime)
-
-        val totalRating = animeRating.map { it.rating }.average()
-        anime.totalRating = totalRating
-        animeRepository.save(anime)
     }
 
     fun updatePreferredGenres(

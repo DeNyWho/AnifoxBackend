@@ -5,22 +5,24 @@ import club.anifox.backend.domain.model.anime.episode.AnimeEpisodeProgressReques
 import club.anifox.backend.domain.model.anime.light.AnimeLight
 import club.anifox.backend.domain.repository.user.UserRepository
 import club.anifox.backend.service.user.component.UserAnimeInteractionsComponent
-import club.anifox.backend.service.user.component.favourite.AnimeFavoriteStatusService
+import club.anifox.backend.service.user.component.favourite.AnimeFavoriteStatusComponent
+import club.anifox.backend.service.user.component.rating.AnimeRatingComponent
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Service
 
 @Service
 class UserService(
     private val userAnimeInteractionsComponent: UserAnimeInteractionsComponent,
-    private val animeFavoriteStatusService: AnimeFavoriteStatusService,
+    private val animeRatingComponent: AnimeRatingComponent,
+    private val animeFavoriteStatusService: AnimeFavoriteStatusComponent,
 ) : UserRepository {
-    override fun setAnimeRating(
+    override fun addRating(
         token: String,
         url: String,
         rating: Int,
         response: HttpServletResponse,
     ) {
-        userAnimeInteractionsComponent.setRating(token = token, url = url, rating = rating, response = response)
+        animeRatingComponent.addRating(token = token, url = url, rating = rating, response = response)
     }
 
     override fun changeEpisodeProgress(
