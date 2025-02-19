@@ -4,6 +4,7 @@ import club.anifox.backend.config.web.converter.anime.common.AnimeStatusConverte
 import club.anifox.backend.config.web.converter.anime.common.AnimeTypeConverter
 import club.anifox.backend.config.web.converter.anime.filter.AnimeDefaultFilterConverter
 import club.anifox.backend.config.web.converter.anime.search.AnimeSearchFilterConverter
+import club.anifox.backend.config.web.converter.user.anime.AnimeStatusFavoriteConverter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.format.FormatterRegistry
@@ -32,10 +33,16 @@ class WebConfig : WebMvcConfigurer {
         return AnimeTypeConverter()
     }
 
+    @Bean
+    fun animeStatusFavoriteConverter(): AnimeStatusFavoriteConverter {
+        return AnimeStatusFavoriteConverter()
+    }
+
     override fun addFormatters(registry: FormatterRegistry) {
         registry.addConverter(animeSearchFilterConverter())
         registry.addConverter(animeStatusConverter())
         registry.addConverter(animeDefaultFilterConverter())
         registry.addConverter(animeTypeConverter())
+        registry.addConverter(animeStatusFavoriteConverter())
     }
 }
