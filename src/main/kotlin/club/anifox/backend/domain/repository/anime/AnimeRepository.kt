@@ -30,7 +30,7 @@ interface AnimeRepository {
 
     fun getAnimeTranslations(): List<AnimeTranslationTable>
 
-    fun getAnimeDetails(url: String): AnimeDetail
+    fun getAnimeDetails(token: String?, url: String): AnimeDetail
 
     fun getAnimeSimilar(page: Int, limit: Int, url: String): List<AnimeLight>
 

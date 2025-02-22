@@ -87,8 +87,11 @@ class AnimeService : AnimeRepository {
         )
     }
 
-    override fun getAnimeDetails(url: String): AnimeDetail {
-        return animeCommonComponent.getAnimeByUrl(url)
+    override fun getAnimeDetails(
+        token: String?,
+        url: String,
+    ): AnimeDetail {
+        return animeCommonComponent.getAnimeByUrl(token, url)
     }
 
     override fun getAnimeStatistics(url: String): AnimeStatistics {

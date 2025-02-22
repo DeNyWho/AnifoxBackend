@@ -16,6 +16,7 @@ import club.anifox.backend.domain.mappers.anime.toStudio
 import club.anifox.backend.domain.model.anime.AnimeGenre
 import club.anifox.backend.domain.model.anime.AnimeRelation
 import club.anifox.backend.domain.model.anime.AnimeStudio
+import club.anifox.backend.domain.model.anime.AnimeUserStats
 import club.anifox.backend.domain.model.anime.AnimeVideo
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterLight
 import club.anifox.backend.domain.model.anime.character.AnimeCharacterResponse
@@ -44,11 +45,12 @@ import club.anifox.backend.jpa.entity.anime.episodes.EpisodeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
 import club.anifox.backend.jpa.repository.anime.AnimeStudiosRepository
+import club.anifox.backend.jpa.repository.user.anime.UserFavoriteAnimeRepository
 import club.anifox.backend.jpa.repository.user.anime.UserProgressAnimeRepository
+import club.anifox.backend.jpa.repository.user.anime.UserRatingRepository
 import club.anifox.backend.util.anime.AnimeUtils
 import club.anifox.backend.util.user.UserUtils
 import jakarta.persistence.EntityManager
-import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Expression
@@ -57,36 +59,27 @@ import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
 import jakarta.transaction.Transactional
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class AnimeCommonComponent {
-    @Autowired
-    private lateinit var animeRepository: AnimeRepository
-
-    @Autowired
-    private lateinit var animeStudiosRepository: AnimeStudiosRepository
-
-    @Autowired
-    private lateinit var animeGenreRepository: AnimeGenreRepository
-
-    @Autowired
-    private lateinit var userProgressAnimeRepository: UserProgressAnimeRepository
-
-    @PersistenceContext
-    private lateinit var entityManager: EntityManager
-
-    @Autowired
-    private lateinit var animeUtils: AnimeUtils
-
-    @Autowired
-    private lateinit var userUtils: UserUtils
-
-    fun getAnimeByUrl(url: String): AnimeDetail {
+class AnimeCommonComponent(
+    private val userUtils: UserUtils,
+    private val animeUtils: AnimeUtils,
+    private val entityManager: EntityManager,
+    private val userProgressAnimeRepository: UserProgressAnimeRepository,
+    private val animeGenreRepository: AnimeGenreRepository,
+    private val animeStudiosRepository: AnimeStudiosRepository,
+    private val animeRepository: AnimeRepository,
+    private val userRatingRepository: UserRatingRepository,
+    private val userFavoriteAnimeRepository: UserFavoriteAnimeRepository,
+) {
+    fun getAnimeByUrl(
+        token: String?,
+        url: String,
+    ): AnimeDetail {
         val criteriaBuilder = entityManager.criteriaBuilder
         val criteriaQuery = criteriaBuilder.createQuery(AnimeTable::class.java)
         val root = criteriaQuery.from(AnimeTable::class.java)
@@ -101,8 +94,28 @@ class AnimeCommonComponent {
         val anime = entityManager.createQuery(criteriaQuery).resultList
         if (anime.isEmpty()) {
             throw NotFoundException("Anime not found")
+        }
+
+        val existAnime = anime.first()
+        val baseAnimeDetail = existAnime.toAnimeDetail()
+
+        return if (token != null) {
+            val user = userUtils.checkUser(token)
+            val rating = userRatingRepository.findByUserAndAnime(user, existAnime)
+            val existingFavorite = userFavoriteAnimeRepository.findByUserAndAnime(user, existAnime)
+
+            existAnime.toAnimeDetail(
+                if (rating.isPresent || existingFavorite.isPresent) {
+                    AnimeUserStats(
+                        rating = rating.orElse(null)?.rating,
+                        list = existingFavorite.orElse(null)?.status,
+                    )
+                } else {
+                    null
+                },
+            )
         } else {
-            return anime.first().toAnimeDetail()
+            baseAnimeDetail
         }
     }
 

@@ -129,9 +129,10 @@ class AnimeController {
     @GetMapping("/{url}")
     @Operation(summary = "detail anime")
     fun getAnimeDetails(
+        @RequestHeader(value = "Authorization", required = false) token: String?,
         @PathVariable url: String,
     ): AnimeDetail {
-        return animeService.getAnimeDetails(url)
+        return animeService.getAnimeDetails(token, url)
     }
 
     @GetMapping("/{url}/statistics")
