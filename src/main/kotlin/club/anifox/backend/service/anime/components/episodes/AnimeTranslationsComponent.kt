@@ -37,12 +37,14 @@ class AnimeTranslationsComponent {
 
         val translationsCountEpisodes: Set<AnimeEpisodeTranslationCountTable> = anime.translationsCountEpisodes
 
-        return translationsCountEpisodes.map { translationEpisodes ->
-            AnimeTranslationCount(
-                translation = translationEpisodes.translation.toAnimeTranslation(),
-                countEpisodes = translationEpisodes.countEpisodes,
-            )
-        }
+        return translationsCountEpisodes
+            .map { translationEpisodes ->
+                AnimeTranslationCount(
+                    translation = translationEpisodes.translation.toAnimeTranslation(),
+                    countEpisodes = translationEpisodes.countEpisodes,
+                )
+            }
+            .sortedByDescending { it.countEpisodes }
     }
 
     fun getAnimeTranslations(): List<AnimeTranslationTable> {
