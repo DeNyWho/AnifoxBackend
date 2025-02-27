@@ -3,8 +3,12 @@ package club.anifox.backend.service.anime.components.episodes
 import club.anifox.backend.domain.constants.Constants
 import club.anifox.backend.domain.dto.anime.kodik.KodikResponseDto
 import club.anifox.backend.domain.dto.anime.kodik.KodikTranslationsDto
+import club.anifox.backend.domain.enums.anime.AnimeStatus
 import club.anifox.backend.domain.mappers.anime.toAnimeTranslation
 import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCount
+import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCountDefault
+import club.anifox.backend.domain.model.anime.translation.AnimeTranslationCountSingle
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeTranslationRepository
@@ -37,14 +41,32 @@ class AnimeTranslationsComponent {
 
         val translationsCountEpisodes: Set<AnimeEpisodeTranslationCountTable> = anime.translationsCountEpisodes
 
-        return translationsCountEpisodes
-            .map { translationEpisodes ->
-                AnimeTranslationCount(
-                    translation = translationEpisodes.translation.toAnimeTranslation(),
-                    countEpisodes = translationEpisodes.countEpisodes,
-                )
-            }
-            .sortedByDescending { it.countEpisodes }
+        return if (anime.status == AnimeStatus.Released && anime.episodesCount == 1) {
+            val episodes: Set<AnimeEpisodeTable> = anime.episodes
+            val episode = episodes.first()
+            val translationLinks = episode.translations.associate { it.translation.id to it.link }
+
+            translationsCountEpisodes
+                .map { translationEpisodes ->
+                    val translation = translationEpisodes.translation.toAnimeTranslation()
+                    val link = translationLinks[translationEpisodes.translation.id] ?: ""
+                    AnimeTranslationCountSingle(
+                        translation = translation,
+                        countEpisodes = translationEpisodes.countEpisodes,
+                        link = link,
+                    )
+                }
+                .sortedByDescending { it.countEpisodes }
+        } else {
+            translationsCountEpisodes
+                .map { translationEpisodes ->
+                    AnimeTranslationCountDefault(
+                        translation = translationEpisodes.translation.toAnimeTranslation(),
+                        countEpisodes = translationEpisodes.countEpisodes,
+                    )
+                }
+                .sortedByDescending { it.countEpisodes }
+        }
     }
 
     fun getAnimeTranslations(): List<AnimeTranslationTable> {
