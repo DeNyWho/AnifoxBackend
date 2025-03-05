@@ -15,16 +15,20 @@ import java.util.*
 data class AnimeRatingTable(
     @Id
     val id: String = UUID.randomUUID().toString(),
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    val user: UserTable = UserTable(),
-
+    val user: UserTable? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anime_id")
-    val anime: AnimeTable = AnimeTable(),
-
+    val anime: AnimeTable? = null,
     var rating: Int = 0,
-
     var updateDate: LocalDateTime = LocalDateTime.now(),
-)
+) {
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AnimeRatingTable) return false
+        return id == other.id
+    }
+}

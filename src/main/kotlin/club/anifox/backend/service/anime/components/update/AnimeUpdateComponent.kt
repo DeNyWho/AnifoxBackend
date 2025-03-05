@@ -7,7 +7,10 @@ import club.anifox.backend.jpa.entity.anime.AnimeErrorParserTable
 import club.anifox.backend.jpa.entity.anime.AnimeTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeGenreTable
 import club.anifox.backend.jpa.entity.anime.common.AnimeIdsTable
+import club.anifox.backend.jpa.entity.anime.common.AnimeImagesTable
 import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeEpisodeTranslationCountTable
+import club.anifox.backend.jpa.entity.anime.episodes.AnimeTranslationTable
 import club.anifox.backend.jpa.repository.anime.AnimeErrorParserRepository
 import club.anifox.backend.jpa.repository.anime.AnimeGenreRepository
 import club.anifox.backend.jpa.repository.anime.AnimeRepository
@@ -136,7 +139,7 @@ class AnimeUpdateComponent(
                     } catch (e: Exception) {
                         logger.error("Failed to process anime ${anime.shikimoriId}", e)
                         logError(anime.shikimoriId, "PROCESS_FAILED", e.message)
-                        null
+                        null // Возвращаем null, чтобы продолжить обработку других аниме
                     }
                 }
             }.awaitAll().filterNotNull()
@@ -158,20 +161,20 @@ class AnimeUpdateComponent(
 
     private suspend fun fetchAnimeList(batchIds: List<Int>): List<AnimeTable> = coroutineScope {
         withContext(Dispatchers.Default) {
-            entityManager.createQuery(
-                """
-                SELECT DISTINCT a FROM AnimeTable a
-                LEFT JOIN FETCH a.episodes e
-                LEFT JOIN FETCH a.genres g
-                LEFT JOIN FETCH a.screenshots
-                LEFT JOIN FETCH a.images
-                LEFT JOIN FETCH a.translations
-                LEFT JOIN FETCH a.translationsCountEpisodes
-                WHERE a.shikimoriId IN :ids
-                """.trimIndent(),
-                AnimeTable::class.java,
-            )
-                .setParameter("ids", batchIds)
+            val cb = entityManager.criteriaBuilder
+            val query = cb.createQuery(AnimeTable::class.java)
+            val root = query.from(AnimeTable::class.java)
+
+            root.fetch<AnimeTable, AnimeEpisodeTable>("episodes", JoinType.LEFT)
+            root.fetch<AnimeTable, AnimeGenreTable>("genres", JoinType.LEFT)
+            root.fetch<AnimeTable, MutableList<String>>("screenshots", JoinType.LEFT)
+            root.fetch<AnimeTable, AnimeImagesTable>("images", JoinType.LEFT)
+            root.fetch<AnimeTable, AnimeTranslationTable>("translations", JoinType.LEFT)
+            root.fetch<AnimeTable, AnimeEpisodeTranslationCountTable>("translationsCountEpisodes", JoinType.LEFT)
+
+            query.select(root).where(root.get<Int>("shikimoriId").`in`(batchIds)).distinct(true)
+
+            entityManager.createQuery(query)
                 .setHint(AvailableHints.HINT_FETCH_SIZE, BATCH_SIZE)
                 .resultList
         }
@@ -224,7 +227,7 @@ class AnimeUpdateComponent(
 
                 query.where(cb.equal(root.get<AnimeTable>("anime").get<String>("id"), anime.id))
 
-                val ids = entityManager.createQuery(query).singleResult
+                val ids = entityManager.createQuery(query).resultList
 
                 val criteriaQueryEpisodes: CriteriaQuery<AnimeEpisodeTable> = cb.createQuery(AnimeEpisodeTable::class.java)
 
@@ -234,10 +237,12 @@ class AnimeUpdateComponent(
                 criteriaQueryEpisodes.where(cb.equal(animeRoot.get<String>("id"), anime.id))
                 val locallyEpisodes = entityManager.createQuery(criteriaQueryEpisodes).resultList
 
+                val kitsuId = if (ids.isNotEmpty()) ids.first().kitsu.toString() else null
+
                 val episodesDeferred = async {
                     episodesComponent.fetchEpisodes(
                         shikimoriId = anime.shikimoriId,
-                        kitsuId = ids.kitsu.toString(),
+                        kitsuId = kitsuId,
                         type = anime.type,
                         urlLinkPath = anime.url,
                         defaultImage = anime.images.medium,
@@ -251,9 +256,7 @@ class AnimeUpdateComponent(
 
                 anime.apply {
                     this.addEpisodesAll(episodes)
-
                     this.addTranslation(translationsCount.map { it.translation })
-
                     this.addTranslationCount(translationsCount)
 
                     this.duration = this.duration?.let { duration ->
@@ -266,6 +269,7 @@ class AnimeUpdateComponent(
                 }
             } catch (e: Exception) {
                 logError(anime.shikimoriId, "EPISODES_UPDATE_FAILED", e.message)
+                return@coroutineScope anime // Продолжаем с текущим anime
             }
 
             updateAnimeFromShikimori(anime, shikimori)

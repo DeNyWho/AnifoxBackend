@@ -26,28 +26,23 @@ data class UserTable(
     var birthday: LocalDate? = null,
     @Column(nullable = true)
     var nickName: String? = null,
-    @ManyToMany(
-        fetch = FetchType.EAGER,
-        cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL],
-    )
+    @ManyToMany(fetch = FetchType.EAGER, cascade = [CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH, CascadeType.ALL])
     var preferredGenres: MutableSet<AnimeGenreTable> = mutableSetOf(),
-    @OneToMany(
-        fetch = FetchType.LAZY,
-        mappedBy = "user",
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
     val favoritesAnime: MutableSet<UserFavoriteAnimeTable> = mutableSetOf(),
-    @OneToMany(
-        mappedBy = "user",
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
     fun addPreferredGenres(genres: List<AnimeGenreTable>): UserTable {
         preferredGenres.addAll(genres)
         return this
+    }
+
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is UserTable) return false
+        return id == other.id
     }
 }

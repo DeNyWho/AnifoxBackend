@@ -144,12 +144,7 @@ data class AnimeTable(
         schema = "anime",
     )
     var genres: MutableSet<AnimeGenreTable> = mutableSetOf(),
-    @OneToMany(
-        mappedBy = "anime",
-        fetch = FetchType.LAZY,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
+    @OneToMany(mappedBy = "anime", fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     val characterRoles: MutableSet<AnimeCharacterRoleTable> = mutableSetOf(),
     @ManyToMany(
@@ -203,6 +198,7 @@ data class AnimeTable(
     @BatchSize(size = 10)
     val rating: MutableSet<AnimeRatingTable> = mutableSetOf(),
 ) {
+
     fun addTranslation(translation: List<AnimeTranslationTable>): AnimeTable {
         translations.addAll(translation)
         translation.forEach { newTranslation ->

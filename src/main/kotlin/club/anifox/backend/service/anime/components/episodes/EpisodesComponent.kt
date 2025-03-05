@@ -77,7 +77,7 @@ class EpisodesComponent {
 
     suspend fun fetchEpisodes(
         shikimoriId: Int,
-        kitsuId: String,
+        kitsuId: String?,
         type: AnimeType,
         urlLinkPath: String,
         defaultImage: String,
@@ -95,10 +95,13 @@ class EpisodesComponent {
                 kodikAnime.seasons.forEach { kodikSeason ->
                     if (kodikSeason.key != "0") {
                         coroutineScope {
-                            val deferredKitsu = async { fetchKitsuEpisodes(kitsuId) }
                             val deferredJikan = async { fetchJikanEpisodes(shikimoriId) }
 
-                            kitsuEpisodes.addAll(deferredKitsu.await())
+                            if (kitsuId != null) {
+                                val deferredKitsu = async { fetchKitsuEpisodes(kitsuId) }
+                                kitsuEpisodes.addAll(deferredKitsu.await())
+                            }
+
                             jikanEpisodes.addAll(deferredJikan.await())
                         }
 
