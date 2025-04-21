@@ -9,7 +9,7 @@ The **AniFox** is a project that was created with passion. It all started when a
 - Oauth 2.0 authorization between Keycloak, which is installed on the Anifox server, and the Spring Boot application (works with cookies)✅
 - Default user requests: adding a rating to an anime, adding an anime to favorite lists (watching, watched, on plan, postponed)✅
 - Default admin requests for animes: adding an anime to the blocked list (users won't see these anime) ✅
-- Add anime release schedules ❌
+- Add anime release schedules ✅
 - Add notifications for anime series ❌
 - Chat between users ❌
 - Users ability to add friends ❌
