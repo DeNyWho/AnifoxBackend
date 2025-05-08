@@ -1,19 +1,40 @@
-**Anifox** is a anime project where people can watch anime. **Open source project** made with ❤️.
-
 ## About
-The **AniFox** is a project that was created with passion. It all started when a young person wanted to create their own version of an anime application, as every app with anime viewing capabilities had a large amount of advertising. It ended up evolving into a [diploma](https://github.com/DeNyWho/Anifox_Backend/blob/main/diplom/%D0%92%D0%9A%D0%A0.docx) project. This repository contains the second, completely rewritten version of the backend part of the project. All the features of the backend part can be seen on the [website](https://anifox.club/anime). 
+Anifox is an open-source anime watching platform built with ❤️, designed to provide an ad-free experience for anime enthusiasts. This repository contains the backend of the second, completely rewritten version of the Anifox project, initially developed as a diploma project.
+Explore the live application on [anifox.club](https://anifox.club)!
+
 ## Features
-- **Parser** - using scheduled tasks in Spring Boot, new anime data from Shikimori, Jikan, Kitsu, Haglund, Kodik are added to the PostgreSQL database every 12 hours✅
-- **Update** - using scheduled tasks in Spring Boot, new anime episodes from Kodik, and episode information from Kitsu and Jikan are added to the database every 1️⃣ hour✅
-- Default anime requests: main anime catalog request, details etc✅
-- Oauth 2.0 authorization between Keycloak, which is installed on the Anifox server, and the Spring Boot application (works with cookies)✅
-- Default user requests: adding a rating to an anime, adding an anime to favorite lists (watching, watched, on plan, postponed)✅
-- Default admin requests for animes: adding an anime to the blocked list (users won't see these anime) ✅
-- Add anime release schedules ✅
-- Add notifications for anime series ❌
-- Chat between users ❌
-- Users ability to add friends ❌
-- Users ability to watch animes with friends ❌
+- **Anime Parsing**: Scheduled tasks in Spring Boot fetch new anime data from Shikimori, Jikan, Kitsu, Haglund, and Kodik every 12 hours, stored in a PostgreSQL database. ✅
+- **Episode Updates**: Hourly scheduled tasks retrieve new anime episodes and metadata from Kodik, Kitsu, and Jikan. ✅
+- **Anime Catalog**: Supports main catalog requests, anime details, and more. ✅
+- **Anime characters**: Find out all about your favorite anime character. ✅
+- **Anime voice acting**: Watch anime with any of the popular dubbings (JAM, KANSAI Studio, AniDub, AniLibria, Studio Band, Animedia, SHIZA Project, HDrezka Studio, AniMaunt, Amber, Dream Cast). ✅
+- **OAuth 2.0 Authentication**: Secure user authentication via Keycloak, integrated with the Spring Boot backend (cookie-based). ✅
+- **User features**: Rate anime and add to personal lists (Watching, Watched, Planned, Postponed), saving the point where playback stopped ✅
+- **Admin features**: Block specific anime from appearing in user searches. ✅
+- **Release Schedules**: Display upcoming anime release schedules. ✅
+
+## Configuration
+The AniFox backend requires environment variables to connect to external services, databases, and authentication systems.
+````
+anime.ko.token=<Kodik API token>;
+bucket_name_s3=<Amazon S3 bucket name>;
+secret_key_s3=<Amazon S3 secret access key>
+domain_s3=<Amazon S3 CDN URL (e.g., https://cdn.domain)>;
+spring.datasource.url=<JDBC URL to PostgreSQL (e.g., jdbc:postgresql://localhost:5432/anifox)>;
+spring.datasource.username=<PostgreSQL username>;
+spring.datasource.password=<PostgreSQL password>;
+keycloak.auth-server-url=<Keycloak authentication server URL (e.g., https://keycloak)>;
+keycloak.realm=<Keycloak realm name>;
+keycloak.resource=<Keycloak client ID>;
+keycloak.credentials.secret=<Keycloak client secret>;
+keycloak.issuer-uri=<Keycloak realm issuer URL (e.g., https://keycloak/realms/realm-name)>;
+key-store=<Path to keystore file (e.g., /path/to/keystore.jks)>;
+key-store-password=<Keystore password>;
+trust-store=<Path to truststore file (e.g., /path/to/truststore.jks)>;
+trust-store-password=<Truststore password>;
+spring.profiles.active=<Active profile (e.g., parser, prod, dev)>;
+````
+
 ## Built With 🛠
 - [Kotlin](https://kotlinlang.org/) - is a modern but already mature programming language designed to make developers happier.
 - [Spring boot](https://spring.io/projects/spring-boot) - is a Java framework designed to simplify the configuration and deployment of applications, providing a streamlined development experience.
@@ -32,6 +53,17 @@ The **AniFox** is a project that was created with passion. It all started when a
 - [Haglund](https://arm.haglund.dev/docs) -  a service for mapping Anime IDs.
 - [Kodik](https://kodik.online/) -  is a convenient database for searching, tracking and discussing anime episodes, as well as information about anime.
 - [Docker](https://www.docker.com/) -  is a platform designed to help developers build, share, and run container applications.
+
+## Contributing
+
+I welcome contributions to Anifox! To contribute, please follow these steps:
+
+1. Fork this repository.
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
 ## License
 This project uses the **Apache** license, the details are written [here](https://github.com/DeNyWho/Anifox_Backend/blob/main/LICENSE)
 
