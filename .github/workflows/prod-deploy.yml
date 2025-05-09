@@ -78,4 +78,4 @@ jobs:
             docker container rm backend || true
             docker rmi app || true
             docker load -i app.tar
-            docker run -d -p 12200:12200 --env-file env.txt --log-opt max-size=50m --name backend app
+            docker run -d -p 12200:12200 --env-file env.txt --log-opt max-size=50m --name backend -v /etc/letsencrypt:/etc/letsencrypt:ro app
