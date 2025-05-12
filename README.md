@@ -1,6 +1,6 @@
 ## About
 Anifox is an open-source anime watching platform built with ❤️, designed to provide an ad-free experience for anime enthusiasts. This repository contains the backend of the second, completely rewritten version of the Anifox project, initially developed as a diploma project.
-Explore the live application on [anifox.club](https://anifox.club)!
+Explore the live application on [anifox.su](https://anifox.su)!
 
 ## Features
 - **Anime Parsing**: Scheduled tasks in Spring Boot fetch new anime data from Shikimori, Jikan, Kitsu, Haglund, and Kodik every 12 hours, stored in a PostgreSQL database. ✅
